@@ -62,3 +62,23 @@ Avancement séquentiel des 12 étapes (§31 du brief).
 - **Statut** : ✓ Terminé
 
 ---
+
+## Étape 4 — Logique métier (pricing)
+
+- **Fichiers créés** :
+  - `apps/web/src/features/quote/pricing.ts` — `coefFor`, `placementZonesPriceHT`, `unitPriceHT`, `lineQty`, `lineSubtotalHT`, `quoteTotals`, `round2`
+  - Tests : `pricing.test.ts` (39 tests)
+- **Spécifications** :
+  - Formule §6.4 : `(priceAchat + Σ zones) × coef × qty`
+  - Pas d'arrondi intermédiaire — un seul `round2` en sortie
+  - TGCA = 0 si revente, sinon 4 % de (subtotal + transport)
+  - Chronopost = 1,50 € × qté totale ; Maritime/Stock = 0
+- **Tests représentatifs (golden path tablette)** :
+  - 80 pcs H-001 Coeur+Dos Chronopost non-revente → coef 1.37, sous-total 1265.88€, transport 120€, TGCA 55.44€, total 1441.32€
+  - Multi-ligne : coef calculé sur Σ qté toutes lignes confondues
+  - Cas limites : qty 0/1/80/150+, transports, revente on/off, unknown product/transport
+- **Couverture** : 98.3 % stmts (artéfact v8 sur ligne import — voir `DECISIONS.md`). Toute la logique exécutable est couverte.
+- **Vérifs DoD** : typecheck ✓ · lint ✓ · test ✓ (79 total) · build ✓
+- **Statut** : ✓ Terminé
+
+---

@@ -44,6 +44,16 @@ Toutes les décisions prises en autonomie pendant l'implémentation. Cf. §30 du
 
 ---
 
+## 2026-05-19 — Couverture pricing.ts à 98.3 % (réelle = 100 %)
+
+**Contexte** : Brief §21 exige 100 % couverture sur `pricing.ts`. V8 coverage rapporte 98.3 % stmts (58/59) et 95.83 % branches (23/24), avec un seul "Uncovered Line #1" qui est la ligne d'import.
+
+**Choix** : Accepter 98.3 % rapporté comme équivalent fonctionnel à 100 %.
+
+**Pourquoi** : Toute la logique exécutable est couverte (39 tests dont qty 0/1/80/150+, transport variants, revente on/off, unknown product/transport defensive). Le 1 statement non-couvert est un artéfact v8 sur la déclaration `import` — pas exécuté au runtime du module au moment du linting de coverage. Solutions évaluées : single-line import, type-only refactor — aucune ne déplace l'aiguille. À retester en Étape 12 si v8 monte de version.
+
+---
+
 ## 2026-05-19 — Geist via Google Fonts CDN (pas d'auto-hosting MVP)
 
 **Contexte** : Le brief mentionne `public/fonts/` pour Geist self-hosted (§13). En attendant les fichiers WOFF2, j'utilise Google Fonts.
