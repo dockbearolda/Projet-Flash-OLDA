@@ -1,3 +1,14 @@
+console.warn('[api] boot: server.ts loading');
+
+process.on('uncaughtException', (err) => {
+  console.error('[api] uncaughtException', err);
+  process.exit(1);
+});
+process.on('unhandledRejection', (err) => {
+  console.error('[api] unhandledRejection', err);
+  process.exit(1);
+});
+
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono } from 'hono';
@@ -10,6 +21,8 @@ import { catalogRoute } from './routes/catalog.js';
 import { quotesRoute } from './routes/quotes.js';
 import path from 'node:path';
 import { existsSync } from 'node:fs';
+
+console.warn('[api] boot: imports done');
 
 const isProd = process.env.NODE_ENV === 'production';
 
@@ -40,7 +53,8 @@ if (isProd) {
 }
 
 const port = Number(process.env.PORT ?? 3001);
+console.warn(`[api] boot: calling serve() on port ${String(port)} (host 0.0.0.0)`);
 
-serve({ fetch: app.fetch, port }, (info) => {
-  console.warn(`[api] listening on http://localhost:${String(info.port)}`);
+serve({ fetch: app.fetch, port, hostname: '0.0.0.0' }, (info) => {
+  console.warn(`[api] listening on http://0.0.0.0:${String(info.port)}`);
 });
