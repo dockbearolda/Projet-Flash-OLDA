@@ -43,12 +43,21 @@ app.route('/api/quotes', quotesRoute);
 
 // Serve the SPA in production
 if (isProd) {
-  const webDist = path.resolve(process.cwd(), '../web/dist');
-  if (existsSync(webDist)) {
+  // Resolve relative to this file's location so cwd at startup is irrelevant.
+  // Compiled layout: /app/apps/api/dist/server.js  →  /app/apps/web/dist
+  const here = path.dirname(new URL(import.meta.url).pathname);
+  const candidates = [
+    path.resolve(here, '../../web/dist'),
+    path.resolve(process.cwd(), '../web/dist'),
+    path.resolve(process.cwd(), 'apps/web/dist'),
+  ];
+  const webDist = candidates.find((p) => existsSync(p));
+  if (webDist) {
+    console.warn(`[api] serving SPA from ${webDist}`);
     app.use('*', serveStatic({ root: webDist }));
     app.get('*', serveStatic({ path: path.join(webDist, 'index.html') }));
   } else {
-    console.warn(`[api] SPA dist not found at ${webDist} — running API-only`);
+    console.warn(`[api] SPA dist not found in [${candidates.join(', ')}] — running API-only`);
   }
 }
 
