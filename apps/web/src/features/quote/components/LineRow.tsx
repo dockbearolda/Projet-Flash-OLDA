@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Boxes, ChevronDown, Link2, Link2Off, Plane, Ship, Trash2 } from 'lucide-react';
 import {
   PRODUCTS,
@@ -106,6 +106,21 @@ export function LineRow({
   const isLinked = line.linked;
   const effectiveTransport: Transport = line.transport ?? transport;
   const effectiveRevente = line.revente ?? revente;
+
+  const externalCustomPrice = line.custom?.priceAchat ?? 0;
+  const [customPriceText, setCustomPriceText] = useState<string>(() =>
+    externalCustomPrice === 0 ? '' : String(externalCustomPrice).replace('.', ','),
+  );
+  useEffect(() => {
+    const parsed = Number(customPriceText.replace(',', '.'));
+    const localNum = customPriceText.trim() === '' ? 0 : Number.isFinite(parsed) ? parsed : 0;
+    if (Math.abs(localNum - externalCustomPrice) > 1e-6) {
+      setCustomPriceText(
+        externalCustomPrice === 0 ? '' : String(externalCustomPrice).replace('.', ','),
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalCustomPrice]);
 
   const transportPerPiece = useMemo(() => {
     return TRANSPORT_OPTIONS.find((t) => t.id === effectiveTransport)?.surcharge ?? 0;
@@ -257,17 +272,26 @@ export function LineRow({
                 <input
                   type="text"
                   inputMode="decimal"
-                  value={line.custom?.priceAchat ?? 0}
+                  value={customPriceText}
                   onChange={(e) => {
-                    const raw = e.target.value.replace(',', '.').replace(/[^\d.]/g, '');
-                    const n = raw === '' ? 0 : Number(raw);
+                    let cleaned = e.target.value.replace(/[^\d.,]/g, '');
+                    const firstSep = cleaned.search(/[.,]/);
+                    if (firstSep !== -1) {
+                      cleaned =
+                        cleaned.slice(0, firstSep + 1) +
+                        cleaned.slice(firstSep + 1).replace(/[.,]/g, '');
+                    }
+                    setCustomPriceText(cleaned);
+                    const parsed = Number(cleaned.replace(',', '.'));
+                    const n = cleaned === '' || !Number.isFinite(parsed) ? 0 : Math.max(0, parsed);
                     onChange({
                       custom: {
                         name: line.custom?.name ?? '',
-                        priceAchat: Number.isFinite(n) ? Math.max(0, n) : 0,
+                        priceAchat: n,
                       },
                     });
                   }}
+                  placeholder="0,00"
                   aria-label="Prix achat (€ HT)"
                   className="df-input h-12 pr-7 text-right tabular-nums"
                 />
