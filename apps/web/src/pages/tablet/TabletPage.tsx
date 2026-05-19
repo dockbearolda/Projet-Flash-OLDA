@@ -41,6 +41,7 @@ export default function TabletPage() {
   const updatedAt = useQuoteStore((s) => s.updatedAt);
 
   const addLine = useQuoteStore((s) => s.addLine);
+  const addCustomLine = useQuoteStore((s) => s.addCustomLine);
   const removeLine = useQuoteStore((s) => s.removeLine);
   const updateLine = useQuoteStore((s) => s.updateLine);
   const setSizes = useQuoteStore((s) => s.setSizes);
@@ -193,14 +194,24 @@ export default function TabletPage() {
                 />
               ))}
 
-              <button
-                type="button"
-                onClick={addLine}
-                className="flex items-center justify-center gap-2 h-14 rounded-[var(--df-radius-lg)] border-2 border-dashed border-[var(--df-border-strong)] text-[var(--df-ink-2)] text-sm font-medium hover:bg-[var(--df-surface-2)] hover:text-[var(--df-ink)] transition-colors"
-              >
-                <Plus size={18} strokeWidth={1.8} aria-hidden />
-                Ajouter une référence
-              </button>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={addLine}
+                  className="flex items-center justify-center gap-2 h-14 rounded-[var(--df-radius-lg)] border-2 border-dashed border-[var(--df-border-strong)] text-[var(--df-ink-2)] text-sm font-medium hover:bg-[var(--df-surface-2)] hover:text-[var(--df-ink)] transition-colors"
+                >
+                  <Plus size={18} strokeWidth={1.8} aria-hidden />
+                  Ajouter une référence
+                </button>
+                <button
+                  type="button"
+                  onClick={addCustomLine}
+                  className="flex items-center justify-center gap-2 h-14 rounded-[var(--df-radius-lg)] border-2 border-dashed border-[var(--df-border-strong)] text-[var(--df-ink-2)] text-sm font-medium hover:bg-[var(--df-surface-2)] hover:text-[var(--df-ink)] transition-colors"
+                >
+                  <Plus size={18} strokeWidth={1.8} aria-hidden />
+                  Ajouter une ligne libre
+                </button>
+              </div>
             </>
           )}
         </div>

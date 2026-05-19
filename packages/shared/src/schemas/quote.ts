@@ -26,6 +26,17 @@ export type FlockMode = z.infer<typeof FlockModeSchema>;
 export const TransportSchema = z.enum(['maritime', 'chronopost', 'stock']);
 export type Transport = z.infer<typeof TransportSchema>;
 
+/**
+ * Ligne hors catalogue : produit saisi à la main (ex. trouvé sur le site
+ * fournisseur, pas en stock). Le PRIX ACHAT remplace la lookup catalogue ;
+ * coef, placement, code et transport s'appliquent comme une ligne normale.
+ */
+export const CustomLineSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  priceAchat: z.number().min(0),
+});
+export type CustomLine = z.infer<typeof CustomLineSchema>;
+
 export const QuoteLineSchema = z.object({
   id: z.string().min(1),
   productRef: z.string().min(1),
@@ -40,6 +51,8 @@ export const QuoteLineSchema = z.object({
   // Per-line overrides. If undefined, fall back to the quote-level value.
   transport: TransportSchema.optional(),
   revente: z.boolean().optional(),
+  // Présent uniquement sur les lignes libres (hors catalogue).
+  custom: CustomLineSchema.optional(),
 });
 
 export type QuoteLine = z.infer<typeof QuoteLineSchema>;

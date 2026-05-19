@@ -76,18 +76,29 @@ export function lineQty(sizes: Sizes): number {
  * `qty` is the *quote-wide* total quantity used to look up the coef and
  * the zone tier. `code` is the multi-couleurs surcharge (in %, default 10).
  */
+/**
+ * Resolve the priceAchat for a line: explicit override (custom/free lines)
+ * wins, otherwise look it up in the catalogue.
+ */
+function resolvePriceAchat(productRef: string, override: number | undefined): number {
+  if (override !== undefined) return override;
+  const product = PRODUCT_BY_REF[productRef];
+  if (!product) {
+    throw new Error(`Unknown product ref: ${productRef}`);
+  }
+  return product.priceAchat;
+}
+
 export function unitPriceHT(args: {
   productRef: string;
   placementId: string;
   qty: number;
   code?: number | undefined;
+  /** Override the catalogue priceAchat — used by custom/free lines. */
+  priceAchatOverride?: number | undefined;
 }): number {
-  const product = PRODUCT_BY_REF[args.productRef];
-  if (!product) {
-    throw new Error(`Unknown product ref: ${args.productRef}`);
-  }
   const coef = coefFor(args.qty);
-  const vierge = viergePriceHT(product.priceAchat, coef);
+  const vierge = viergePriceHT(resolvePriceAchat(args.productRef, args.priceAchatOverride), coef);
   const zones = placementZonesPriceHT(args.placementId, args.qty);
   const base = vierge + zones;
   const codePct = args.code ?? 10;
@@ -120,13 +131,11 @@ export function unitPriceBreakdown(args: {
   qty: number;
   code?: number | undefined;
   transportPerPiece?: number | undefined;
+  /** Override the catalogue priceAchat — used by custom/free lines. */
+  priceAchatOverride?: number | undefined;
 }): UnitPriceBreakdown {
-  const product = PRODUCT_BY_REF[args.productRef];
-  if (!product) {
-    throw new Error(`Unknown product ref: ${args.productRef}`);
-  }
   const coef = coefFor(args.qty);
-  const vierge = viergePriceHT(product.priceAchat, coef);
+  const vierge = viergePriceHT(resolvePriceAchat(args.productRef, args.priceAchatOverride), coef);
   const zones = placementZonesPriceHT(args.placementId, args.qty);
   const base = vierge + zones;
   const codePct = args.code ?? 10;
@@ -153,6 +162,8 @@ export interface LineForPricing {
   transport?: Transport | undefined;
   /** Per-line revente override (falls back to quote-level revente). */
   revente?: boolean | undefined;
+  /** Free-line product (replaces the catalogue lookup for priceAchat + name). */
+  custom?: { name: string; priceAchat: number } | undefined;
 }
 
 /**
@@ -165,6 +176,7 @@ export function lineSubtotalHT(line: LineForPricing, quoteQty: number): number {
     placementId: line.placementId,
     qty: quoteQty,
     code: line.code,
+    priceAchatOverride: line.custom?.priceAchat,
   });
   return unit * lineQty(line.sizes);
 }

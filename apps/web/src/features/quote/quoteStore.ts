@@ -27,6 +27,14 @@ function makeLine(defaults?: { transport?: Transport; revente?: boolean }): Quot
   };
 }
 
+function makeCustomLine(defaults?: { transport?: Transport; revente?: boolean }): QuoteLine {
+  return {
+    ...makeLine(defaults),
+    productRef: 'CUSTOM',
+    custom: { name: 'Produit hors catalogue', priceAchat: 0 },
+  };
+}
+
 export interface QuoteState {
   id: string;
   status: 'draft' | 'sent' | 'archived';
@@ -39,6 +47,7 @@ export interface QuoteState {
   updatedAt: string;
   // actions
   addLine: () => void;
+  addCustomLine: () => void;
   removeLine: (id: string) => void;
   updateLine: (id: string, patch: Partial<Omit<QuoteLine, 'id'>>) => void;
   setActive: (id: string) => void;
@@ -94,6 +103,15 @@ export const useQuoteStore = create<QuoteState>()(
       addLine: () => {
         const { transport, revente } = get();
         const line = makeLine({ transport, revente });
+        set((s) => ({
+          lines: [...s.lines, line],
+          activeLineId: line.id,
+          updatedAt: new Date().toISOString(),
+        }));
+      },
+      addCustomLine: () => {
+        const { transport, revente } = get();
+        const line = makeCustomLine({ transport, revente });
         set((s) => ({
           lines: [...s.lines, line],
           activeLineId: line.id,

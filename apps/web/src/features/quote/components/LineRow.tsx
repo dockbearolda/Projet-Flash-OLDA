@@ -96,7 +96,12 @@ export function LineRow({
   onLineRevente,
   onRemove,
 }: Props) {
-  const product = PRODUCT_BY_REF[line.productRef];
+  const isCustom = line.custom !== undefined;
+  const product = isCustom ? undefined : PRODUCT_BY_REF[line.productRef];
+  const displayRef = isCustom ? 'Libre' : (product?.ref ?? '—');
+  const displayName = isCustom
+    ? (line.custom?.name ?? 'Produit libre')
+    : (product?.name ?? 'Produit ?');
   const qty = lineQty(line.sizes);
   const isLinked = line.linked;
   const effectiveTransport: Transport = line.transport ?? transport;
@@ -114,11 +119,19 @@ export function LineRow({
         qty: quoteQty,
         code: line.code,
         transportPerPiece,
+        priceAchatOverride: line.custom?.priceAchat,
       });
     } catch {
       return null;
     }
-  }, [line.productRef, line.placementId, quoteQty, line.code, transportPerPiece]);
+  }, [
+    line.productRef,
+    line.placementId,
+    quoteQty,
+    line.code,
+    transportPerPiece,
+    line.custom?.priceAchat,
+  ]);
 
   const subtotal = useMemo(() => {
     try {
@@ -151,9 +164,7 @@ export function LineRow({
       <div className="px-5 pt-4 pb-3 flex items-center gap-4 border-b border-[var(--df-border)]">
         <div className="flex items-baseline gap-3 flex-1 min-w-0">
           <span className="df-mono text-sm text-[var(--df-ink-3)] shrink-0">#{index + 1}</span>
-          <span className="df-mono text-base text-[var(--df-ink-3)] shrink-0">
-            {product?.ref ?? '—'}
-          </span>
+          <span className="df-mono text-base text-[var(--df-ink-3)] shrink-0">{displayRef}</span>
           <input
             type="number"
             min={0}
@@ -167,9 +178,7 @@ export function LineRow({
             aria-label="Code multi-couleurs"
             className="df-mono text-base text-[var(--df-ink-3)] shrink-0 bg-transparent border border-[var(--df-border)] rounded px-2 py-0.5 w-14 text-center tabular-nums focus:outline-none focus:border-[var(--df-accent)] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           />
-          <h3 className="df-display text-xl truncate text-[var(--df-ink)]">
-            {product?.name ?? 'Produit ?'}
-          </h3>
+          <h3 className="df-display text-xl truncate text-[var(--df-ink)]">{displayName}</h3>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <span className="df-caps">Transport</span>
@@ -226,29 +235,73 @@ export function LineRow({
 
       {/* Row 1: dropdowns inline */}
       <div className="px-5 py-4 grid grid-cols-12 gap-3 items-end">
-        <Field label="Produit" className="col-span-3">
-          <SelectInput
-            value={line.productRef}
-            onChange={(v) => {
-              onChange({ productRef: v });
-            }}
-            aria-label="Produit textile"
-          >
-            {FAMILY_ORDER.map((family) => {
-              const items = groupedProducts.get(family) ?? [];
-              if (items.length === 0) return null;
-              return (
-                <optgroup key={family} label={FAMILY_LABEL[family]}>
-                  {items.map((p) => (
-                    <option key={p.ref} value={p.ref}>
-                      {p.ref} — {p.name}
-                    </option>
-                  ))}
-                </optgroup>
-              );
-            })}
-          </SelectInput>
-        </Field>
+        {isCustom ? (
+          <Field label="Produit libre (nom + prix achat)" className="col-span-3">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={line.custom?.name ?? ''}
+                onChange={(e) => {
+                  onChange({
+                    custom: {
+                      name: e.target.value,
+                      priceAchat: line.custom?.priceAchat ?? 0,
+                    },
+                  });
+                }}
+                placeholder="Nom du t-shirt"
+                aria-label="Nom du produit libre"
+                className="df-input h-12 flex-1 min-w-0"
+              />
+              <div className="relative w-28 shrink-0">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={line.custom?.priceAchat ?? 0}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(',', '.').replace(/[^\d.]/g, '');
+                    const n = raw === '' ? 0 : Number(raw);
+                    onChange({
+                      custom: {
+                        name: line.custom?.name ?? '',
+                        priceAchat: Number.isFinite(n) ? Math.max(0, n) : 0,
+                      },
+                    });
+                  }}
+                  aria-label="Prix achat (€ HT)"
+                  className="df-input h-12 pr-7 text-right tabular-nums"
+                />
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-[var(--df-ink-3)] pointer-events-none">
+                  €
+                </span>
+              </div>
+            </div>
+          </Field>
+        ) : (
+          <Field label="Produit" className="col-span-3">
+            <SelectInput
+              value={line.productRef}
+              onChange={(v) => {
+                onChange({ productRef: v });
+              }}
+              aria-label="Produit textile"
+            >
+              {FAMILY_ORDER.map((family) => {
+                const items = groupedProducts.get(family) ?? [];
+                if (items.length === 0) return null;
+                return (
+                  <optgroup key={family} label={FAMILY_LABEL[family]}>
+                    {items.map((p) => (
+                      <option key={p.ref} value={p.ref}>
+                        {p.ref} — {p.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })}
+            </SelectInput>
+          </Field>
+        )}
 
         <Field label="Coloris textile" className="col-span-3">
           <ColorSelect

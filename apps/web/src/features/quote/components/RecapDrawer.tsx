@@ -73,7 +73,7 @@ export function RecapDrawer({
                 <div className="flex items-baseline justify-between gap-2">
                   <div className="df-caps shrink-0">#{i + 1}</div>
                   <div className="text-xs text-[var(--df-ink-3)] truncate text-right">
-                    {e.product?.name ?? 'Produit ?'}
+                    {e.line.custom?.name ?? e.product?.name ?? 'Produit ?'}
                   </div>
                 </div>
                 <div className="flex items-baseline justify-between gap-2 mt-1">
@@ -138,6 +138,16 @@ export function RecapDrawer({
             >
               {fmtEUR.format(totals.totalHT)}
             </output>
+            {totals.qtyTotal > 0 && (
+              <div className="mt-2 flex items-baseline justify-between">
+                <div className="text-xs text-[var(--df-ink-3)]">
+                  Prix moyen / pièce (avec transport)
+                </div>
+                <div className="df-mono text-sm tabular-nums text-[var(--df-ink-2)]">
+                  {fmtEUR.format((totals.subtotalHT + totals.transportHT) / totals.qtyTotal)}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
