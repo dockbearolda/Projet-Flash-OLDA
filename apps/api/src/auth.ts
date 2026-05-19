@@ -57,7 +57,7 @@ export async function isValid(rawToken: string | undefined): Promise<boolean> {
 
 export const authMiddleware = createMiddleware(async (c, next) => {
   const path = c.req.path;
-  if (path === '/api/health' || path === '/api/login') return next();
+  if (path === '/api/health' || path === '/api/auth/login') return next();
   const token = getCookie(c, COOKIE);
   if (!(await isValid(token))) {
     return c.json({ error: 'Unauthorized' }, 401);
