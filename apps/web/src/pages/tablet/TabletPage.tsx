@@ -1,7 +1,9 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { toast } from 'sonner';
 import { useQuoteStore, useQuoteTotals, attachIdbStorage } from '@/features/quote/quoteStore';
+import { useHistoryStore, attachHistoryIdb } from '@/features/quote/historyStore';
 import { nextQuoteId } from '@/features/quote/quoteId';
+import { lineQty } from '@/features/quote/pricing';
 import { Card, CardHeader, CardBody } from '@/components/ui';
 import {
   ProductPicker,
@@ -17,6 +19,7 @@ import { unitPriceHT } from '@/features/quote/pricing';
 import { fmtEUR, fmtShortDate } from '@/lib/format';
 
 attachIdbStorage();
+attachHistoryIdb();
 
 export default function TabletPage() {
   const id = useQuoteStore((s) => s.id);
@@ -49,6 +52,33 @@ export default function TabletPage() {
       useQuoteStore.setState({ id: nextQuoteId() });
     }
   }, [id]);
+
+  // Auto-save to history (debounced 800ms)
+  const saveTimer = useRef<number | null>(null);
+  useEffect(() => {
+    if (id === 'DEV-PENDING') return;
+    if (saveTimer.current) window.clearTimeout(saveTimer.current);
+    saveTimer.current = window.setTimeout(() => {
+      const qty = lines.reduce((acc, l) => acc + lineQty(l.sizes), 0);
+      if (qty === 0 && customer.name.trim() === '') return; // skip empty drafts
+      useHistoryStore.getState().upsert({
+        id,
+        status: 'draft',
+        customer,
+        transport,
+        revente,
+        lines,
+        totalHT: totals.totalHT,
+        qtyTotal: totals.qtyTotal,
+        createdAt: useQuoteStore.getState().createdAt,
+        updatedAt: new Date().toISOString(),
+        deletedAt: null,
+      });
+    }, 800);
+    return () => {
+      if (saveTimer.current) window.clearTimeout(saveTimer.current);
+    };
+  }, [id, customer, transport, revente, lines, totals.totalHT, totals.qtyTotal]);
 
   if (!active) {
     return null;

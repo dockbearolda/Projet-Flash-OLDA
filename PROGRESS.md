@@ -154,3 +154,22 @@ Avancement séquentiel des 12 étapes (§31 du brief).
 - **Statut** : ✓ Terminé
 
 ---
+
+## Étape 9 — Page /admin
+
+- **Fichiers créés** :
+  - `apps/web/src/pages/admin/AdminLayout.tsx` — top bar 48px + nav 240px (Historique/Catalogue/Coefficients) + main + bouton "Nouveau devis" avec ⌘N
+  - `apps/web/src/pages/admin/QuotesPage.tsx` — table dense, segmented Actifs/Corbeille, aside 380px sticky avec Éditer/Dupliquer/Archiver/Supprimer, pagination 50/page
+  - `apps/web/src/pages/admin/CatalogPage.tsx` — liste des 23 produits
+  - `apps/web/src/pages/admin/CoefsPage.tsx` — paliers + PV zones (lecture seule pour MVP)
+  - `apps/web/src/features/quote/historyStore.ts` — Zustand persist IDB avec soft delete
+- **Branchements** :
+  - Auto-save du brouillon courant vers history (debounce 800ms)
+  - Edit charge un devis dans le store quote → redirige tablet
+  - Dupliquer crée un nouvel ID + nouveaux line IDs
+  - Soft delete via `deletedAt` (corbeille)
+- **Raccourcis** : ⌘N nouveau devis (admin uniquement)
+- **Vérifs DoD** : typecheck ✓ · lint ✓ · test ✓ (103 total) · build ✓
+- **Statut** : ✓ Terminé
+
+---
