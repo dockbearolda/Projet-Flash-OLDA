@@ -42,3 +42,23 @@ Avancement séquentiel des 12 étapes (§31 du brief).
 - **Statut** : ✓ Terminé
 
 ---
+
+## Étape 3 — Catalogue statique + types
+
+- **Fichiers créés** :
+  - `packages/shared/src/catalog/` : `zones.ts`, `placements.ts`, `coefs.ts`, `colors.ts`, `products.ts`, `index.ts`
+  - `packages/shared/src/schemas/quote.ts` (Customer, Sizes, QuoteLine, Quote)
+  - Tests : `catalog.test.ts` (30 tests), `quote.test.ts` (14 tests)
+- **Données seedées** :
+  - 5 zones DTF (coeur 2.50€, dos 5.00€, poitrine 3.20€, manche-d/g 1.50€)
+  - 9 placements (combinaisons de zones)
+  - 13 paliers de coefs (1→3.80 ... 100+→1.27)
+  - 17 coloris textile (8 best + 9 autres)
+  - 10 coloris flocage (incl. multi spécial hex=null)
+  - 23 produits (14 unisexe + 7 femme + 2 enfant)
+  - 3 transports (maritime/chronopost/stock), TGCA 4 %, 7 tailles
+- **Tests** : 44 passants (shared) + 40 (web) = 84 total
+- **Vérifs DoD** : typecheck ✓ · lint ✓ · test ✓ · build ✓
+- **Statut** : ✓ Terminé
+
+---
