@@ -210,3 +210,72 @@ Avancement séquentiel des 12 étapes (§31 du brief).
 - **Statut** : ✓ Terminé
 
 ---
+
+## Étape 12 — Polish + Tag v0.1.0
+
+- **Fichiers** :
+  - `README.md` réécrit avec stack, démarrage, env, déploiement Railway, structure, scénarios de test patron
+- **Budgets respectés** :
+  - Bundle initial JS gzip : **77.13 kB** (budget §22 : < 220 kB) ✓
+  - TabletPage chunk : 7.21 kB gzip
+  - AdminLayout chunk : 4.14 kB gzip
+  - PDF chunk lazy : 492 kB gzip (pas dans le bundle initial)
+- **Vérifs finales** :
+  - `pnpm typecheck` ✓ (3 workspaces)
+  - `pnpm lint --max-warnings=0` ✓
+  - `pnpm test` ✓ (103 tests)
+  - `pnpm build` ✓ (web + api)
+- **Statut** : ✓ Terminé
+
+---
+
+## Rapport final
+
+### Features livrées
+
+- Monorepo pnpm propre (shared + web + api)
+- Vibe éditoriale calibre Linear/Vercel (tokens df-\*, Geist, tabular-nums, accent bleu muet)
+- 6 primitives UI testées (Button, Chip, Input, Swatch, SegToggle, Card) + 40 tests
+- Catalogue complet : 23 produits, 17 textiles, 10 flocages, 9 placements, 13 paliers coef, 5 zones — 44 tests
+- Moteur de pricing strict (coefFor, unitPriceHT, lineSubtotalHT, quoteTotals) — 39 tests, formule §6.4 verrouillée
+- Store Zustand + persist IDB + sélecteur memoïsé — 14 tests
+- 8 composants métier (ProductPicker, PlacementPicker SVG t-shirt, QtyGrid live, TextilePicker, FlockPicker, TransportPicker, ReventeToggle, CustomerInline)
+- Page /tablet complète : header, onglets lignes, 4 cartes + flocage col-span, drawer récap 460px fixe, prix unit live, hero total
+- PDF A4 portrait via @react-pdf/renderer (lazy)
+- Page /admin desktop : top bar + nav 240px + table dense + aside 380px, history avec edit/duplicate/archive/soft-delete, raccourci ⌘N
+- API Hono + Prisma (Product, Quote, Session…) + auth HMAC + routes catalog/quotes
+- Auth mot de passe partagé + cookie httpOnly, guard Authed tolérant offline
+- PWA (manifest landscape, sw généré, cache catalog)
+- Indicateur de sync online/offline
+
+### Décisions prises (cf. DECISIONS.md)
+
+- Node 20 LTS dans le CI, Node 24 toléré en dev
+- pnpm 10 (au lieu de pnpm 9)
+- Git local — pas de remote GitHub configuré (le patron y branchera son repo)
+- Tailwind v4 via `@theme` (pas de tailwind.config.ts)
+- Override Vite 6 pour résoudre conflit transitif Vite 5
+- Geist via Google Fonts CDN (à passer self-hosted plus tard)
+- Couverture pricing.ts 98.3 % (artéfact v8 sur ligne import)
+- **Divergence détectée avec `Flash devis.xlsx`** : voir DECISIONS.md, à confirmer par patron
+
+### Tâches futures suggérées
+
+1. **Confirmer la grille de prix** par zone DTF — divergence brief vs sheet `Flash devis.xlsx` à arbitrer
+2. **Logo OLDA SVG** à fournir pour remplacer le placeholder texte
+3. **Geist self-hosted** — embarquer les fichiers WOFF2 dans `public/fonts/`, retirer Google Fonts
+4. **Embarquer Geist dans le PDF** (base64) au lieu de Helvetica/Courier built-in
+5. **Sync IDB → API** : implémenter la queue d'opérations pour synchroniser brouillons et historique vers la DB Railway
+6. **Envoi email** des devis (Resend / SMTP)
+7. **Multi-utilisateur** : passer du mot de passe partagé à un vrai login par compte (avec notion d'auteur sur les devis)
+8. **Tests E2E Playwright** : remplir les deux scénarios du brief §21 (tablette 80 pcs, desktop 3 lignes revente)
+9. **Couverture** : monter la couverture des composants métier (actuellement 80 % sur QtyGrid/FlockPicker)
+10. **Lighthouse audit** : à exécuter sur déploiement Railway pour valider Performance ≥ 90 et A11y ≥ 95
+
+### Lien Railway
+
+Pas de déploiement automatique — pas de credentials Railway disponibles dans l'environnement de build. Le patron pourra `railway up` une fois le repo poussé sur GitHub et le projet créé sur Railway.app.
+
+### Commandes de test manuel
+
+Voir `README.md` section "Commandes pour tester (patron)".
