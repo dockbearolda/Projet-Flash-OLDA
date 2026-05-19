@@ -193,3 +193,20 @@ Avancement séquentiel des 12 étapes (§31 du brief).
 - **Statut** : ✓ Terminé
 
 ---
+
+## Étape 11 — Auth + PWA
+
+- **Fichiers créés** :
+  - `apps/web/src/pages/login/LoginPage.tsx` — formulaire mot de passe partagé
+  - `apps/web/src/app/Authed.tsx` — guard React qui :
+    - check `/api/auth/me` au mount
+    - redirige `/login?from=...` si refus
+    - **tolérant offline** : si réseau down, autorise (PWA — la vendeuse ne doit pas perdre la main)
+  - `apps/web/src/components/SyncIndicator.tsx` — pastille verte/ambre selon `navigator.onLine`
+- **Routeur** : `/login` accessible sans guard ; `/tablet`, `/admin/*` derrière `<Authed>` ; `/dev/components` ouvert
+- **PWA** : `vite-plugin-pwa` configuré dès Étape 1 (manifest landscape, theme color, service worker généré, cache /api/catalog en StaleWhileRevalidate)
+- **Sync** : indicateur dans le drawer tablette. Pas de queue d'ops complexe en MVP — `useQuoteStore` et `useHistoryStore` sont déjà persistés IDB.
+- **Vérifs DoD** : typecheck ✓ · lint ✓ · test ✓ (103) · build ✓
+- **Statut** : ✓ Terminé
+
+---

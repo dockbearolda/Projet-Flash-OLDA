@@ -16,6 +16,7 @@ import type {
 } from '@df/shared';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
+import { SyncIndicator } from '@/components/SyncIndicator';
 import { fmtEUR, fmtCoef, fmtInt } from '@/lib/format';
 import { lineQty } from '../pricing';
 import type { QuoteTotals } from '../pricing';
@@ -53,7 +54,10 @@ export function RecapDrawer({
   return (
     <aside className="w-[460px] shrink-0 h-screen bg-[var(--df-surface)] border-l border-[var(--df-border)] flex flex-col">
       <div className="px-6 py-5 border-b border-[var(--df-border)]">
-        <div className="df-caps">{quoteId}</div>
+        <div className="flex items-baseline justify-between gap-2">
+          <div className="df-caps">{quoteId}</div>
+          <SyncIndicator />
+        </div>
         <div className="df-display text-3xl mt-1">{customerName}</div>
       </div>
 
