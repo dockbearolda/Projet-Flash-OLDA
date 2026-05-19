@@ -49,14 +49,14 @@ function SizeCell({
     <label className="flex flex-col gap-1">
       <span className="df-caps text-center">{label}</span>
       <input
-        type="number"
+        type="text"
         inputMode="numeric"
-        min={0}
+        pattern="[0-9]*"
         value={value === 0 ? '' : value}
         onChange={(e) => {
-          onChange(e.target.value || '0');
+          const cleaned = e.target.value.replace(/[^\d]/g, '');
+          onChange(cleaned || '0');
         }}
-        placeholder="0"
         className="h-11 px-2 text-center text-base font-semibold bg-[var(--df-surface)] border border-[var(--df-border)] rounded-[var(--df-radius-sm)] focus:border-[var(--df-accent)] focus:shadow-[0_0_0_3px_var(--df-accent-soft)] outline-none transition-colors tabular-nums"
         aria-label={`Quantité ${label}`}
       />

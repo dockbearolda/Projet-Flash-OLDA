@@ -3,6 +3,8 @@ import {
   coefFor,
   placementZonesPriceHT,
   round2,
+  roundUp10Cents,
+  viergePriceHT,
   lineQty,
   unitPriceHT,
   lineSubtotalHT,
@@ -60,32 +62,33 @@ describe('coefFor', () => {
 });
 
 describe('placementZonesPriceHT', () => {
-  it('coeur-dos = 2.50 + 5.00 = 7.50', () => {
-    expect(placementZonesPriceHT('coeur-dos')).toBe(7.5);
+  it('coeur-dos at qty 10 = 5.10 + 10.80 = 15.90', () => {
+    expect(placementZonesPriceHT('coeur-dos', 10)).toBeCloseTo(15.9, 10);
   });
 
-  it('dos only = 5.00', () => {
-    expect(placementZonesPriceHT('dos')).toBe(5.0);
+  it('dos only at qty 10 = 10.80', () => {
+    expect(placementZonesPriceHT('dos', 10)).toBe(10.8);
   });
 
-  it('coeur only = 2.50', () => {
-    expect(placementZonesPriceHT('coeur')).toBe(2.5);
+  it('coeur only at qty 10 = 5.10', () => {
+    expect(placementZonesPriceHT('coeur', 10)).toBe(5.1);
   });
 
-  it('coeur-dos-manche-dr-ga = 2.50+5.00+1.50+1.50 = 10.50', () => {
-    expect(placementZonesPriceHT('coeur-dos-manche-dr-ga')).toBe(10.5);
+  it('coeur-dos-manche-dr-ga at qty 10 = 5.10+10.80+5.10+5.10 = 26.10', () => {
+    expect(placementZonesPriceHT('coeur-dos-manche-dr-ga', 10)).toBeCloseTo(26.1, 10);
   });
 
-  it('t-shirt-seul = 0', () => {
-    expect(placementZonesPriceHT('t-shirt-seul')).toBe(0);
+  it('t-shirt-seul = 0 (at any qty)', () => {
+    expect(placementZonesPriceHT('t-shirt-seul', 1)).toBe(0);
+    expect(placementZonesPriceHT('t-shirt-seul', 100)).toBe(0);
   });
 
-  it('poitrine-dos = 3.20 + 5.00 = 8.20', () => {
-    expect(placementZonesPriceHT('poitrine-dos')).toBe(8.2);
+  it('poitrine-dos at qty 10 = 5.50 + 10.80 = 16.30', () => {
+    expect(placementZonesPriceHT('poitrine-dos', 10)).toBeCloseTo(16.3, 10);
   });
 
   it('throws on unknown placement (defensive)', () => {
-    expect(() => placementZonesPriceHT('bogus-placement')).toThrow(/Unknown placement/);
+    expect(() => placementZonesPriceHT('bogus-placement', 10)).toThrow(/Unknown placement/);
   });
 });
 
@@ -107,6 +110,40 @@ describe('round2', () => {
   });
 });
 
+describe('roundUp10Cents', () => {
+  it('rounds 7.7355 up to 7.80', () => {
+    expect(roundUp10Cents(7.7355)).toBe(7.8);
+  });
+
+  it('keeps exact 0.10 multiples', () => {
+    expect(roundUp10Cents(5.2)).toBe(5.2);
+  });
+
+  it('rounds 5.913 up to 6.00 (patron grid h001 @ qty 70)', () => {
+    expect(roundUp10Cents(5.913)).toBe(6.0);
+  });
+});
+
+describe('viergePriceHT', () => {
+  // Reference values from the patron's h001 sheet (priceAchat = 4.05€).
+  it.each([
+    [1, 3.8, 15.4],
+    [5, 2.09, 8.5],
+    [10, 1.91, 7.8],
+    [20, 1.82, 7.4],
+    [30, 1.73, 7.1],
+    [40, 1.64, 6.7],
+    [50, 1.55, 6.3],
+    [60, 1.5, 6.1],
+    [70, 1.46, 6.0],
+    [80, 1.37, 5.6],
+    [90, 1.32, 5.4],
+    [100, 1.27, 5.2],
+  ])('h001 at qty %i (coef %f) → vierge %f €', (_qty, coef, expected) => {
+    expect(viergePriceHT(4.05, coef)).toBe(expected);
+  });
+});
+
 describe('lineQty', () => {
   it('sums all sizes', () => {
     expect(lineQty(sizes({ xs: 5, s: 10, m: 30, l: 30, xl: 10, xxl: 4, autres: 1 }))).toBe(90);
@@ -117,48 +154,142 @@ describe('lineQty', () => {
   });
 });
 
-describe('unitPriceHT', () => {
-  it('H-001 (4.05€) + coeur-dos (7.50€) × 1.46 (qty 70) = 16.863', () => {
-    const u = unitPriceHT({ productRef: 'H-001', placementId: 'coeur-dos', coef: 1.46 });
-    expect(round2(u)).toBe(16.86);
+describe('unitPriceHT (patron grid h001, code=0 baseline)', () => {
+  // PU HT = vierge + Σ zoneSalePrice[qty]. h001 priceAchat = 4.05.
+  it('coeur+dos at qty 10 = 7.80 + 5.10 + 10.80 = 23.70', () => {
+    const u = unitPriceHT({ productRef: 'H-001', placementId: 'coeur-dos', qty: 10, code: 0 });
+    expect(round2(u)).toBe(23.7);
   });
 
-  it('t-shirt-seul has zero zone price', () => {
-    const u = unitPriceHT({ productRef: 'H-001', placementId: 't-shirt-seul', coef: 1.0 });
-    expect(round2(u)).toBe(4.05);
+  it('coeur+dos at qty 1 = 15.40 + 9.50 + 16.20 = 41.10', () => {
+    const u = unitPriceHT({ productRef: 'H-001', placementId: 'coeur-dos', qty: 1, code: 0 });
+    expect(round2(u)).toBe(41.1);
+  });
+
+  it('coeur+dos at qty 70 = 6.00 + 3.40 + 6.80 = 16.20', () => {
+    const u = unitPriceHT({ productRef: 'H-001', placementId: 'coeur-dos', qty: 70, code: 0 });
+    expect(round2(u)).toBe(16.2);
+  });
+
+  it('coeur+dos at qty 100 = 5.20 + 3.00 + 5.90 = 14.10', () => {
+    const u = unitPriceHT({ productRef: 'H-001', placementId: 'coeur-dos', qty: 100, code: 0 });
+    expect(round2(u)).toBe(14.1);
+  });
+
+  it('dos only at qty 10 = 7.80 + 10.80 = 18.60', () => {
+    const u = unitPriceHT({ productRef: 'H-001', placementId: 'dos', qty: 10, code: 0 });
+    expect(round2(u)).toBe(18.6);
+  });
+
+  it('coeur only at qty 10 = 7.80 + 5.10 = 12.90', () => {
+    const u = unitPriceHT({ productRef: 'H-001', placementId: 'coeur', qty: 10, code: 0 });
+    expect(round2(u)).toBe(12.9);
+  });
+
+  it('coeur+dos+manche at qty 10 = 7.80 + 5.10 + 10.80 + 5.10 = 28.80', () => {
+    const u = unitPriceHT({
+      productRef: 'H-001',
+      placementId: 'coeur-dos-manche-dr',
+      qty: 10,
+      code: 0,
+    });
+    expect(round2(u)).toBe(28.8);
+  });
+
+  it('t-shirt-seul has zero zone price (= vierge)', () => {
+    const u = unitPriceHT({ productRef: 'H-001', placementId: 't-shirt-seul', qty: 1, code: 0 });
+    // vierge h001 @ qty 1 = ceil(4.05 × 3.8 × 10)/10 = 15.40
+    expect(round2(u)).toBe(15.4);
   });
 
   it('throws on unknown product', () => {
-    expect(() => unitPriceHT({ productRef: 'XXX-999', placementId: 'dos', coef: 1 })).toThrow(
-      /Unknown product/,
-    );
+    expect(() =>
+      unitPriceHT({ productRef: 'XXX-999', placementId: 'dos', qty: 1, code: 0 }),
+    ).toThrow(/Unknown product/);
+  });
+});
+
+describe('unitPriceHT — CODE multi-couleurs surcharge (patron grid h001)', () => {
+  // From the patron's "PRIX + CODE" column with CODE=10 (=+10%).
+  // surcharge = ceil(base × code/100 × 10) / 10.
+  it.each([
+    [1, 45.3],
+    [5, 29.7],
+    [10, 26.1],
+    [20, 23.6],
+    [30, 21.3],
+    [40, 20.1],
+    [50, 19.0],
+    [60, 18.3],
+    [70, 17.9],
+    [80, 16.9],
+    [90, 16.2],
+    [100, 15.6],
+    [150, 15.1],
+  ])('h001 coeur+dos @ qty %i with code=10 → %f €', (qty, expected) => {
+    const u = unitPriceHT({ productRef: 'H-001', placementId: 'coeur-dos', qty, code: 10 });
+    expect(round2(u)).toBe(expected);
   });
 
-  it('with full coef 3.80 on qty=1 case', () => {
-    // F-008 (2.81) + dos (5.00) = 7.81 × 3.80 = 29.678
-    const u = unitPriceHT({ productRef: 'F-008', placementId: 'dos', coef: 3.8 });
-    expect(round2(u)).toBe(29.68);
+  it('coeur seul @ qty 10 with code=20 = 12.90 + ceil(12.90×0.20)/0.10 = 12.90 + 2.60 = 15.50', () => {
+    const u = unitPriceHT({ productRef: 'H-001', placementId: 'coeur', qty: 10, code: 20 });
+    expect(round2(u)).toBe(15.5);
+  });
+
+  it('coeur+dos+manche @ qty 10 with code=8 = 28.80 + ceil(28.80×0.08)/0.10 = 28.80 + 2.40 = 31.20', () => {
+    const u = unitPriceHT({
+      productRef: 'H-001',
+      placementId: 'coeur-dos-manche-dr',
+      qty: 10,
+      code: 8,
+    });
+    expect(round2(u)).toBe(31.2);
+  });
+
+  it('defaults to code=10 when omitted', () => {
+    const u = unitPriceHT({ productRef: 'H-001', placementId: 'coeur-dos', qty: 10 });
+    expect(round2(u)).toBe(26.1);
+  });
+
+  it('code=0 disables the surcharge', () => {
+    const u = unitPriceHT({ productRef: 'H-001', placementId: 'coeur-dos', qty: 10, code: 0 });
+    expect(round2(u)).toBe(23.7);
   });
 });
 
 describe('lineSubtotalHT', () => {
-  it('80 pieces × H-001 coeur-dos × coef 1.37 = 80 × 15.8235 = 1265.88', () => {
-    // (4.05 + 7.50) × 1.37 = 15.8235  →  × 80 = 1265.88
+  it('80 pcs × H-001 coeur-dos × code=0 = 80 × 15.30 = 1224', () => {
+    // h001 @ qty 80: vierge = ceil(4.05 × 1.37 × 10)/10 = 5.60
+    // coeur+dos @ qty 80 = 3.20 + 6.50 = 9.70. PU base = 15.30. × 80 = 1224
+    const total = lineSubtotalHT(
+      {
+        productRef: 'H-001',
+        placementId: 'coeur-dos',
+        sizes: sizes({ m: 40, l: 40 }),
+        code: 0,
+      },
+      80,
+    );
+    expect(round2(total)).toBe(1224);
+  });
+
+  it('80 pcs × H-001 coeur-dos × default code (10%) = 80 × 16.90 = 1352', () => {
+    // PU base 15.30 + ceil(15.30×0.10×10)/10 = 15.30 + 1.60 = 16.90. × 80 = 1352
     const total = lineSubtotalHT(
       {
         productRef: 'H-001',
         placementId: 'coeur-dos',
         sizes: sizes({ m: 40, l: 40 }),
       },
-      1.37,
+      80,
     );
-    expect(round2(total)).toBe(1265.88);
+    expect(round2(total)).toBe(1352);
   });
 
   it('0 pieces yields 0', () => {
     const total = lineSubtotalHT(
-      { productRef: 'H-001', placementId: 'dos', sizes: emptySizes },
-      1.27,
+      { productRef: 'H-001', placementId: 'dos', sizes: emptySizes, code: 0 },
+      100,
     );
     expect(total).toBe(0);
   });
@@ -172,6 +303,7 @@ describe('quoteTotals', () => {
           productRef: 'H-001',
           placementId: 'coeur-dos',
           sizes: sizes({ m: 40, l: 40 }),
+          code: 0,
         },
       ],
       transport: 'chronopost',
@@ -179,10 +311,28 @@ describe('quoteTotals', () => {
     });
     expect(r.qtyTotal).toBe(80);
     expect(r.coef).toBe(1.37);
-    expect(r.subtotalHT).toBe(1265.88);
+    expect(r.subtotalHT).toBe(1224); // 80 × 15.30
     expect(r.transportHT).toBe(120.0); // 80 × 1.50
-    expect(r.tgcaHT).toBe(55.44); // (1265.88 + 120) × 0.04 = 55.4352 → 55.44
-    expect(r.totalHT).toBe(1441.32); // 1265.88 + 120 + 55.4352 = 1441.3152
+    expect(r.tgcaHT).toBe(53.76); // (1224 + 120) × 0.04
+    expect(r.totalHT).toBe(1397.76);
+  });
+
+  it('default code=10% adds the multi-couleurs surcharge to the subtotal', () => {
+    const r = quoteTotals({
+      lines: [
+        {
+          productRef: 'H-001',
+          placementId: 'coeur-dos',
+          sizes: sizes({ m: 40, l: 40 }),
+          // code omitted → defaults to 10
+        },
+      ],
+      transport: 'chronopost',
+      revente: true,
+    });
+    // PU = 16.90, subtotal = 1352, transport = 120, total = 1472
+    expect(r.subtotalHT).toBe(1352);
+    expect(r.totalHT).toBe(1472);
   });
 
   it('exempts TGCA when revente=true', () => {
@@ -192,13 +342,14 @@ describe('quoteTotals', () => {
           productRef: 'H-001',
           placementId: 'coeur-dos',
           sizes: sizes({ m: 40, l: 40 }),
+          code: 0,
         },
       ],
       transport: 'chronopost',
       revente: true,
     });
     expect(r.tgcaHT).toBe(0);
-    expect(r.totalHT).toBe(round2(1265.88 + 120));
+    expect(r.totalHT).toBe(1344); // 1224 + 120
   });
 
   it('maritime has zero transport', () => {
@@ -260,25 +411,29 @@ describe('quoteTotals', () => {
     expect(r.totalHT).toBe(0);
   });
 
-  it('qty 1 single piece honors 3.80 coef', () => {
-    // F-008 (2.81) + dos (5.00) = 7.81 × 3.80 = 29.678 → 1 piece
+  it('qty 1 single piece honors qty=1 tier (patron grid)', () => {
+    // h001 @ qty 1: vierge = ceil(4.05 × 3.8 × 10)/10 = 15.40
+    // dos @ qty 1 = 16.20.  PU base = 31.60
     const r = quoteTotals({
-      lines: [{ productRef: 'F-008', placementId: 'dos', sizes: sizes({ m: 1 }) }],
+      lines: [{ productRef: 'H-001', placementId: 'dos', sizes: sizes({ m: 1 }), code: 0 }],
       transport: 'maritime',
       revente: true,
     });
     expect(r.qtyTotal).toBe(1);
     expect(r.coef).toBe(3.8);
-    expect(r.subtotalHT).toBe(29.68);
+    expect(r.subtotalHT).toBe(31.6);
   });
 
-  it('qty 150+ stays on 1.27 coef floor', () => {
+  it('qty 150+ stays on 150 tier (1.27 coef, lowest zone prices)', () => {
     const r = quoteTotals({
-      lines: [{ productRef: 'H-001', placementId: 'dos', sizes: sizes({ m: 200 }) }],
+      lines: [{ productRef: 'H-001', placementId: 'dos', sizes: sizes({ m: 200 }), code: 0 }],
       transport: 'maritime',
       revente: true,
     });
     expect(r.coef).toBe(1.27);
+    // h001 vierge @ 1.27 = ceil(4.05 × 1.27 × 10)/10 = ceil(51.435)/10 = 5.20
+    // dos @ qty 200 → tier 150 = 5.70.  PU = 10.90. × 200 = 2180.
+    expect(r.subtotalHT).toBe(2180);
   });
 
   it('throws on unknown transport id (defensive)', () => {
@@ -291,18 +446,107 @@ describe('quoteTotals', () => {
       }),
     ).toThrow(/Unknown transport/);
   });
+});
 
-  it('does not double-round between transport and TGCA', () => {
-    // Forces fractional intermediate (3 pcs × 1.50 = 4.50€ transport)
+describe('quoteTotals — per-line transport + revente overrides', () => {
+  it('mixed revente: only end-use line pays TGCA', () => {
+    // 10 pieces total, both lines coeur+dos H-001 code=0.
+    // PU @ qty 10, code 0 = 23.70. Each line × 5 pcs = 118.50 → subtotal 237.
+    // transport: chronopost 1.50 × 10 = 15.
+    // line A revente → TGCA 0.
+    // line B revente=false → (118.50 + 7.50) × 0.04 = 126 × 0.04 = 5.04.
     const r = quoteTotals({
-      lines: [{ productRef: 'H-019', placementId: 'coeur', sizes: sizes({ m: 3 }) }],
+      lines: [
+        {
+          productRef: 'H-001',
+          placementId: 'coeur-dos',
+          sizes: sizes({ m: 5 }),
+          code: 0,
+          revente: true,
+        },
+        {
+          productRef: 'H-001',
+          placementId: 'coeur-dos',
+          sizes: sizes({ m: 5 }),
+          code: 0,
+          revente: false,
+        },
+      ],
       transport: 'chronopost',
       revente: false,
     });
-    expect(r.transportHT).toBe(4.5);
-    // 3 × (2.09 + 2.50) × 3.80 = 3 × 4.59 × 3.80 = 52.326
-    expect(r.subtotalHT).toBe(52.33);
-    // (52.326 + 4.50) × 0.04 = 2.27304 → 2.27
-    expect(r.tgcaHT).toBe(2.27);
+    expect(r.qtyTotal).toBe(10);
+    expect(r.subtotalHT).toBe(237);
+    expect(r.transportHT).toBe(15);
+    expect(r.tgcaHT).toBe(5.04);
+    expect(r.totalHT).toBe(257.04);
+  });
+
+  it('mixed transport: only chronopost line pays shipping', () => {
+    const r = quoteTotals({
+      lines: [
+        {
+          productRef: 'H-001',
+          placementId: 'coeur-dos',
+          sizes: sizes({ m: 5 }),
+          code: 0,
+          transport: 'chronopost',
+          revente: true,
+        },
+        {
+          productRef: 'H-001',
+          placementId: 'coeur-dos',
+          sizes: sizes({ m: 5 }),
+          code: 0,
+          transport: 'maritime',
+          revente: true,
+        },
+      ],
+      transport: 'maritime',
+      revente: true,
+    });
+    // chronopost line transport = 1.50 × 5 = 7.50, maritime = 0
+    expect(r.transportHT).toBe(7.5);
+    expect(r.tgcaHT).toBe(0);
+  });
+
+  it('line override wins over quote-level revente', () => {
+    // Quote-level revente=false would charge TGCA, but the line opts out.
+    const r = quoteTotals({
+      lines: [
+        {
+          productRef: 'H-001',
+          placementId: 'coeur-dos',
+          sizes: sizes({ m: 5 }),
+          code: 0,
+          revente: true,
+        },
+      ],
+      transport: 'maritime',
+      revente: false,
+    });
+    expect(r.tgcaHT).toBe(0);
+  });
+
+  it('falls back to quote-level when line override is undefined', () => {
+    // No per-line override: behaves like the legacy quote-level behavior.
+    const r = quoteTotals({
+      lines: [
+        {
+          productRef: 'H-001',
+          placementId: 'coeur-dos',
+          sizes: sizes({ m: 5 }),
+          code: 0,
+        },
+      ],
+      transport: 'chronopost',
+      revente: false,
+    });
+    // PU @ qty 5, code 0 = 8.50 + 6.40 + 12.10 = 27. × 5 = 135.
+    // transport 1.50 × 5 = 7.50. (135+7.50) × 0.04 = 5.70. total 148.20.
+    expect(r.subtotalHT).toBe(135);
+    expect(r.transportHT).toBe(7.5);
+    expect(r.tgcaHT).toBe(5.7);
+    expect(r.totalHT).toBe(148.2);
   });
 });

@@ -34,6 +34,12 @@ export const QuoteLineSchema = z.object({
   flockMode: FlockModeSchema,
   flockColorId: z.string().nullable(),
   sizes: SizesSchema,
+  linked: z.boolean().default(true),
+  // CODE multi-couleurs : % ajouté au PU HT (défaut 10 = +10 %), arrondi sup. 0,10 €.
+  code: z.number().min(0).max(100).default(10),
+  // Per-line overrides. If undefined, fall back to the quote-level value.
+  transport: TransportSchema.optional(),
+  revente: z.boolean().optional(),
 });
 
 export type QuoteLine = z.infer<typeof QuoteLineSchema>;

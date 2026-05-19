@@ -63,13 +63,15 @@ async function main() {
   }
   console.warn(`[seed] placements: ${PLACEMENTS.length.toString()}`);
 
-  // Zones
+  // Zones — DB only stores the qty=1 sale price (legacy field) for display
+  // back-compat; runtime pricing uses the full per-qty grid from the catalog.
   for (const id of ZONE_IDS) {
     const z = ZONES[id];
+    const price = z.salePrices[0]?.[1] ?? 0;
     await prisma.zone.upsert({
       where: { slug: z.id },
-      create: { slug: z.id, label: z.label, price: z.price },
-      update: { label: z.label, price: z.price },
+      create: { slug: z.id, label: z.label, price },
+      update: { label: z.label, price },
     });
   }
   console.warn(`[seed] zones: ${ZONE_IDS.length.toString()}`);

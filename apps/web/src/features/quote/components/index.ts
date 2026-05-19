@@ -7,4 +7,6 @@ export { TransportPicker } from './TransportPicker';
 export { ReventeToggle } from './ReventeToggle';
 export { CustomerInline } from './CustomerInline';
 export { LineTabs } from './LineTabs';
+export { LineRow } from './LineRow';
+export { PricingGrid } from './PricingGrid';
 export { RecapDrawer } from './RecapDrawer';

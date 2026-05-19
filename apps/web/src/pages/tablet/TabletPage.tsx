@@ -1,51 +1,58 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Plus, Table2, FileText as FileTextIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuoteStore, useQuoteTotals, attachIdbStorage } from '@/features/quote/quoteStore';
 import { useHistoryStore, attachHistoryIdb } from '@/features/quote/historyStore';
 import { nextQuoteId } from '@/features/quote/quoteId';
 import { lineQty } from '@/features/quote/pricing';
-import { Card, CardHeader, CardBody } from '@/components/ui';
-import {
-  ProductPicker,
-  PlacementPicker,
-  QtyGrid,
-  TextilePicker,
-  FlockPicker,
-  CustomerInline,
-  LineTabs,
-  RecapDrawer,
-} from '@/features/quote/components';
-import { unitPriceHT } from '@/features/quote/pricing';
-import { fmtEUR, fmtShortDate } from '@/lib/format';
+import { LineRow, CustomerInline, PricingGrid, RecapDrawer } from '@/features/quote/components';
+import { SegToggle } from '@/components/ui/SegToggle';
+import { fmtShortDate } from '@/lib/format';
 
 attachIdbStorage();
 attachHistoryIdb();
 
+const VIEW_OPTIONS = [
+  {
+    value: 'devis' as const,
+    label: (
+      <span className="inline-flex items-center gap-1.5">
+        <FileTextIcon size={14} strokeWidth={1.8} aria-hidden /> Devis
+      </span>
+    ),
+  },
+  {
+    value: 'grille' as const,
+    label: (
+      <span className="inline-flex items-center gap-1.5">
+        <Table2 size={14} strokeWidth={1.8} aria-hidden /> Grille
+      </span>
+    ),
+  },
+];
+
 export default function TabletPage() {
+  const [view, setView] = useState<'devis' | 'grille'>('devis');
   const id = useQuoteStore((s) => s.id);
   const customer = useQuoteStore((s) => s.customer);
   const lines = useQuoteStore((s) => s.lines);
-  const activeLineId = useQuoteStore((s) => s.activeLineId);
   const transport = useQuoteStore((s) => s.transport);
   const revente = useQuoteStore((s) => s.revente);
   const updatedAt = useQuoteStore((s) => s.updatedAt);
 
   const addLine = useQuoteStore((s) => s.addLine);
   const removeLine = useQuoteStore((s) => s.removeLine);
-  const setActive = useQuoteStore((s) => s.setActive);
   const updateLine = useQuoteStore((s) => s.updateLine);
   const setSizes = useQuoteStore((s) => s.setSizes);
   const setFlockMode = useQuoteStore((s) => s.setFlockMode);
+  const setLinked = useQuoteStore((s) => s.setLinked);
+  const setLineTransport = useQuoteStore((s) => s.setLineTransport);
+  const setLineRevente = useQuoteStore((s) => s.setLineRevente);
   const setCustomer = useQuoteStore((s) => s.setCustomer);
   const setTransport = useQuoteStore((s) => s.setTransport);
   const setRevente = useQuoteStore((s) => s.setRevente);
 
   const totals = useQuoteTotals();
-
-  const active = useMemo(
-    () => lines.find((l) => l.id === activeLineId) ?? lines[0],
-    [lines, activeLineId],
-  );
 
   useEffect(() => {
     if (id === 'DEV-PENDING') {
@@ -53,14 +60,13 @@ export default function TabletPage() {
     }
   }, [id]);
 
-  // Auto-save to history (debounced 800ms)
   const saveTimer = useRef<number | null>(null);
   useEffect(() => {
     if (id === 'DEV-PENDING') return;
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(() => {
       const qty = lines.reduce((acc, l) => acc + lineQty(l.sizes), 0);
-      if (qty === 0 && customer.name.trim() === '') return; // skip empty drafts
+      if (qty === 0 && customer.name.trim() === '') return;
       useHistoryStore.getState().upsert({
         id,
         status: 'draft',
@@ -80,10 +86,6 @@ export default function TabletPage() {
     };
   }, [id, customer, transport, revente, lines, totals.totalHT, totals.qtyTotal]);
 
-  if (!active) {
-    return null;
-  }
-
   function handleGenerate() {
     void (async () => {
       try {
@@ -96,7 +98,7 @@ export default function TabletPage() {
           <QuotePdf
             id={id}
             customer={customer}
-            lines={lines}
+            lines={lines.filter((l) => l.linked)}
             transport={transport}
             revente={revente}
             totals={totals}
@@ -124,22 +126,11 @@ export default function TabletPage() {
     URL.revokeObjectURL(url);
   }
 
-  const unit = (() => {
-    try {
-      return unitPriceHT({
-        productRef: active.productRef,
-        placementId: active.placementId,
-        coef: totals.coef,
-      });
-    } catch {
-      return 0;
-    }
-  })();
+  const activeLine = lines.find((l) => l.id === useQuoteStore.getState().activeLineId) ?? lines[0];
 
   return (
     <div className="flex min-h-screen bg-[var(--df-bg)]">
       <main className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
         <header className="px-6 py-4 border-b border-[var(--df-border)] bg-[var(--df-surface)] flex items-center justify-between gap-4">
           <div className="flex items-center gap-6">
             <div>
@@ -151,118 +142,74 @@ export default function TabletPage() {
               <span className="text-xs text-[var(--df-ink-4)]">·</span>
               <span className="text-xs text-[var(--df-ink-3)]">{fmtShortDate(updatedAt)}</span>
             </div>
+            <SegToggle
+              value={view}
+              onChange={setView}
+              options={VIEW_OPTIONS}
+              ariaLabel="Mode d'affichage"
+            />
           </div>
           <CustomerInline customer={customer} onChange={setCustomer} />
         </header>
 
-        {/* Tabs */}
-        <div className="px-6 pt-4">
-          <LineTabs
-            lines={lines}
-            activeId={activeLineId}
-            onSelect={setActive}
-            onAdd={addLine}
-            onRemove={removeLine}
-          />
-        </div>
+        <div className="flex-1 px-6 py-5 flex flex-col gap-5 overflow-y-auto">
+          {view === 'grille' ? (
+            <PricingGrid
+              defaultRef={activeLine?.productRef ?? 'H-001'}
+              defaultPlacement={activeLine?.placementId ?? 'coeur-dos'}
+            />
+          ) : (
+            <>
+              {lines.map((line, i) => (
+                <LineRow
+                  key={line.id}
+                  index={i}
+                  line={line}
+                  quoteQty={totals.qtyTotal}
+                  transport={transport}
+                  revente={revente}
+                  canRemove={lines.length > 1}
+                  onChange={(patch) => {
+                    updateLine(line.id, patch);
+                  }}
+                  onSizes={(s) => {
+                    setSizes(line.id, s);
+                  }}
+                  onFlockMode={(m) => {
+                    setFlockMode(line.id, m);
+                  }}
+                  onLinked={(b) => {
+                    setLinked(line.id, b);
+                  }}
+                  onLineTransport={(t) => {
+                    setLineTransport(line.id, t);
+                  }}
+                  onLineRevente={(b) => {
+                    setLineRevente(line.id, b);
+                  }}
+                  onRemove={() => {
+                    removeLine(line.id);
+                  }}
+                />
+              ))}
 
-        {/* Sections grid */}
-        <div className="flex-1 px-6 py-4 grid grid-cols-2 gap-4 min-h-0">
-          <Card>
-            <CardHeader>
-              <div className="df-caps">Produit textile</div>
-            </CardHeader>
-            <CardBody>
-              <ProductPicker
-                value={active.productRef}
-                onChange={(ref) => {
-                  updateLine(active.id, { productRef: ref });
-                }}
-              />
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <div className="df-caps">Coloris textile</div>
-            </CardHeader>
-            <CardBody>
-              <TextilePicker
-                value={active.textileColorId}
-                onChange={(id) => {
-                  updateLine(active.id, { textileColorId: id });
-                }}
-              />
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <div className="df-caps">Placement DTF</div>
-            </CardHeader>
-            <CardBody>
-              <PlacementPicker
-                value={active.placementId}
-                onChange={(id) => {
-                  updateLine(active.id, { placementId: id });
-                }}
-              />
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <div className="df-caps">Quantités par taille</div>
-            </CardHeader>
-            <CardBody className="space-y-4">
-              <QtyGrid
-                sizes={active.sizes}
-                onChange={(s) => {
-                  setSizes(active.id, s);
-                }}
-              />
-              <div className="flex items-baseline justify-between pt-2 border-t border-[var(--df-border)]">
-                <div>
-                  <div className="df-caps">Prix unitaire HT</div>
-                  <div className="text-[11px] text-[var(--df-ink-3)] mt-0.5">
-                    avec coef {totals.coef.toFixed(2)} sur Σ qté devis
-                  </div>
-                </div>
-                <output
-                  role="status"
-                  aria-live="polite"
-                  className="df-display text-3xl tabular-nums"
-                >
-                  {fmtEUR.format(unit)}
-                </output>
-              </div>
-            </CardBody>
-          </Card>
-
-          <Card className="col-span-2">
-            <CardHeader>
-              <div className="df-caps">Coloris flocage</div>
-            </CardHeader>
-            <CardBody>
-              <FlockPicker
-                mode={active.flockMode}
-                color={active.flockColorId}
-                onMode={(m) => {
-                  setFlockMode(active.id, m);
-                }}
-                onColor={(c) => {
-                  updateLine(active.id, { flockColorId: c });
-                }}
-              />
-            </CardBody>
-          </Card>
+              <button
+                type="button"
+                onClick={addLine}
+                className="flex items-center justify-center gap-2 h-14 rounded-[var(--df-radius-lg)] border-2 border-dashed border-[var(--df-border-strong)] text-[var(--df-ink-2)] text-sm font-medium hover:bg-[var(--df-surface-2)] hover:text-[var(--df-ink)] transition-colors"
+              >
+                <Plus size={18} strokeWidth={1.8} aria-hidden />
+                Ajouter une référence
+              </button>
+            </>
+          )}
         </div>
       </main>
 
       <RecapDrawer
         quoteId={id}
         customer={customer}
-        lines={lines}
+        lines={lines.filter((l) => l.linked)}
         totals={totals}
         transport={transport}
         revente={revente}

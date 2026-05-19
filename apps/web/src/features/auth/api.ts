@@ -21,7 +21,17 @@ export async function logoutRequest(): Promise<void> {
   await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
 }
 
-export async function checkAuth(): Promise<boolean> {
-  const res = await fetch('/api/auth/me', { credentials: 'include' });
-  return res.ok;
+export type AuthStatus = 'authenticated' | 'denied' | 'offline';
+
+export async function checkAuth(): Promise<AuthStatus> {
+  try {
+    const res = await fetch('/api/auth/me', { credentials: 'include' });
+    if (res.ok) return 'authenticated';
+    if (res.status === 401) return 'denied';
+    // 5xx, 502 proxy, 404 — API likely down: treat as offline
+    return 'offline';
+  } catch {
+    // network unreachable (PWA offline, no API server, CORS)
+    return 'offline';
+  }
 }

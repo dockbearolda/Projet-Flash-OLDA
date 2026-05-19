@@ -15,14 +15,11 @@ export default function LoginPage() {
 
   useEffect(() => {
     void (async () => {
-      try {
-        const ok = await checkAuth();
-        if (ok) {
-          navigate(from, { replace: true });
-          return;
-        }
-      } catch {
-        // network down — let user log in offline
+      const status = await checkAuth();
+      if (status === 'authenticated' || status === 'offline') {
+        // déjà authentifié OU API down → on laisse passer
+        navigate(from, { replace: true });
+        return;
       }
       setChecking(false);
     })();

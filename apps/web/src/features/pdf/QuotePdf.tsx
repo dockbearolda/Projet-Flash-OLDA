@@ -172,7 +172,7 @@ interface Props {
   createdAt: string;
 }
 
-function enrich(line: QuoteLine, coef: number) {
+function enrich(line: QuoteLine, quoteQty: number) {
   const product = PRODUCT_BY_REF[line.productRef];
   const placement = (PLACEMENT_BY_ID as Record<string, Placement | undefined>)[line.placementId];
   const textile = (TEXTILE_COLOR_BY_ID as Record<string, TextileColor | undefined>)[
@@ -187,14 +187,19 @@ function enrich(line: QuoteLine, coef: number) {
         : 'Couleur ?';
   const qty = lineQty(line.sizes);
   const pu = product
-    ? unitPriceHT({ productRef: line.productRef, placementId: line.placementId, coef })
+    ? unitPriceHT({
+        productRef: line.productRef,
+        placementId: line.placementId,
+        qty: quoteQty,
+        code: line.code,
+      })
     : 0;
   return { line, product, placement, textile, flockLabel, qty, pu, total: pu * qty };
 }
 
 export function QuotePdf({ id, customer, lines, transport, revente, totals, createdAt }: Props) {
   const transportOpt = TRANSPORT_OPTIONS.find((t) => t.id === transport);
-  const enriched = lines.map((l) => enrich(l, totals.coef));
+  const enriched = lines.map((l) => enrich(l, totals.qtyTotal));
 
   return (
     <Document

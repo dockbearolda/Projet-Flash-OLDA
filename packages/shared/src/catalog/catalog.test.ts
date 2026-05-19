@@ -12,6 +12,7 @@ import {
   TRANSPORT_OPTIONS,
   TGCA_RATE,
   SIZE_KEYS,
+  zoneSalePriceForQty,
 } from './index.js';
 
 describe('ZONES', () => {
@@ -22,17 +23,41 @@ describe('ZONES', () => {
     );
   });
 
-  it('exposes locked prices §6.2', () => {
-    expect(ZONES.coeur.price).toBe(2.5);
-    expect(ZONES.dos.price).toBe(5.0);
-    expect(ZONES.poitrine.price).toBe(3.2);
-    expect(ZONES['manche-d'].price).toBe(1.5);
-    expect(ZONES['manche-g'].price).toBe(1.5);
+  it('matches the patron grid at qty 10', () => {
+    expect(zoneSalePriceForQty('coeur', 10)).toBe(5.1);
+    expect(zoneSalePriceForQty('dos', 10)).toBe(10.8);
+    expect(zoneSalePriceForQty('poitrine', 10)).toBe(5.5);
+    expect(zoneSalePriceForQty('manche-d', 10)).toBe(5.1);
+    expect(zoneSalePriceForQty('manche-g', 10)).toBe(5.1);
   });
 
-  it('all zones have a positive price', () => {
+  it('matches the patron grid at qty 1', () => {
+    expect(zoneSalePriceForQty('coeur', 1)).toBe(9.5);
+    expect(zoneSalePriceForQty('dos', 1)).toBe(16.2);
+    expect(zoneSalePriceForQty('poitrine', 1)).toBe(10.3);
+  });
+
+  it('1 manche has the same grid as coeur', () => {
+    for (const [threshold] of COEFS) {
+      expect(zoneSalePriceForQty('manche-d', threshold)).toBe(
+        zoneSalePriceForQty('coeur', threshold),
+      );
+      expect(zoneSalePriceForQty('manche-g', threshold)).toBe(
+        zoneSalePriceForQty('coeur', threshold),
+      );
+    }
+  });
+
+  it('floors at 150+ tier', () => {
+    expect(zoneSalePriceForQty('coeur', 999)).toBe(2.8);
+    expect(zoneSalePriceForQty('dos', 999)).toBe(5.7);
+  });
+
+  it('all zones have positive prices at every tier', () => {
     for (const id of ZONE_IDS) {
-      expect(ZONES[id].price).toBeGreaterThan(0);
+      for (const [, price] of ZONES[id].salePrices) {
+        expect(price).toBeGreaterThan(0);
+      }
     }
   });
 });

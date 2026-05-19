@@ -11,7 +11,7 @@ const EMPTY_SIZES: Sizes = { xs: 0, s: 0, m: 0, l: 0, xl: 0, xxl: 0, autres: 0 }
 
 const EMPTY_CUSTOMER: Customer = { name: '' };
 
-function makeLine(): QuoteLine {
+function makeLine(defaults?: { transport?: Transport; revente?: boolean }): QuoteLine {
   return {
     id: newLineId(),
     productRef: 'H-001',
@@ -20,6 +20,10 @@ function makeLine(): QuoteLine {
     flockMode: 'multi',
     flockColorId: null,
     sizes: { ...EMPTY_SIZES },
+    linked: true,
+    code: 10,
+    transport: defaults?.transport,
+    revente: defaults?.revente,
   };
 }
 
@@ -39,9 +43,14 @@ export interface QuoteState {
   updateLine: (id: string, patch: Partial<Omit<QuoteLine, 'id'>>) => void;
   setActive: (id: string) => void;
   setSizes: (id: string, sizes: Sizes) => void;
+  setLinked: (id: string, linked: boolean) => void;
   setFlockMode: (id: string, mode: FlockMode) => void;
+  setLineTransport: (id: string, t: Transport) => void;
+  setLineRevente: (id: string, b: boolean) => void;
   setCustomer: (patch: Partial<Customer>) => void;
+  /** Sets the quote-level default *and* cascades the value to every line. */
   setTransport: (t: Transport) => void;
+  /** Sets the quote-level default *and* cascades the value to every line. */
   setRevente: (b: boolean) => void;
   newQuote: () => void;
   reset: () => void;
@@ -64,7 +73,7 @@ function initialState(): Pick<
   // Defer nextQuoteId() to avoid touching localStorage at module load time
   // when the store is reused in SSR or tests.
   const now = new Date().toISOString();
-  const firstLine = makeLine();
+  const firstLine = makeLine({ transport: 'chronopost', revente: false });
   return {
     id: 'DEV-PENDING',
     status: 'draft',
@@ -83,7 +92,8 @@ export const useQuoteStore = create<QuoteState>()(
     (set, get) => ({
       ...initialState(),
       addLine: () => {
-        const line = makeLine();
+        const { transport, revente } = get();
+        const line = makeLine({ transport, revente });
         set((s) => ({
           lines: [...s.lines, line],
           activeLineId: line.id,
@@ -116,6 +126,12 @@ export const useQuoteStore = create<QuoteState>()(
           updatedAt: new Date().toISOString(),
         }));
       },
+      setLinked: (id, linked) => {
+        set((s) => ({
+          lines: s.lines.map((l) => (l.id === id ? { ...l, linked } : l)),
+          updatedAt: new Date().toISOString(),
+        }));
+      },
       setFlockMode: (id, mode) => {
         set((s) => ({
           lines: s.lines.map((l) =>
@@ -132,11 +148,31 @@ export const useQuoteStore = create<QuoteState>()(
           updatedAt: new Date().toISOString(),
         }));
       },
+      setLineTransport: (id, t) => {
+        set((s) => ({
+          lines: s.lines.map((l) => (l.id === id ? { ...l, transport: t } : l)),
+          updatedAt: new Date().toISOString(),
+        }));
+      },
+      setLineRevente: (id, b) => {
+        set((s) => ({
+          lines: s.lines.map((l) => (l.id === id ? { ...l, revente: b } : l)),
+          updatedAt: new Date().toISOString(),
+        }));
+      },
       setTransport: (t) => {
-        set({ transport: t, updatedAt: new Date().toISOString() });
+        set((s) => ({
+          transport: t,
+          lines: s.lines.map((l) => ({ ...l, transport: t })),
+          updatedAt: new Date().toISOString(),
+        }));
       },
       setRevente: (b) => {
-        set({ revente: b, updatedAt: new Date().toISOString() });
+        set((s) => ({
+          revente: b,
+          lines: s.lines.map((l) => ({ ...l, revente: b })),
+          updatedAt: new Date().toISOString(),
+        }));
       },
       newQuote: () => {
         const init = initialState();

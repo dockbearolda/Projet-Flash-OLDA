@@ -15,13 +15,10 @@ export function Authed({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     void (async () => {
-      try {
-        const ok = await checkAuth();
-        setState(ok ? 'ok' : 'denied');
-      } catch {
-        // offline — allow optimistically
-        setState('ok');
-      }
+      const status = await checkAuth();
+      // PWA spec : si API down (offline) ou si on est authentifié → on entre.
+      // Seul un refus explicite (401) renvoie vers /login.
+      setState(status === 'denied' ? 'denied' : 'ok');
     })();
   }, []);
 

@@ -153,24 +153,26 @@ button:active:not(:disabled) {
   font-variant-numeric: tabular-nums;
 }
 
-.df-input {
-  width: 100%;
-  height: 40px;
-  padding: 0 12px;
-  background: var(--df-surface);
-  border: 1px solid var(--df-border);
-  border-radius: var(--df-radius);
-  font-size: 14px;
-  color: var(--df-ink);
-  font-family: inherit;
-  transition:
-    border-color 140ms,
-    box-shadow 140ms;
-}
-.df-input:focus {
-  border-color: var(--df-accent);
-  box-shadow: 0 0 0 3px var(--df-accent-soft);
-}
-.df-input::placeholder {
-  color: var(--df-ink-4);
+@layer components {
+  .df-input {
+    width: 100%;
+    height: 40px;
+    padding: 0 12px;
+    background: var(--df-surface);
+    border: 1px solid var(--df-border);
+    border-radius: var(--df-radius);
+    font-size: 14px;
+    color: var(--df-ink);
+    font-family: inherit;
+    transition:
+      border-color 140ms,
+      box-shadow 140ms;
+  }
+  .df-input:focus {
+    border-color: var(--df-accent);
+    box-shadow: 0 0 0 3px var(--df-accent-soft);
+  }
+  .df-input::placeholder {
+    color: var(--df-ink-4);
+  }
 }
