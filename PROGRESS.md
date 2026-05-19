@@ -97,3 +97,21 @@ Avancement séquentiel des 12 étapes (§31 du brief).
 - **Statut** : ✓ Terminé
 
 ---
+
+## Étape 6 — Composants métier
+
+- **Fichiers créés** dans `apps/web/src/features/quote/components/` :
+  - `ProductPicker.tsx` — recherche + filtre famille + liste cliquable
+  - `PlacementPicker.tsx` — grille 3×3 avec mini-SVG t-shirt (zones surlignées)
+  - `QtyGrid.tsx` — 7 tailles + total live, input number, total live aria-live
+  - `TextilePicker.tsx` — 17 coloris, filtre Best/Tout, Swatch comme contrôle radio direct
+  - `FlockPicker.tsx` — segmented multi/single + grille couleurs si single, banner si multi
+  - `TransportPicker.tsx` — 3 cards avec icônes Plane/Ship/Boxes
+  - `ReventeToggle.tsx` — segmented Non/Oui
+  - `CustomerInline.tsx` — input inline avec icône user
+- **Tests** : `QtyGrid.test.tsx` (4), `FlockPicker.test.tsx` (5)
+- **Décisions** : Swatch utilisée directement comme `role="radio"` (pas de button-in-button)
+- **Vérifs DoD** : typecheck ✓ · lint ✓ · test ✓ (103 total) · build ✓
+- **Statut** : ✓ Terminé
+
+---
