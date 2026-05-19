@@ -27,8 +27,9 @@ const CHRONO_PER_PIECE = TRANSPORT_OPTIONS.find((t) => t.id === 'chronopost')?.s
 
 /** Largest tier ≤ qty (e.g. qty 27 → 20, qty 130 → 100, qty 200 → 150). */
 function tierForQty(qty: number): number | null {
-  if (qty < QTY_TIERS[0]) return null;
-  let last = QTY_TIERS[0];
+  const first = QTY_TIERS[0];
+  if (first === undefined || qty < first) return null;
+  let last: number = first;
   for (const t of QTY_TIERS) {
     if (qty >= t) last = t;
     else return last;

@@ -352,7 +352,7 @@ function SelectInput({
   value: string;
   onChange: (v: string) => void;
   children: React.ReactNode;
-} & React.SelectHTMLAttributes<HTMLSelectElement>) {
+} & Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'value' | 'onChange' | 'children'>) {
   return (
     <div className="relative">
       <select
@@ -384,7 +384,7 @@ function ColorSelect({
   options: readonly TextileColor[];
   value: string;
   onChange: (v: string) => void;
-} & React.SelectHTMLAttributes<HTMLSelectElement>) {
+} & Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'value' | 'onChange'>) {
   const current = options.find((c) => c.id === value);
   return (
     <div className="relative">

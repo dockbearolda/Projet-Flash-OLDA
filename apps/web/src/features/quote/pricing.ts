@@ -80,7 +80,7 @@ export function unitPriceHT(args: {
   productRef: string;
   placementId: string;
   qty: number;
-  code?: number;
+  code?: number | undefined;
 }): number {
   const product = PRODUCT_BY_REF[args.productRef];
   if (!product) {
@@ -118,8 +118,8 @@ export function unitPriceBreakdown(args: {
   productRef: string;
   placementId: string;
   qty: number;
-  code?: number;
-  transportPerPiece?: number;
+  code?: number | undefined;
+  transportPerPiece?: number | undefined;
 }): UnitPriceBreakdown {
   const product = PRODUCT_BY_REF[args.productRef];
   if (!product) {
@@ -147,12 +147,12 @@ export interface LineForPricing {
   productRef: string;
   placementId: string;
   sizes: Sizes;
-  linked?: boolean;
-  code?: number;
+  linked?: boolean | undefined;
+  code?: number | undefined;
   /** Per-line transport override (falls back to quote-level transport). */
-  transport?: Transport;
+  transport?: Transport | undefined;
   /** Per-line revente override (falls back to quote-level revente). */
-  revente?: boolean;
+  revente?: boolean | undefined;
 }
 
 /**
