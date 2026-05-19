@@ -82,3 +82,18 @@ Avancement séquentiel des 12 étapes (§31 du brief).
 - **Statut** : ✓ Terminé
 
 ---
+
+## Étape 5 — Store Zustand
+
+- **Fichiers créés** :
+  - `apps/web/src/features/quote/quoteStore.ts` — `useQuoteStore` (Zustand + persist), `useQuoteTotals` sélecteur mémoïsé, `attachIdbStorage()` à appeler au boot
+  - `apps/web/src/features/quote/idbStorage.ts` — wrapper `idb-keyval` → zustand `PersistStorage`
+  - `apps/web/src/features/quote/quoteId.ts` — `nextQuoteId()` (DEV-YYYY-NNNN, séquence par année dans localStorage), `newLineId()`
+  - Tests : `quoteStore.test.ts` (14 tests)
+- **Actions** : addLine / removeLine (refuse de descendre sous 1) / updateLine / setSizes / setFlockMode (clear color en multi) / setActive / setCustomer / setTransport / setRevente / newQuote / reset / \_\_replace (tests)
+- **Persistance** : IndexedDB via `idb-keyval`, clé `df:current-quote`. Storage no-op par défaut, IDB attaché au boot.
+- **Décisions** : Brouillon courant unique (pas de multi-drafts en MVP) — l'historique est géré côté API à l'étape 10.
+- **Vérifs DoD** : typecheck ✓ · lint ✓ · test ✓ (94 total) · build ✓
+- **Statut** : ✓ Terminé
+
+---

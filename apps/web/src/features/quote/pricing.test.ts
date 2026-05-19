@@ -83,6 +83,10 @@ describe('placementZonesPriceHT', () => {
   it('poitrine-dos = 3.20 + 5.00 = 8.20', () => {
     expect(placementZonesPriceHT('poitrine-dos')).toBe(8.2);
   });
+
+  it('throws on unknown placement (defensive)', () => {
+    expect(() => placementZonesPriceHT('bogus-placement')).toThrow(/Unknown placement/);
+  });
 });
 
 describe('round2', () => {

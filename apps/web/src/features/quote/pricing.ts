@@ -7,7 +7,7 @@ import {
   ZONES,
   SIZE_KEYS,
 } from '@df/shared/catalog';
-import type { PlacementId, Sizes, Transport } from '@df/shared';
+import type { Sizes, Transport, Placement } from '@df/shared';
 
 /**
  * Returns the margin coefficient for the given total quantity.
@@ -15,7 +15,7 @@ import type { PlacementId, Sizes, Transport } from '@df/shared';
  * For totalQty < 1, returns the first row's coef (no discount).
  */
 export function coefFor(totalQty: number): number {
-  let last = COEFS[0][1];
+  let last: number = COEFS[0][1];
   for (const [threshold, c] of COEFS) {
     if (totalQty >= threshold) {
       last = c;
@@ -30,8 +30,11 @@ export function coefFor(totalQty: number): number {
  * Sum the printable-zone prices for a given placement.
  * Uses the locked §6.2 prices.
  */
-export function placementZonesPriceHT(placementId: PlacementId): number {
-  const placement = PLACEMENT_BY_ID[placementId];
+export function placementZonesPriceHT(placementId: string): number {
+  const placement = (PLACEMENT_BY_ID as Record<string, Placement | undefined>)[placementId];
+  if (!placement) {
+    throw new Error(`Unknown placement: ${placementId}`);
+  }
   return placement.zones.reduce((acc, zoneId) => acc + ZONES[zoneId].price, 0);
 }
 
@@ -58,7 +61,7 @@ export function lineQty(sizes: Sizes): number {
  */
 export function unitPriceHT(args: {
   productRef: string;
-  placementId: PlacementId;
+  placementId: string;
   coef: number;
 }): number {
   const product = PRODUCT_BY_REF[args.productRef];
@@ -71,7 +74,7 @@ export function unitPriceHT(args: {
 
 export interface LineForPricing {
   productRef: string;
-  placementId: PlacementId;
+  placementId: string;
   sizes: Sizes;
 }
 
