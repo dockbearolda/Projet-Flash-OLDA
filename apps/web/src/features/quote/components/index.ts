@@ -6,3 +6,5 @@ export { FlockPicker } from './FlockPicker';
 export { TransportPicker } from './TransportPicker';
 export { ReventeToggle } from './ReventeToggle';
 export { CustomerInline } from './CustomerInline';
+export { LineTabs } from './LineTabs';
+export { RecapDrawer } from './RecapDrawer';

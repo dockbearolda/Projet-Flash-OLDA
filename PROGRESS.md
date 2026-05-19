@@ -115,3 +115,21 @@ Avancement séquentiel des 12 étapes (§31 du brief).
 - **Statut** : ✓ Terminé
 
 ---
+
+## Étape 7 — Page /tablet
+
+- **Fichiers créés / modifiés** :
+  - `apps/web/src/pages/tablet/TabletPage.tsx` — orchestration complète, sélection ligne active, hook attach IDB
+  - `apps/web/src/features/quote/components/LineTabs.tsx` — onglets lignes (1+) avec quick stats et bouton supprimer
+  - `apps/web/src/features/quote/components/RecapDrawer.tsx` — drawer fixe 460px : récap lignes, transport, revente, hero Total HT
+- **Layout** : grille 2 colonnes pour les 4 cartes (Produit textile, Coloris textile, Placement DTF, Quantités + prix unitaire), flocage en col-span-2. Drawer toujours visible à droite.
+- **Hit targets** : ≥ 44×44 partout. CTA principal h-14, secondaires h-10/h-11.
+- **Live** : prix unitaire et total recalculés via `useQuoteTotals` à chaque mutation. `aria-live=polite` sur les chiffres clés.
+- **Décisions** :
+  - PDF generation toast placeholder (étape 8 le branche)
+  - Export JSON déjà branché (download blob)
+- **Vérifs DoD** : typecheck ✓ · lint ✓ · test ✓ (103 total) · build ✓ — bundle TabletPage 30 kB gzip
+- **Commande pour tester** : `pnpm dev` puis http://localhost:5173/tablet
+- **Statut** : ✓ Terminé
+
+---
