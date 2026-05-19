@@ -173,3 +173,23 @@ Avancement séquentiel des 12 étapes (§31 du brief).
 - **Statut** : ✓ Terminé
 
 ---
+
+## Étape 10 — API + DB
+
+- **Schéma Prisma** (`apps/api/prisma/schema.prisma`) :
+  - `Product`, `TextileColor`, `FlockColor`, `Placement`, `Zone`, `Coef` — catalogue editable
+  - `Quote` (id `DEV-YYYY-NNNN`, customerJson/linesJson stockés en JSONB, totaux pré-calculés, `deletedAt` pour soft delete)
+  - `Session` (token sha256-hashé, `expiresAt`)
+- **Seed** (`prisma/seed.ts`) idempotent — upsert sur tous les enregistrements depuis `@df/shared`
+- **Routes Hono** :
+  - `GET /api/health` — db ping
+  - `POST /api/auth/login` · `POST /api/auth/logout` · `GET /api/auth/me`
+  - `GET /api/catalog` — full snapshot
+  - `GET/POST/PATCH/DELETE /api/quotes` — upsert, soft delete, pagination
+- **Auth middleware** : intercept `/api/*` sauf `/api/health` et `/api/login`. Cookie httpOnly `df_session` signé HMAC-SHA256.
+- **Sync IDB ↔ Postgres** : helpers `loginRequest/logoutRequest/checkAuth` côté front prêts. Sync history non branché en MVP (l'historique local IDB est suffisant pour le mode déconnecté ; l'API est cible en ligne).
+- **Dockerfile** : déjà multi-stage prêt (Étape 1) ; `docker build && docker run` fonctionnel localement avec `DATABASE_URL` valide.
+- **Vérifs DoD** : typecheck ✓ · lint ✓ · test ✓ (103) · build web + build API ✓
+- **Statut** : ✓ Terminé
+
+---
