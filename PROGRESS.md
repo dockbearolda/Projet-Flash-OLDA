@@ -22,3 +22,23 @@ Avancement séquentiel des 12 étapes (§31 du brief).
 - **Statut** : ✓ Terminé
 
 ---
+
+## Étape 2 — Primitives UI
+
+- **Fichiers créés** :
+  - `apps/web/src/lib/cn.ts` (helper clsx)
+  - `apps/web/src/lib/color.ts` (luminance + inkOn)
+  - `apps/web/src/components/ui/` : `Button.tsx`, `Chip.tsx`, `Input.tsx`, `Swatch.tsx`, `SegToggle.tsx`, `Card.tsx`, `index.ts`
+  - Tests : `Button.test.tsx`, `Chip.test.tsx`, `Input.test.tsx`, `Swatch.test.tsx`, `SegToggle.test.tsx`, `Card.test.tsx`, `color.test.ts`
+  - `apps/web/src/pages/dev/DevComponentsPage.tsx` rempli avec galerie
+- **Tests** : 40 tests passants (7 fichiers) — couverture confortable sur primitives
+- **Décisions** : `Swatch` prop nommée `hex` (pas `color`) pour éviter collision avec attribut HTML natif. SegToggle générique sur `T extends string`.
+- **Vérifs DoD** :
+  - `pnpm typecheck` ✓
+  - `pnpm lint` ✓
+  - `pnpm test` ✓ (40 passing)
+  - `pnpm build` ✓ — bundle initial 75.15 kB gzip (route /dev/components 3.83 kB)
+- **Commande pour tester** : `pnpm dev` puis http://localhost:5173/dev/components
+- **Statut** : ✓ Terminé
+
+---

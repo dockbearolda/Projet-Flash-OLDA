@@ -13,6 +13,6 @@
     },
     "types": ["vite/client", "@testing-library/jest-dom"]
   },
-  "include": ["src", "tests"],
-  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "tests/e2e/**"]
+  "include": ["src"],
+  "exclude": ["tests/e2e/**", "dist/**"]
 }
