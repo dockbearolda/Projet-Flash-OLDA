@@ -133,3 +133,24 @@ Avancement séquentiel des 12 étapes (§31 du brief).
 - **Statut** : ✓ Terminé
 
 ---
+
+## Étape 8 — PDF
+
+- **Fichiers créés** :
+  - `apps/web/src/features/pdf/QuotePdf.tsx` — Document `@react-pdf/renderer` A4 portrait
+  - `apps/web/src/features/pdf/generate.ts` — helper `downloadPdf(filename, element)`
+- **Spec respectée** (§18) :
+  - Header OLDA Helvetica-Bold 24pt + ref mono, date sous la ref
+  - Bloc client (nom + email/phone/address)
+  - Tableau lignes : Réf · Description · Placement · Coloris · Qté · PU HT · Total HT
+  - Bullets sous chaque ligne : coloris textile, placement DTF, couleur d'impression
+  - Totals droite-bas (sous-total, transport, TGCA), Total HT en 18pt mono bold accent
+  - Footer "OLDA · Saint-Martin · Devis valable 30 jours…"
+- **Branchement** : bouton "Générer PDF" dans `RecapDrawer` → `handleGenerate()` qui import dynamique le module PDF (lazy chunk)
+- **Décisions** :
+  - Helvetica/Courier built-in (pas d'embed Geist base64) — à remplacer en Étape 12 pour vraie identité OLDA
+  - Lazy-load : react-pdf 492 kB gzip dans son propre chunk, **n'impacte pas le bundle initial** (toujours 75 kB)
+- **Vérifs DoD** : typecheck ✓ · lint ✓ · build ✓ — bundle initial 75.20 kB gzip
+- **Statut** : ✓ Terminé
+
+---

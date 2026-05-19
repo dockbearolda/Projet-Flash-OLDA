@@ -55,10 +55,30 @@ export default function TabletPage() {
   }
 
   function handleGenerate() {
-    // PDF generation wired in Étape 8
-    toast.message('Génération PDF', {
-      description: 'Sera branchée à l’étape 8 (devis ' + id + ').',
-    });
+    void (async () => {
+      try {
+        toast.loading('Génération du PDF…', { id: 'pdf' });
+        const { QuotePdf } = await import('@/features/pdf/QuotePdf');
+        const { downloadPdf } = await import('@/features/pdf/generate');
+        const createdAt = useQuoteStore.getState().createdAt;
+        await downloadPdf(
+          `${id}.pdf`,
+          <QuotePdf
+            id={id}
+            customer={customer}
+            lines={lines}
+            transport={transport}
+            revente={revente}
+            totals={totals}
+            createdAt={createdAt}
+          />,
+        );
+        toast.success('PDF généré', { id: 'pdf', description: `${id}.pdf téléchargé` });
+      } catch (err) {
+        console.error('PDF generation failed', err);
+        toast.error('Échec génération PDF', { id: 'pdf' });
+      }
+    })();
   }
 
   function handleExportJSON() {
