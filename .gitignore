@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+.next/
+*.tsbuildinfo
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# Test artefacts
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+.vitest/
+
+# Cache
+.cache/
+.turbo/
+.parcel-cache/
+
+# PWA
+dev-dist/
+
+# Prisma
+apps/api/prisma/*.db
+apps/api/prisma/*.db-journal

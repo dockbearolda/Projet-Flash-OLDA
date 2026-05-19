@@ -1,0 +1,176 @@
+@import 'tailwindcss';
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500&display=swap');
+
+@theme {
+  /* Surfaces */
+  --color-df-bg: #ebeef0;
+  --color-df-bg-2: #dde2e6;
+  --color-df-surface: #f7f8f9;
+  --color-df-surface-2: #f0f2f4;
+  --color-df-surface-soft: rgba(247, 248, 249, 0.7);
+
+  /* Encres */
+  --color-df-ink: #0e1116;
+  --color-df-ink-2: #36404a;
+  --color-df-ink-3: #6b7480;
+  --color-df-ink-4: #a4adb6;
+
+  /* Bordures */
+  --color-df-border: rgba(14, 17, 22, 0.08);
+  --color-df-border-strong: rgba(14, 17, 22, 0.16);
+
+  /* Accent */
+  --color-df-accent: #2f5a7a;
+  --color-df-accent-2: #3d749b;
+  --color-df-accent-ink: #f7f8f9;
+  --color-df-accent-soft: rgba(47, 90, 122, 0.1);
+
+  /* Sémantiques */
+  --color-df-success: #3a6d54;
+  --color-df-danger: #a23b2a;
+  --color-df-warning: #a96e16;
+
+  /* Typo */
+  --font-body: 'Geist', -apple-system, system-ui, sans-serif;
+  --font-display: 'Geist', -apple-system, system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, monospace;
+
+  /* Rayons */
+  --radius-df-sm: 6px;
+  --radius-df: 10px;
+  --radius-df-lg: 14px;
+  --radius-df-xl: 20px;
+
+  /* Ombres */
+  --shadow-df-1: 0 1px 0 rgba(14, 17, 22, 0.04), 0 1px 2px rgba(14, 17, 22, 0.05);
+  --shadow-df-2: 0 1px 0 rgba(14, 17, 22, 0.04), 0 6px 20px rgba(14, 17, 22, 0.08);
+  --shadow-df-3: 0 2px 0 rgba(14, 17, 22, 0.04), 0 24px 60px rgba(14, 17, 22, 0.16);
+  --shadow-df-pressed: inset 0 1px 2px rgba(14, 17, 22, 0.1);
+
+  /* Glass */
+  --color-df-glass: rgba(247, 248, 249, 0.88);
+  --color-df-glass-border: rgba(14, 17, 22, 0.08);
+}
+
+:root {
+  /* Mirror tokens as CSS variables for non-Tailwind uses */
+  --df-bg: #ebeef0;
+  --df-bg-2: #dde2e6;
+  --df-surface: #f7f8f9;
+  --df-surface-2: #f0f2f4;
+  --df-surface-soft: rgba(247, 248, 249, 0.7);
+
+  --df-ink: #0e1116;
+  --df-ink-2: #36404a;
+  --df-ink-3: #6b7480;
+  --df-ink-4: #a4adb6;
+
+  --df-border: rgba(14, 17, 22, 0.08);
+  --df-border-strong: rgba(14, 17, 22, 0.16);
+
+  --df-accent: #2f5a7a;
+  --df-accent-2: #3d749b;
+  --df-accent-ink: #f7f8f9;
+  --df-accent-soft: rgba(47, 90, 122, 0.1);
+
+  --df-success: #3a6d54;
+  --df-danger: #a23b2a;
+  --df-warning: #a96e16;
+
+  --df-font-body: 'Geist', -apple-system, system-ui, sans-serif;
+  --df-font-display: 'Geist', -apple-system, system-ui, sans-serif;
+  --df-font-mono: 'Geist Mono', ui-monospace, monospace;
+
+  --df-radius-sm: 6px;
+  --df-radius: 10px;
+  --df-radius-lg: 14px;
+  --df-radius-xl: 20px;
+
+  --df-shadow-1: 0 1px 0 rgba(14, 17, 22, 0.04), 0 1px 2px rgba(14, 17, 22, 0.05);
+  --df-shadow-2: 0 1px 0 rgba(14, 17, 22, 0.04), 0 6px 20px rgba(14, 17, 22, 0.08);
+  --df-shadow-3: 0 2px 0 rgba(14, 17, 22, 0.04), 0 24px 60px rgba(14, 17, 22, 0.16);
+  --df-shadow-pressed: inset 0 1px 2px rgba(14, 17, 22, 0.1);
+
+  --df-glass: rgba(247, 248, 249, 0.88);
+  --df-glass-border: rgba(14, 17, 22, 0.08);
+
+  --df-display-letter: -0.04em;
+  --df-display-leading: 0.92;
+}
+
+html,
+body {
+  background: var(--df-bg);
+  color: var(--df-ink);
+  font-family: var(--df-font-body);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+button {
+  transition: transform 80ms;
+}
+button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+:focus {
+  outline: none;
+}
+:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--df-bg),
+    0 0 0 4px var(--df-accent);
+  border-radius: 4px;
+}
+
+/* Utilities */
+.df-mono {
+  font-family: var(--df-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.df-caps {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--df-ink-3);
+}
+
+.df-display {
+  font-family: var(--df-font-display);
+  letter-spacing: var(--df-display-letter);
+  line-height: var(--df-display-leading);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.df-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  background: var(--df-surface);
+  border: 1px solid var(--df-border);
+  border-radius: var(--df-radius);
+  font-size: 14px;
+  color: var(--df-ink);
+  font-family: inherit;
+  transition:
+    border-color 140ms,
+    box-shadow 140ms;
+}
+.df-input:focus {
+  border-color: var(--df-accent);
+  box-shadow: 0 0 0 3px var(--df-accent-soft);
+}
+.df-input::placeholder {
+  color: var(--df-ink-4);
+}
