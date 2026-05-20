@@ -2,22 +2,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500&display=swap');
 
 @theme {
-  /* Surfaces */
-  --color-df-bg: #ebeef0;
-  --color-df-bg-2: #dde2e6;
-  --color-df-surface: #f7f8f9;
-  --color-df-surface-2: #f0f2f4;
-  --color-df-surface-soft: rgba(247, 248, 249, 0.7);
+  /* Surfaces — beige chaud, peu éblouissant */
+  --color-df-bg: #e7e1d4;
+  --color-df-bg-2: #d8d0bf;
+  --color-df-surface: #f3eee2;
+  --color-df-surface-2: #eae3d3;
+  --color-df-surface-soft: rgba(243, 238, 226, 0.7);
 
   /* Encres */
-  --color-df-ink: #0e1116;
-  --color-df-ink-2: #36404a;
-  --color-df-ink-3: #6b7480;
-  --color-df-ink-4: #a4adb6;
+  --color-df-ink: #1c1810;
+  --color-df-ink-2: #443d2f;
+  --color-df-ink-3: #756c59;
+  --color-df-ink-4: #a89e89;
 
   /* Bordures */
-  --color-df-border: rgba(14, 17, 22, 0.08);
-  --color-df-border-strong: rgba(14, 17, 22, 0.16);
+  --color-df-border: rgba(40, 33, 18, 0.1);
+  --color-df-border-strong: rgba(40, 33, 18, 0.18);
 
   /* Accent */
   --color-df-accent: #2f5a7a;
@@ -48,25 +48,25 @@
   --shadow-df-pressed: inset 0 1px 2px rgba(14, 17, 22, 0.1);
 
   /* Glass */
-  --color-df-glass: rgba(247, 248, 249, 0.88);
-  --color-df-glass-border: rgba(14, 17, 22, 0.08);
+  --color-df-glass: rgba(243, 238, 226, 0.88);
+  --color-df-glass-border: rgba(40, 33, 18, 0.1);
 }
 
 :root {
   /* Mirror tokens as CSS variables for non-Tailwind uses */
-  --df-bg: #ebeef0;
-  --df-bg-2: #dde2e6;
-  --df-surface: #f7f8f9;
-  --df-surface-2: #f0f2f4;
-  --df-surface-soft: rgba(247, 248, 249, 0.7);
+  --df-bg: #e7e1d4;
+  --df-bg-2: #d8d0bf;
+  --df-surface: #f3eee2;
+  --df-surface-2: #eae3d3;
+  --df-surface-soft: rgba(243, 238, 226, 0.7);
 
-  --df-ink: #0e1116;
-  --df-ink-2: #36404a;
-  --df-ink-3: #6b7480;
-  --df-ink-4: #a4adb6;
+  --df-ink: #1c1810;
+  --df-ink-2: #443d2f;
+  --df-ink-3: #756c59;
+  --df-ink-4: #a89e89;
 
-  --df-border: rgba(14, 17, 22, 0.08);
-  --df-border-strong: rgba(14, 17, 22, 0.16);
+  --df-border: rgba(40, 33, 18, 0.1);
+  --df-border-strong: rgba(40, 33, 18, 0.18);
 
   --df-accent: #2f5a7a;
   --df-accent-2: #3d749b;
@@ -91,8 +91,8 @@
   --df-shadow-3: 0 2px 0 rgba(14, 17, 22, 0.04), 0 24px 60px rgba(14, 17, 22, 0.16);
   --df-shadow-pressed: inset 0 1px 2px rgba(14, 17, 22, 0.1);
 
-  --df-glass: rgba(247, 248, 249, 0.88);
-  --df-glass-border: rgba(14, 17, 22, 0.08);
+  --df-glass: rgba(243, 238, 226, 0.88);
+  --df-glass-border: rgba(40, 33, 18, 0.1);
 
   --df-display-letter: -0.04em;
   --df-display-leading: 0.92;

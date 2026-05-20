@@ -8,6 +8,9 @@ import { lineQty } from '@/features/quote/pricing';
 import { LineRow, CustomerInline, PricingGrid, RecapDrawer } from '@/features/quote/components';
 import { SegToggle } from '@/components/ui/SegToggle';
 import { fmtShortDate } from '@/lib/format';
+import type { Customer } from '@df/shared';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 attachIdbStorage();
 attachHistoryIdb();
@@ -33,6 +36,50 @@ const VIEW_OPTIONS = [
 
 export default function TabletPage() {
   const [view, setView] = useState<'devis' | 'grille'>('devis');
+  const [missingClient, setMissingClient] = useState<{
+    name?: boolean;
+    phone?: boolean;
+    email?: boolean;
+  }>({});
+
+  const DRAWER_MIN = 360;
+  const DRAWER_MAX = 760;
+  const [drawerWidth, setDrawerWidth] = useState<number>(() => {
+    try {
+      const saved = Number(localStorage.getItem('df:drawer-width'));
+      if (Number.isFinite(saved) && saved >= DRAWER_MIN) {
+        return Math.min(saved, DRAWER_MAX);
+      }
+    } catch {
+      /* ignore */
+    }
+    return 460;
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('df:drawer-width', String(drawerWidth));
+    } catch {
+      /* ignore */
+    }
+  }, [drawerWidth]);
+
+  function handleResizeStart(e: React.PointerEvent) {
+    e.preventDefault();
+    const onMove = (ev: PointerEvent) => {
+      const w = Math.min(DRAWER_MAX, Math.max(DRAWER_MIN, window.innerWidth - ev.clientX));
+      setDrawerWidth(w);
+    };
+    const onUp = () => {
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  }
   const id = useQuoteStore((s) => s.id);
   const customer = useQuoteStore((s) => s.customer);
   const lines = useQuoteStore((s) => s.lines);
@@ -87,7 +134,38 @@ export default function TabletPage() {
     };
   }, [id, customer, transport, revente, lines, totals.totalHT, totals.qtyTotal]);
 
+  function handleCustomerChange(patch: Partial<Customer>) {
+    setCustomer(patch);
+    setMissingClient((m) => {
+      const next = { ...m };
+      if ('name' in patch) delete next.name;
+      if ('phone' in patch) delete next.phone;
+      if ('email' in patch) delete next.email;
+      return next;
+    });
+  }
+
   function handleGenerate() {
+    const name = customer.name.trim();
+    const phone = (customer.phone ?? '').trim();
+    const email = (customer.email ?? '').trim();
+    const miss = {
+      name: name === '',
+      phone: phone === '',
+      email: email === '' || !EMAIL_RE.test(email),
+    };
+    if (miss.name || miss.phone || miss.email) {
+      setMissingClient(miss);
+      const labels: string[] = [];
+      if (miss.name) labels.push('nom');
+      if (miss.phone) labels.push('téléphone');
+      if (miss.email) labels.push(email !== '' ? 'email valide' : 'email');
+      toast.error('Infos client obligatoires', {
+        description: `À renseigner avant le PDF : ${labels.join(', ')}.`,
+      });
+      return;
+    }
+    setMissingClient({});
     void (async () => {
       try {
         toast.loading('Génération du PDF…', { id: 'pdf' });
@@ -150,7 +228,11 @@ export default function TabletPage() {
               ariaLabel="Mode d'affichage"
             />
           </div>
-          <CustomerInline customer={customer} onChange={setCustomer} />
+          <CustomerInline
+            customer={customer}
+            onChange={handleCustomerChange}
+            missing={missingClient}
+          />
         </header>
 
         <div className="flex-1 px-6 py-5 flex flex-col gap-5 overflow-y-auto">
@@ -217,6 +299,14 @@ export default function TabletPage() {
         </div>
       </main>
 
+      <div
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Redimensionner le panneau récapitulatif"
+        onPointerDown={handleResizeStart}
+        className="w-1.5 shrink-0 cursor-col-resize bg-[var(--df-border)] hover:bg-[var(--df-accent)] active:bg-[var(--df-accent)] transition-colors"
+      />
+
       <RecapDrawer
         quoteId={id}
         customer={customer}
@@ -228,6 +318,7 @@ export default function TabletPage() {
         onRevente={setRevente}
         onGeneratePDF={handleGenerate}
         onExportJSON={handleExportJSON}
+        width={drawerWidth}
       />
     </div>
   );

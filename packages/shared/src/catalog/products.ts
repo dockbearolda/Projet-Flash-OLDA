@@ -182,9 +182,9 @@ export const PRODUCT_BY_REF: Readonly<Record<string, Product>> = Object.fromEntr
 );
 
 export const TRANSPORT_OPTIONS = [
-  { id: 'maritime' as const, label: 'Maritime', surcharge: 0 },
-  { id: 'chronopost' as const, label: 'Chronopost', surcharge: 1.5 },
-  { id: 'stock' as const, label: 'Stock', surcharge: 0 },
+  { id: 'maritime' as const, label: 'Maritime', surcharge: 0, delay: '≈ 1 mois' },
+  { id: 'chronopost' as const, label: 'Chronopost', surcharge: 1.5, delay: '≈ 10 jours' },
+  { id: 'stock' as const, label: 'Stock', surcharge: 0, delay: 'Sur place' },
 ] as const;
 
 export type TransportId = (typeof TRANSPORT_OPTIONS)[number]['id'];

@@ -53,6 +53,8 @@ export const QuoteLineSchema = z.object({
   revente: z.boolean().optional(),
   // Présent uniquement sur les lignes libres (hors catalogue).
   custom: CustomLineSchema.optional(),
+  // Note libre attachée à la référence (visible dans le recap / PDF).
+  note: z.string().trim().max(300).optional(),
 });
 
 export type QuoteLine = z.infer<typeof QuoteLineSchema>;

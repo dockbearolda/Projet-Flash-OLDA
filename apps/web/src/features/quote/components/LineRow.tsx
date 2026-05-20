@@ -126,12 +126,22 @@ export function LineRow({
     return TRANSPORT_OPTIONS.find((t) => t.id === effectiveTransport)?.surcharge ?? 0;
   }, [effectiveTransport]);
 
+  // Quantité servant à choisir le palier de prix (coef + zones).
+  // - ligne liée : on utilise la quantité totale du devis (remise au volume).
+  // - ligne non liée : elle est facturée seule → on prend SA propre quantité.
+  // Tant qu'aucune quantité n'est saisie, le prix n'a pas de sens (coefFor(0)
+  // renvoie la marge la plus forte) : on n'affiche donc rien plutôt qu'un
+  // PU HT gonflé qui ne correspond à rien.
+  const pricingQty = isLinked ? quoteQty : qty;
+  const hasPricing = pricingQty > 0;
+
   const breakdown = useMemo(() => {
+    if (!hasPricing) return null;
     try {
       return unitPriceBreakdown({
         productRef: line.productRef,
         placementId: line.placementId,
-        qty: quoteQty,
+        qty: pricingQty,
         code: line.code,
         transportPerPiece,
         priceAchatOverride: line.custom?.priceAchat,
@@ -140,21 +150,23 @@ export function LineRow({
       return null;
     }
   }, [
+    hasPricing,
     line.productRef,
     line.placementId,
-    quoteQty,
+    pricingQty,
     line.code,
     transportPerPiece,
     line.custom?.priceAchat,
   ]);
 
   const subtotal = useMemo(() => {
+    if (!hasPricing) return 0;
     try {
-      return lineSubtotalHT(line, quoteQty);
+      return lineSubtotalHT(line, pricingQty);
     } catch {
       return 0;
     }
-  }, [line, quoteQty]);
+  }, [hasPricing, line, pricingQty]);
 
   const groupedProducts = useMemo(() => {
     const byFamily = new Map<ProductFamily, Product[]>();
@@ -366,6 +378,23 @@ export function LineRow({
         </Field>
       </div>
 
+      {/* Note libre sous la référence */}
+      <div className="px-5 pb-4">
+        <label className="flex flex-col gap-1.5">
+          <span className="df-caps">Note</span>
+          <input
+            type="text"
+            value={line.note ?? ''}
+            onChange={(e) => {
+              onChange({ note: e.target.value });
+            }}
+            placeholder="Note libre (ex. logo fourni, BAT à valider, coloris spécifique…)"
+            aria-label={`Note ligne ${String(index + 1)}`}
+            className="df-input h-11"
+          />
+        </label>
+      </div>
+
       {/* Row 2: qty + price breakdown + totals */}
       <div className="px-5 pb-4 flex items-stretch gap-3 flex-wrap">
         <div className="flex items-center gap-3 px-4 h-14 rounded-[var(--df-radius)] border border-[var(--df-border)] bg-[var(--df-surface-2)]">
@@ -383,13 +412,13 @@ export function LineRow({
           <div className="flex flex-col items-end">
             <span className="df-caps">PU HT</span>
             <span className="df-mono text-base tabular-nums text-[var(--df-ink-2)]">
-              {fmtEUR.format(breakdown?.unitHT ?? 0)}
+              {hasPricing && breakdown ? fmtEUR.format(breakdown.unitHT) : '—'}
             </span>
           </div>
           <div className="flex flex-col items-end">
             <span className="df-caps">Sous-total HT</span>
             <span className="df-display text-2xl tabular-nums text-[var(--df-ink)]">
-              {fmtEUR.format(subtotal)}
+              {hasPricing ? fmtEUR.format(subtotal) : '—'}
             </span>
           </div>
         </div>

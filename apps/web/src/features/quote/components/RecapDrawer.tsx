@@ -5,6 +5,9 @@ import {
   PLACEMENT_BY_ID,
   TEXTILE_COLOR_BY_ID,
   FLOCK_COLOR_BY_ID,
+  TRANSPORT_OPTIONS,
+  SIZE_KEYS,
+  SIZE_LABELS,
 } from '@df/shared';
 import type {
   Customer,
@@ -18,7 +21,7 @@ import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { SyncIndicator } from '@/components/SyncIndicator';
 import { fmtEUR, fmtCoef, fmtInt } from '@/lib/format';
-import { lineQty } from '../pricing';
+import { lineQty, unitPriceBreakdown, lineSubtotalHT } from '../pricing';
 import type { QuoteTotals } from '../pricing';
 import { TransportPicker } from './TransportPicker';
 import { ReventeToggle } from './ReventeToggle';
@@ -34,6 +37,8 @@ interface Props {
   onRevente: (v: boolean) => void;
   onGeneratePDF: () => void;
   onExportJSON: () => void;
+  /** Largeur du panneau en px (réglable par l'utilisateur). */
+  width?: number;
 }
 
 export function RecapDrawer({
@@ -47,12 +52,19 @@ export function RecapDrawer({
   onRevente,
   onGeneratePDF,
   onExportJSON,
+  width = 460,
 }: Props) {
-  const enriched = useMemo(() => lines.map((l) => enrichLine(l)), [lines]);
+  const enriched = useMemo(
+    () => lines.map((l) => enrichLine(l, totals.qtyTotal, transport, revente)),
+    [lines, totals.qtyTotal, transport, revente],
+  );
   const customerName = customer.name.trim() || 'Client non renseigné';
 
   return (
-    <aside className="w-[460px] shrink-0 h-screen bg-[var(--df-surface)] border-l border-[var(--df-border)] flex flex-col">
+    <aside
+      style={{ width }}
+      className="shrink-0 h-screen bg-[var(--df-surface)] border-l border-[var(--df-border)] flex flex-col"
+    >
       <div className="px-6 py-5 border-b border-[var(--df-border)]">
         <div className="flex items-baseline justify-between gap-2">
           <div className="df-caps">{quoteId}</div>
@@ -70,12 +82,23 @@ export function RecapDrawer({
                 key={e.line.id}
                 className="rounded-[var(--df-radius)] border border-[var(--df-border)] bg-[var(--df-bg)] px-3 py-2.5"
               >
+                {/* Réf + nom + PU HT */}
                 <div className="flex items-baseline justify-between gap-2">
-                  <div className="df-caps shrink-0">#{i + 1}</div>
-                  <div className="text-xs text-[var(--df-ink-3)] truncate text-right">
-                    {e.line.custom?.name ?? e.product?.name ?? 'Produit ?'}
+                  <div className="flex items-baseline gap-1.5 min-w-0">
+                    <span className="df-caps shrink-0">#{i + 1}</span>
+                    <span className="df-mono text-[11px] text-[var(--df-ink-3)] shrink-0">
+                      {e.ref}
+                    </span>
+                    <span className="text-xs font-medium text-[var(--df-ink)] truncate">
+                      {e.name}
+                    </span>
+                  </div>
+                  <div className="df-mono text-[11px] tabular-nums text-[var(--df-ink-3)] shrink-0">
+                    {e.unitHT != null ? `${fmtEUR.format(e.unitHT)}/u` : '—'}
                   </div>
                 </div>
+
+                {/* Placement + quantité */}
                 <div className="flex items-baseline justify-between gap-2 mt-1">
                   <div className="text-[11px] text-[var(--df-ink-3)] truncate">
                     {e.placement?.label ?? '—'}
@@ -84,6 +107,8 @@ export function RecapDrawer({
                     × {fmtInt.format(e.qty)}
                   </div>
                 </div>
+
+                {/* Coloris + flocage */}
                 <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                   {e.textile && (
                     <Chip>
@@ -95,6 +120,36 @@ export function RecapDrawer({
                     </Chip>
                   )}
                   {e.flockLabel && <Chip variant="accent">{e.flockLabel}</Chip>}
+                </div>
+
+                {/* Détail des tailles */}
+                {e.sizesText && (
+                  <div className="df-mono text-[11px] text-[var(--df-ink-3)] mt-2 tabular-nums">
+                    {e.sizesText}
+                  </div>
+                )}
+
+                {/* Transport + délai + TGCA */}
+                <div className="flex items-center justify-between gap-2 mt-2 text-[11px] text-[var(--df-ink-3)]">
+                  <span className="truncate">
+                    {e.transportLabel} · {e.transportDelay}
+                  </span>
+                  <span className="shrink-0">{e.tgcaLabel}</span>
+                </div>
+
+                {/* Note */}
+                {e.note && (
+                  <div className="text-[11px] text-[var(--df-ink-2)] mt-2 italic border-l-2 border-[var(--df-accent)] pl-2">
+                    {e.note}
+                  </div>
+                )}
+
+                {/* Sous-total ligne */}
+                <div className="flex items-baseline justify-between gap-2 mt-2 pt-2 border-t border-[var(--df-border)]">
+                  <span className="df-caps">Sous-total</span>
+                  <span className="df-mono text-sm tabular-nums font-semibold text-[var(--df-ink)]">
+                    {e.subtotalHT != null ? fmtEUR.format(e.subtotalHT) : '—'}
+                  </span>
                 </div>
               </div>
             ))}
@@ -183,7 +238,12 @@ function Row({ label, value, muted }: { label: string; value: string; muted?: bo
   );
 }
 
-function enrichLine(line: QuoteLine) {
+function enrichLine(
+  line: QuoteLine,
+  quoteQty: number,
+  quoteTransport: Transport,
+  quoteRevente: boolean,
+) {
   const product = PRODUCT_BY_REF[line.productRef];
   const placement = (PLACEMENT_BY_ID as Record<string, Placement | undefined>)[line.placementId];
   const textile = (TEXTILE_COLOR_BY_ID as Record<string, TextileColor | undefined>)[
@@ -196,5 +256,55 @@ function enrichLine(line: QuoteLine) {
       : line.flockColorId
         ? (flockTable[line.flockColorId]?.name ?? 'Flocage')
         : 'Couleur ?';
-  return { line, product, placement, textile, flockLabel, qty: lineQty(line.sizes) };
+
+  const ref = line.custom ? 'Libre' : (product?.ref ?? '—');
+  const name = line.custom?.name ?? product?.name ?? 'Produit ?';
+
+  const sizesText = SIZE_KEYS.filter((k) => line.sizes[k] > 0)
+    .map((k) => `${SIZE_LABELS[k]}·${String(line.sizes[k])}`)
+    .join('  ');
+
+  const transportId = line.transport ?? quoteTransport;
+  const transportOpt = TRANSPORT_OPTIONS.find((t) => t.id === transportId);
+  const transportLabel = transportOpt?.label ?? transportId;
+  const transportDelay = transportOpt?.delay ?? '—';
+
+  const isRevente = line.revente ?? quoteRevente;
+  const tgcaLabel = isRevente ? 'TGCA exonérée' : 'TGCA 4 %';
+
+  let unitHT: number | null = null;
+  let subtotalHT: number | null = null;
+  if (quoteQty > 0) {
+    try {
+      unitHT = unitPriceBreakdown({
+        productRef: line.productRef,
+        placementId: line.placementId,
+        qty: quoteQty,
+        code: line.code,
+        priceAchatOverride: line.custom?.priceAchat,
+      }).unitHT;
+      subtotalHT = lineSubtotalHT(line, quoteQty);
+    } catch {
+      unitHT = null;
+      subtotalHT = null;
+    }
+  }
+
+  return {
+    line,
+    product,
+    placement,
+    textile,
+    flockLabel,
+    ref,
+    name,
+    sizesText,
+    transportLabel,
+    transportDelay,
+    tgcaLabel,
+    note: line.note?.trim() ?? '',
+    unitHT,
+    subtotalHT,
+    qty: lineQty(line.sizes),
+  };
 }

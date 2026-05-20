@@ -14,14 +14,14 @@ const OPTIONS: readonly {
   detail: string;
   Icon: typeof Plane;
 }[] = [
-  { id: 'maritime', label: 'Maritime', detail: 'Gratuit · ≈ 1 mois', Icon: Ship },
+  { id: 'maritime', label: 'Maritime', detail: 'Gratuit · Livraison ≈ 1 mois', Icon: Ship },
   {
     id: 'chronopost',
     label: 'Chronopost',
-    detail: `+${fmtEUR.format(1.5)} HT / pièce · Aérien Métropole → SXM`,
+    detail: `+${fmtEUR.format(1.5)} HT / pièce · Livraison ≈ 10 jours`,
     Icon: Plane,
   },
-  { id: 'stock', label: 'Stock', detail: 'Gratuit · Sur place', Icon: Boxes },
+  { id: 'stock', label: 'Stock', detail: 'Gratuit · Disponible sur place', Icon: Boxes },
 ];
 
 export function TransportPicker({ value, onChange }: Props) {

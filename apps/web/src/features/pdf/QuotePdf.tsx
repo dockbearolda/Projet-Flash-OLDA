@@ -186,15 +186,20 @@ function enrich(line: QuoteLine, quoteQty: number) {
         ? (flockTable[line.flockColorId]?.name ?? 'Flocage')
         : 'Couleur ?';
   const qty = lineQty(line.sizes);
-  const pu = product
-    ? unitPriceHT({
-        productRef: line.productRef,
-        placementId: line.placementId,
-        qty: quoteQty,
-        code: line.code,
-      })
-    : 0;
-  return { line, product, placement, textile, flockLabel, qty, pu, total: pu * qty };
+  const isCustom = line.custom !== undefined;
+  const ref = isCustom ? 'Libre' : (product?.ref ?? '—');
+  const name = line.custom?.name ?? product?.name ?? '—';
+  const pu =
+    (isCustom || product) && quoteQty > 0
+      ? unitPriceHT({
+          productRef: line.productRef,
+          placementId: line.placementId,
+          qty: quoteQty,
+          code: line.code,
+          priceAchatOverride: line.custom?.priceAchat,
+        })
+      : 0;
+  return { line, product, placement, textile, flockLabel, ref, name, qty, pu, total: pu * qty };
 }
 
 export function QuotePdf({ id, customer, lines, transport, revente, totals, createdAt }: Props) {
@@ -248,11 +253,9 @@ export function QuotePdf({ id, customer, lines, transport, revente, totals, crea
             {enriched.map((e) => (
               <View key={e.line.id}>
                 <View style={styles.row}>
-                  <Text style={[styles.td, styles.colRef, styles.mono]}>
-                    {e.product?.ref ?? '—'}
-                  </Text>
+                  <Text style={[styles.td, styles.colRef, styles.mono]}>{e.ref}</Text>
                   <View style={styles.colDesc}>
-                    <Text style={styles.td}>{e.product?.name ?? '—'}</Text>
+                    <Text style={styles.td}>{e.name}</Text>
                     <Text style={[styles.td, { color: COLORS.ink3 }]}>
                       {e.product?.supplierRef ?? ''}
                     </Text>
@@ -271,6 +274,9 @@ export function QuotePdf({ id, customer, lines, transport, revente, totals, crea
                   <Text style={styles.bullet}>• Coloris textile : {e.textile?.name ?? '—'}</Text>
                   <Text style={styles.bullet}>• Impression DTF : {e.placement?.label ?? '—'}</Text>
                   <Text style={styles.bullet}>• Couleur d&apos;impression : {e.flockLabel}</Text>
+                  {e.line.note?.trim() ? (
+                    <Text style={styles.bullet}>• Note : {e.line.note.trim()}</Text>
+                  ) : null}
                 </View>
               </View>
             ))}
