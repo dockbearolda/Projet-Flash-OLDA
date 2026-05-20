@@ -50,11 +50,33 @@ model Placement {
 }
 
 model Zone {
+  id    String @id @default(cuid())
+  slug  String @unique
+  label String
+  // Legacy single price (qty=1). Kept for back-compat; runtime pricing uses
+  // the tiered `salePrices` grid below.
+  price Decimal @db.Decimal(10, 2)
+  // Tiered sale-price table: [[qtyThreshold, priceHT], ...]
+  salePrices Json     @default("[]")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Transport {
   id        String   @id @default(cuid())
   slug      String   @unique
   label     String
-  price     Decimal  @db.Decimal(10, 2)
+  surcharge Decimal  @db.Decimal(10, 2)
+  delay     String
+  sort      Int      @default(0)
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
   updatedAt DateTime @updatedAt
 }
 

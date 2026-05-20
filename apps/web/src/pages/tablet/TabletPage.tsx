@@ -3,6 +3,7 @@ import { Plus, Table2, FileText as FileTextIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuoteStore, useQuoteTotals, attachIdbStorage } from '@/features/quote/quoteStore';
 import { useHistoryStore, attachHistoryIdb } from '@/features/quote/historyStore';
+import { useCatalogBoot } from '@/features/catalog/boot';
 import { nextQuoteId } from '@/features/quote/quoteId';
 import { lineQty } from '@/features/quote/pricing';
 import { LineRow, CustomerInline, PricingGrid, RecapDrawer } from '@/features/quote/components';
@@ -35,6 +36,7 @@ const VIEW_OPTIONS = [
 ];
 
 export default function TabletPage() {
+  useCatalogBoot();
   const [view, setView] = useState<'devis' | 'grille'>('devis');
   const [missingClient, setMissingClient] = useState<{
     name?: boolean;

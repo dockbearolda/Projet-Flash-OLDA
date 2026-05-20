@@ -1,23 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Boxes, ChevronDown, Link2, Link2Off, Plane, Ship, Trash2 } from 'lucide-react';
-import {
-  PRODUCTS,
-  PLACEMENTS,
-  TEXTILE_COLORS,
-  FLOCK_COLORS,
-  PRODUCT_BY_REF,
-  TRANSPORT_OPTIONS,
-  TGCA_RATE,
-} from '@df/shared';
 import type {
-  Product,
+  CatalogProduct,
+  CatalogTextileColor,
   ProductFamily,
   QuoteLine,
   Sizes,
   FlockMode,
-  TextileColor,
   Transport,
 } from '@df/shared';
+import { useCatalog } from '@/features/catalog/useCatalog';
 import { eur } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { SegToggle } from '@/components/ui/SegToggle';
@@ -98,8 +90,10 @@ export function LineRow({
   onLineRevente,
   onRemove,
 }: Props) {
+  const { products, productByRef, placements, textileColors, transports, tgcaRate, version } =
+    useCatalog();
   const isCustom = line.custom !== undefined;
-  const product = isCustom ? undefined : PRODUCT_BY_REF[line.productRef];
+  const product = isCustom ? undefined : productByRef[line.productRef];
   const displayRef = isCustom ? 'Libre' : (product?.ref ?? '—');
   const displayName = isCustom
     ? (line.custom?.name ?? 'Produit libre')
@@ -125,8 +119,8 @@ export function LineRow({
   }, [externalCustomPrice]);
 
   const transportPerPiece = useMemo(() => {
-    return TRANSPORT_OPTIONS.find((t) => t.id === effectiveTransport)?.surcharge ?? 0;
-  }, [effectiveTransport]);
+    return transports.find((t) => t.id === effectiveTransport)?.surcharge ?? 0;
+  }, [effectiveTransport, transports]);
 
   // Quantité servant à choisir le palier de prix (coef + zones).
   // - ligne liée : on utilise la quantité totale du devis (remise au volume).
@@ -151,6 +145,8 @@ export function LineRow({
     } catch {
       return null;
     }
+    // version forces a recompute when the catalogue changes (read via getCatalog)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     hasPricing,
     line.productRef,
@@ -159,6 +155,7 @@ export function LineRow({
     line.code,
     transportPerPiece,
     line.custom?.priceAchat,
+    version,
   ]);
 
   const subtotal = useMemo(() => {
@@ -168,27 +165,28 @@ export function LineRow({
     } catch {
       return 0;
     }
-  }, [hasPricing, line, pricingQty]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasPricing, line, pricingQty, version]);
 
   // Prix unitaire (1 t-shirt, transport/pièce inclus → bouge avec Chrono) et
   // prix total de la ligne, chacun en HT et TTC (TGCA 4 % sauf exonération).
   const money = useMemo(() => {
-    const tgcaFactor = effectiveRevente ? 1 : 1 + TGCA_RATE;
+    const tgcaFactor = effectiveRevente ? 1 : 1 + tgcaRate;
     const unitHT = breakdown?.unitWithTransportHT ?? 0;
     const unitTTC = unitHT * tgcaFactor;
     const ht = subtotal + transportPerPiece * qty;
     const ttc = ht * tgcaFactor;
     return { unitHT, unitTTC, ht, ttc };
-  }, [breakdown, subtotal, transportPerPiece, qty, effectiveRevente]);
+  }, [breakdown, subtotal, transportPerPiece, qty, effectiveRevente, tgcaRate]);
 
   const groupedProducts = useMemo(() => {
-    const byFamily = new Map<ProductFamily, Product[]>();
+    const byFamily = new Map<ProductFamily, CatalogProduct[]>();
     for (const f of FAMILY_ORDER) byFamily.set(f, []);
-    for (const p of PRODUCTS) byFamily.get(p.family)?.push(p);
+    for (const p of products) byFamily.get(p.family)?.push(p);
     for (const list of byFamily.values())
       list.sort((a, b) => a.ref.localeCompare(b.ref, undefined, { numeric: true }));
     return byFamily;
-  }, []);
+  }, [products]);
 
   return (
     <section
@@ -354,7 +352,7 @@ export function LineRow({
 
         <Field label="Coloris textile" className="col-span-3">
           <ColorSelect
-            options={TEXTILE_COLORS}
+            options={textileColors}
             value={line.textileColorId}
             onChange={(v) => {
               onChange({ textileColorId: v });
@@ -371,7 +369,7 @@ export function LineRow({
             }}
             aria-label="Placement DTF"
           >
-            {PLACEMENTS.map((p) => (
+            {placements.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.label}
               </option>
@@ -517,7 +515,7 @@ function ColorSelect({
   onChange,
   ...rest
 }: {
-  options: readonly TextileColor[];
+  options: readonly CatalogTextileColor[];
   value: string;
   onChange: (v: string) => void;
 } & Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'value' | 'onChange'>) {
@@ -564,8 +562,9 @@ function FlockSelect({
   onMode: (m: FlockMode) => void;
   onColor: (c: string) => void;
 }) {
+  const { flockColors } = useCatalog();
   const value = mode === 'multi' ? '__multi' : (color ?? '');
-  const singleColors = FLOCK_COLORS.filter((c) => !c.special);
+  const singleColors = flockColors.filter((c) => !c.special);
   const current = singleColors.find((c) => c.id === color);
 
   function handleChange(v: string) {

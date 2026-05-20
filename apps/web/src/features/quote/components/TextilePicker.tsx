@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { TEXTILE_COLORS } from '@df/shared';
+import { useCatalog } from '@/features/catalog/useCatalog';
 import { Swatch } from '@/components/ui/Swatch';
 import { SegToggle } from '@/components/ui/SegToggle';
 
@@ -14,11 +14,12 @@ const FILTERS = [
 ];
 
 export function TextilePicker({ value, onChange }: Props) {
+  const { textileColors } = useCatalog();
   const [filter, setFilter] = useState<'best' | 'all'>('best');
 
   const visible = useMemo(
-    () => (filter === 'best' ? TEXTILE_COLORS.filter((c) => c.best) : TEXTILE_COLORS),
-    [filter],
+    () => (filter === 'best' ? textileColors.filter((c) => c.best) : textileColors),
+    [filter, textileColors],
   );
 
   return (

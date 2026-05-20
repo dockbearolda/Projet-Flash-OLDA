@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { useMemo } from 'react';
 import type { Customer, FlockMode, Sizes, Transport, QuoteLine } from '@df/shared';
 import { createIdbStorage } from './idbStorage';
+import { useCatalogStore } from '@/features/catalog/catalogStore';
 import { nextQuoteId, newLineId } from './quoteId';
 import { quoteTotals } from './pricing';
 import type { QuoteTotals } from './pricing';
@@ -234,5 +235,18 @@ export function useQuoteTotals(): QuoteTotals {
   const lines = useQuoteStore((s) => s.lines);
   const transport = useQuoteStore((s) => s.transport);
   const revente = useQuoteStore((s) => s.revente);
-  return useMemo(() => quoteTotals({ lines, transport, revente }), [lines, transport, revente]);
+  // Recompute when the catalogue changes (prices/coefs edited or loaded).
+  const catalogVersion = useCatalogStore((s) => s.version);
+  return useMemo(
+    () => {
+      try {
+        return quoteTotals({ lines, transport, revente });
+      } catch {
+        // A line may reference a product/placement the patron just removed.
+        return { qtyTotal: 0, coef: 1, subtotalHT: 0, transportHT: 0, tgcaHT: 0, totalHT: 0 };
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [lines, transport, revente, catalogVersion],
+  );
 }

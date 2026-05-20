@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { PLACEMENTS } from '@df/shared';
+import { useCatalog } from '@/features/catalog/useCatalog';
 
 interface Props {
   value: string;
@@ -8,7 +8,8 @@ interface Props {
 }
 
 export function PlacementPicker({ value, onChange }: Props) {
-  const selected = useMemo(() => PLACEMENTS.find((p) => p.id === value), [value]);
+  const { placements } = useCatalog();
+  const selected = useMemo(() => placements.find((p) => p.id === value), [placements, value]);
 
   return (
     <div className="space-y-3">
@@ -22,7 +23,7 @@ export function PlacementPicker({ value, onChange }: Props) {
           aria-label="Placement DTF"
         >
           {!selected && <option value="">Sélectionner un placement…</option>}
-          {PLACEMENTS.map((p) => (
+          {placements.map((p) => (
             <option key={p.id} value={p.id}>
               {p.label}
             </option>

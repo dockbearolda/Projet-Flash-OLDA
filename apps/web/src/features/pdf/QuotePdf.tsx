@@ -1,19 +1,6 @@
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
-import {
-  PRODUCT_BY_REF,
-  PLACEMENT_BY_ID,
-  TEXTILE_COLOR_BY_ID,
-  FLOCK_COLOR_BY_ID,
-  TRANSPORT_OPTIONS,
-} from '@df/shared';
-import type {
-  Customer,
-  QuoteLine,
-  Transport,
-  Placement,
-  TextileColor,
-  FlockColor,
-} from '@df/shared';
+import type { Customer, QuoteLine, Transport } from '@df/shared';
+import { getCatalog } from '@/features/catalog/useCatalog';
 import { fmtEUR, fmtInt, fmtShortDate } from '@/lib/format';
 import type { QuoteTotals } from '../quote/pricing';
 import { lineQty, unitPriceHT } from '../quote/pricing';
@@ -173,12 +160,11 @@ interface Props {
 }
 
 function enrich(line: QuoteLine, quoteQty: number) {
-  const product = PRODUCT_BY_REF[line.productRef];
-  const placement = (PLACEMENT_BY_ID as Record<string, Placement | undefined>)[line.placementId];
-  const textile = (TEXTILE_COLOR_BY_ID as Record<string, TextileColor | undefined>)[
-    line.textileColorId
-  ];
-  const flockTable = FLOCK_COLOR_BY_ID as Record<string, FlockColor | undefined>;
+  const cat = getCatalog();
+  const product = cat.productByRef[line.productRef];
+  const placement = cat.placementById[line.placementId];
+  const textile = cat.textileById[line.textileColorId];
+  const flockTable = cat.flockById;
   const flockLabel =
     line.flockMode === 'multi'
       ? 'Multi couleurs'
@@ -203,7 +189,7 @@ function enrich(line: QuoteLine, quoteQty: number) {
 }
 
 export function QuotePdf({ id, customer, lines, transport, revente, totals, createdAt }: Props) {
-  const transportOpt = TRANSPORT_OPTIONS.find((t) => t.id === transport);
+  const transportOpt = getCatalog().transportById[transport];
   const enriched = lines.map((l) => enrich(l, totals.qtyTotal));
 
   return (

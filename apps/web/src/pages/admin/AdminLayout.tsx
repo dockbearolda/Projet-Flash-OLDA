@@ -1,10 +1,23 @@
 import { type ReactNode } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { Plus, Search, History, BookOpenText, Sliders, FileText } from 'lucide-react';
+import {
+  Plus,
+  Search,
+  History,
+  Shirt,
+  Sliders,
+  FileText,
+  Banknote,
+  Palette,
+  LayoutGrid,
+  Settings,
+} from 'lucide-react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useNavigate } from 'react-router-dom';
 import { useHistoryStore, attachHistoryIdb } from '@/features/quote/historyStore';
 import { useQuoteStore, attachIdbStorage } from '@/features/quote/quoteStore';
+import { useCatalog } from '@/features/catalog/useCatalog';
+import { useCatalogBoot } from '@/features/catalog/boot';
 import { fmtInt } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
@@ -12,8 +25,10 @@ attachIdbStorage();
 attachHistoryIdb();
 
 export default function AdminLayout() {
+  useCatalogBoot();
   const entries = useHistoryStore((s) => s.entries);
   const activeCount = entries.filter((e) => !e.deletedAt).length;
+  const { products } = useCatalog();
   const navigate = useNavigate();
 
   useHotkeys(
@@ -40,16 +55,37 @@ export default function AdminLayout() {
             label="Historique"
             badge={fmtInt.format(activeCount)}
           />
+          <div className="px-3 pt-4 pb-1 df-caps text-[var(--df-ink-4)]">Catalogue</div>
           <NavItem
             to="/admin/catalog"
-            icon={<BookOpenText size={16} strokeWidth={1.7} />}
-            label="Catalogue"
-            badge="23"
+            icon={<Shirt size={16} strokeWidth={1.7} />}
+            label="Produits"
+            badge={fmtInt.format(products.length)}
+          />
+          <NavItem
+            to="/admin/zones"
+            icon={<Banknote size={16} strokeWidth={1.7} />}
+            label="Prix d’impression"
           />
           <NavItem
             to="/admin/coefs"
             icon={<Sliders size={16} strokeWidth={1.7} />}
             label="Coefficients"
+          />
+          <NavItem
+            to="/admin/colors"
+            icon={<Palette size={16} strokeWidth={1.7} />}
+            label="Coloris"
+          />
+          <NavItem
+            to="/admin/placements"
+            icon={<LayoutGrid size={16} strokeWidth={1.7} />}
+            label="Placements"
+          />
+          <NavItem
+            to="/admin/settings"
+            icon={<Settings size={16} strokeWidth={1.7} />}
+            label="Réglages"
           />
         </nav>
         <div className="px-3 py-3 border-t border-[var(--df-border)]">

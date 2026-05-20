@@ -1,6 +1,6 @@
 import { Plus, X } from 'lucide-react';
-import { PRODUCT_BY_REF, PLACEMENT_BY_ID } from '@df/shared';
-import type { QuoteLine, Placement } from '@df/shared';
+import type { QuoteLine } from '@df/shared';
+import { useCatalog } from '@/features/catalog/useCatalog';
 import { cn } from '@/lib/cn';
 import { lineQty } from '../pricing';
 
@@ -13,11 +13,12 @@ interface Props {
 }
 
 export function LineTabs({ lines, activeId, onSelect, onAdd, onRemove }: Props) {
+  const { productByRef, placementById } = useCatalog();
   return (
     <div className="flex items-center gap-2 overflow-x-auto pb-1">
       {lines.map((l, i) => {
-        const product = PRODUCT_BY_REF[l.productRef];
-        const placement = (PLACEMENT_BY_ID as Record<string, Placement | undefined>)[l.placementId];
+        const product = productByRef[l.productRef];
+        const placement = placementById[l.placementId];
         const qty = lineQty(l.sizes);
         const active = activeId === l.id;
         return (

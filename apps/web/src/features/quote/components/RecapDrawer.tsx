@@ -1,23 +1,10 @@
 import { useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { Download, FileText } from 'lucide-react';
-import {
-  PRODUCT_BY_REF,
-  PLACEMENT_BY_ID,
-  TEXTILE_COLOR_BY_ID,
-  FLOCK_COLOR_BY_ID,
-  TRANSPORT_OPTIONS,
-  SIZE_KEYS,
-  SIZE_LABELS,
-} from '@df/shared';
-import type {
-  Customer,
-  QuoteLine,
-  Transport,
-  Placement,
-  TextileColor,
-  FlockColor,
-} from '@df/shared';
+import { SIZE_KEYS, SIZE_LABELS } from '@df/shared';
+import type { Customer, QuoteLine, Transport } from '@df/shared';
+import { useCatalog } from '@/features/catalog/useCatalog';
+import type { CatalogView } from '@/features/catalog/useCatalog';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { RollingNumber } from '@/components/ui/RollingNumber';
@@ -56,9 +43,10 @@ export function RecapDrawer({
   onExportJSON,
   width = 460,
 }: Props) {
+  const cat = useCatalog();
   const enriched = useMemo(
-    () => lines.map((l) => enrichLine(l, totals.qtyTotal, transport, revente)),
-    [lines, totals.qtyTotal, transport, revente],
+    () => lines.map((l) => enrichLine(l, totals.qtyTotal, transport, revente, cat)),
+    [lines, totals.qtyTotal, transport, revente, cat],
   );
   const customerName = customer.name.trim() || 'Client non renseigné';
   const totalHTOnly = totals.subtotalHT + totals.transportHT;
@@ -287,13 +275,12 @@ function enrichLine(
   quoteQty: number,
   quoteTransport: Transport,
   quoteRevente: boolean,
+  cat: CatalogView,
 ) {
-  const product = PRODUCT_BY_REF[line.productRef];
-  const placement = (PLACEMENT_BY_ID as Record<string, Placement | undefined>)[line.placementId];
-  const textile = (TEXTILE_COLOR_BY_ID as Record<string, TextileColor | undefined>)[
-    line.textileColorId
-  ];
-  const flockTable = FLOCK_COLOR_BY_ID as Record<string, FlockColor | undefined>;
+  const product = cat.productByRef[line.productRef];
+  const placement = cat.placementById[line.placementId];
+  const textile = cat.textileById[line.textileColorId];
+  const flockTable = cat.flockById;
   const flockLabel =
     line.flockMode === 'multi'
       ? 'Multi couleurs'
@@ -309,7 +296,7 @@ function enrichLine(
     .join('  ');
 
   const transportId = line.transport ?? quoteTransport;
-  const transportOpt = TRANSPORT_OPTIONS.find((t) => t.id === transportId);
+  const transportOpt = cat.transportById[transportId];
   const transportLabel = transportOpt?.label ?? transportId;
   const transportDelay = transportOpt?.delay ?? '—';
 

@@ -1,5 +1,5 @@
-import { FLOCK_COLORS } from '@df/shared';
 import type { FlockMode } from '@df/shared';
+import { useCatalog } from '@/features/catalog/useCatalog';
 import { Swatch } from '@/components/ui/Swatch';
 import { SegToggle } from '@/components/ui/SegToggle';
 
@@ -16,7 +16,8 @@ const MODES = [
 ];
 
 export function FlockPicker({ mode, color, onMode, onColor }: Props) {
-  const colors = FLOCK_COLORS.filter((c) => !c.special);
+  const { flockColors } = useCatalog();
+  const colors = flockColors.filter((c) => !c.special);
 
   return (
     <div className="space-y-3">

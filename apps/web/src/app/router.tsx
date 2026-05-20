@@ -11,6 +11,10 @@ const AdminLayout = lazy(() => import('@/pages/admin/AdminLayout'));
 const QuotesPage = lazy(() => import('@/pages/admin/QuotesPage'));
 const CatalogPage = lazy(() => import('@/pages/admin/CatalogPage'));
 const CoefsPage = lazy(() => import('@/pages/admin/CoefsPage'));
+const ZonesPage = lazy(() => import('@/pages/admin/ZonesPage'));
+const ColorsPage = lazy(() => import('@/pages/admin/ColorsPage'));
+const PlacementsPage = lazy(() => import('@/pages/admin/PlacementsPage'));
+const SettingsPage = lazy(() => import('@/pages/admin/SettingsPage'));
 const LoginPage = lazy(() => import('@/pages/login/LoginPage'));
 
 function lazyPage(El: ReturnType<typeof lazy>, guard = true) {
@@ -52,6 +56,38 @@ export const router: RouterInstance = createBrowserRouter([
         element: (
           <Suspense fallback={<PageFallback />}>
             <CoefsPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'zones',
+        element: (
+          <Suspense fallback={<PageFallback />}>
+            <ZonesPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'colors',
+        element: (
+          <Suspense fallback={<PageFallback />}>
+            <ColorsPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'placements',
+        element: (
+          <Suspense fallback={<PageFallback />}>
+            <PlacementsPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'settings',
+        element: (
+          <Suspense fallback={<PageFallback />}>
+            <SettingsPage />
           </Suspense>
         ),
       },

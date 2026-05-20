@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { PRODUCTS } from '@df/shared';
-import type { Product, ProductFamily } from '@df/shared';
+import type { CatalogProduct, ProductFamily } from '@df/shared';
+import { useCatalog } from '@/features/catalog/useCatalog';
 import { fmtEUR } from '@/lib/format';
 
 interface Props {
@@ -18,19 +18,20 @@ const FAMILY_LABEL: Record<ProductFamily, string> = {
 const FAMILY_ORDER: ProductFamily[] = ['unisexe', 'femme', 'enfant'];
 
 export function ProductPicker({ value, onChange }: Props) {
+  const { products } = useCatalog();
   const grouped = useMemo(() => {
-    const byFamily = new Map<ProductFamily, Product[]>();
+    const byFamily = new Map<ProductFamily, CatalogProduct[]>();
     for (const f of FAMILY_ORDER) byFamily.set(f, []);
-    for (const p of PRODUCTS) {
+    for (const p of products) {
       byFamily.get(p.family)?.push(p);
     }
     for (const list of byFamily.values()) {
       list.sort((a, b) => a.ref.localeCompare(b.ref, undefined, { numeric: true }));
     }
     return byFamily;
-  }, []);
+  }, [products]);
 
-  const selected = useMemo(() => PRODUCTS.find((p) => p.ref === value), [value]);
+  const selected = useMemo(() => products.find((p) => p.ref === value), [products, value]);
 
   return (
     <div className="space-y-3">

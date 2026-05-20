@@ -1,13 +1,6 @@
-import {
-  COEFS,
-  PLACEMENT_BY_ID,
-  PRODUCT_BY_REF,
-  TGCA_RATE,
-  TRANSPORT_OPTIONS,
-  SIZE_KEYS,
-  zoneSalePriceForQty,
-} from '@df/shared/catalog';
-import type { Sizes, Transport, Placement } from '@df/shared';
+import { SIZE_KEYS } from '@df/shared/catalog';
+import type { Sizes, Transport } from '@df/shared';
+import { getCatalog, zoneSalePriceForQty } from '@/features/catalog/useCatalog';
 
 /**
  * Returns the margin coefficient for the given total quantity.
@@ -15,8 +8,11 @@ import type { Sizes, Transport, Placement } from '@df/shared';
  * For totalQty < 1, returns the first row's coef (no discount).
  */
 export function coefFor(totalQty: number): number {
-  let last: number = COEFS[0][1];
-  for (const [threshold, c] of COEFS) {
+  const coefs = getCatalog().coefs;
+  const first = coefs[0];
+  if (!first) return 1;
+  let last: number = first[1];
+  for (const [threshold, c] of coefs) {
     if (totalQty >= threshold) {
       last = c;
     } else {
@@ -30,7 +26,7 @@ export function coefFor(totalQty: number): number {
  * Sum the printable-zone sale prices for a placement at a given quantity tier.
  */
 export function placementZonesPriceHT(placementId: string, qty: number): number {
-  const placement = (PLACEMENT_BY_ID as Record<string, Placement | undefined>)[placementId];
+  const placement = getCatalog().placementById[placementId];
   if (!placement) {
     throw new Error(`Unknown placement: ${placementId}`);
   }
@@ -82,7 +78,7 @@ export function lineQty(sizes: Sizes): number {
  */
 function resolvePriceAchat(productRef: string, override: number | undefined): number {
   if (override !== undefined) return override;
-  const product = PRODUCT_BY_REF[productRef];
+  const product = getCatalog().productByRef[productRef];
   if (!product) {
     throw new Error(`Unknown product ref: ${productRef}`);
   }
@@ -213,7 +209,7 @@ export function lineTotals(
   const eff = transportSurcharge(line.transport ?? quoteTransport);
   const ht = sub + eff * qty;
   const isRevente = line.revente ?? quoteRevente;
-  const tgca = isRevente ? 0 : ht * TGCA_RATE;
+  const tgca = isRevente ? 0 : ht * getCatalog().tgcaRate;
   const ttc = ht + tgca;
   return {
     qty,
@@ -241,7 +237,7 @@ export interface QuoteForPricing {
 }
 
 function transportSurcharge(t: Transport): number {
-  const opt = TRANSPORT_OPTIONS.find((x) => x.id === t);
+  const opt = getCatalog().transportById[t];
   if (!opt) {
     throw new Error(`Unknown transport: ${t}`);
   }
@@ -275,6 +271,7 @@ export function quoteTotals(quote: QuoteForPricing): QuoteTotals {
   const qtyTotal = billable.reduce((acc, l) => acc + lineQty(l.sizes), 0);
   const coef = coefFor(qtyTotal);
 
+  const tgcaRate = getCatalog().tgcaRate;
   let subtotal = 0;
   let transport = 0;
   let tgca = 0;
@@ -283,7 +280,7 @@ export function quoteTotals(quote: QuoteForPricing): QuoteTotals {
     const eff = transportSurcharge(line.transport ?? quote.transport);
     const lineTr = eff * lineQty(line.sizes);
     const isRevente = line.revente ?? quote.revente;
-    const lineTgca = isRevente ? 0 : (lineSub + lineTr) * TGCA_RATE;
+    const lineTgca = isRevente ? 0 : (lineSub + lineTr) * tgcaRate;
     subtotal += lineSub;
     transport += lineTr;
     tgca += lineTgca;

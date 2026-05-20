@@ -7,6 +7,8 @@ import {
   ZONES,
   ZONE_IDS,
   COEFS,
+  TRANSPORT_OPTIONS,
+  TGCA_RATE,
 } from '@df/shared';
 
 const prisma = new PrismaClient();
@@ -63,15 +65,16 @@ async function main() {
   }
   console.warn(`[seed] placements: ${PLACEMENTS.length.toString()}`);
 
-  // Zones — DB only stores the qty=1 sale price (legacy field) for display
-  // back-compat; runtime pricing uses the full per-qty grid from the catalog.
+  // Zones — `price` keeps the qty=1 value for back-compat; `salePrices` holds
+  // the full per-qty tiered grid used by runtime pricing.
   for (const id of ZONE_IDS) {
     const z = ZONES[id];
+    const salePrices = z.salePrices.map(([t, v]) => [t, v]);
     const price = z.salePrices[0]?.[1] ?? 0;
     await prisma.zone.upsert({
       where: { slug: z.id },
-      create: { slug: z.id, label: z.label, price },
-      update: { label: z.label, price },
+      create: { slug: z.id, label: z.label, price, salePrices },
+      update: { label: z.label, price, salePrices },
     });
   }
   console.warn(`[seed] zones: ${ZONE_IDS.length.toString()}`);
@@ -85,6 +88,24 @@ async function main() {
     });
   }
   console.warn(`[seed] coefs: ${COEFS.length.toString()}`);
+
+  // Transports
+  for (const [i, t] of TRANSPORT_OPTIONS.entries()) {
+    await prisma.transport.upsert({
+      where: { slug: t.id },
+      create: { slug: t.id, label: t.label, surcharge: t.surcharge, delay: t.delay, sort: i },
+      update: { label: t.label, surcharge: t.surcharge, delay: t.delay, sort: i },
+    });
+  }
+  console.warn(`[seed] transports: ${TRANSPORT_OPTIONS.length.toString()}`);
+
+  // Settings (TGCA rate)
+  await prisma.setting.upsert({
+    where: { key: 'tgcaRate' },
+    create: { key: 'tgcaRate', value: String(TGCA_RATE) },
+    update: { value: String(TGCA_RATE) },
+  });
+  console.warn('[seed] settings: tgcaRate');
 }
 
 main()

@@ -1,81 +1,95 @@
-import { COEFS, ZONES, ZONE_IDS } from '@df/shared';
-import { fmtEUR, fmtCoef } from '@/lib/format';
+import type { CatalogCoef } from '@df/shared';
+import { useCatalog } from '@/features/catalog/useCatalog';
+import { saveCoefs } from '@/features/catalog/api';
+import {
+  PageHeader,
+  NumberField,
+  DeleteRowButton,
+  AddRowButton,
+  SaveBar,
+  Card,
+} from './components/adminUi';
+import { useSection } from './components/useSection';
+
+const COLS = 'grid-cols-[1fr_1fr_44px]';
 
 export default function CoefsPage() {
+  const cat = useCatalog();
+  return <CoefsEditor key={cat.version} initial={cat.coefs} />;
+}
+
+function sortByThreshold(rows: CatalogCoef[]): CatalogCoef[] {
+  return [...rows].sort((a, b) => a[0] - b[0]);
+}
+
+function CoefsEditor({ initial }: { initial: CatalogCoef[] }) {
+  const { draft, setDraft, dirty, saving, onSave, onCancel } = useSection(initial, (rows) =>
+    saveCoefs(sortByThreshold(rows)),
+  );
+
+  function update(i: number, pos: 0 | 1, value: number) {
+    setDraft((d) => d.map((row, idx) => (idx === i ? updateTuple(row, pos, value) : row)));
+  }
+  function remove(i: number) {
+    setDraft((d) => d.filter((_, idx) => idx !== i));
+  }
+  function add() {
+    setDraft((d) => [...d, [0, 1] as CatalogCoef]);
+  }
+
   return (
     <div>
-      <h1 className="df-display text-3xl mb-1">Coefficients</h1>
-      <p className="text-sm text-[var(--df-ink-3)] mb-6">
-        Paliers de marge et PV par zone DTF (modifiables en Étape 10 via DB)
-      </p>
+      <PageHeader
+        title="Coefficients de marge"
+        subtitle="Le coefficient appliqué est celui du plus grand seuil ≤ quantité totale du devis. PU vierge = prix achat × coef (arrondi sup. 0,10 €)."
+      />
 
-      <div className="grid grid-cols-2 gap-6">
-        <section>
-          <h2 className="df-caps mb-3">Paliers de marge</h2>
-          <div className="rounded-[var(--df-radius-lg)] bg-[var(--df-surface)] border border-[var(--df-border)] overflow-hidden">
-            <div className="grid grid-cols-2 px-4 py-2.5 border-b border-[var(--df-border)] bg-[var(--df-surface-2)]">
-              <div className="df-caps">Seuil (pièces)</div>
-              <div className="df-caps text-right">Coefficient</div>
-            </div>
-            {COEFS.map(([threshold, c]) => (
-              <div
-                key={threshold}
-                className="grid grid-cols-2 px-4 py-2 border-b border-[var(--df-border)] last:border-b-0"
-              >
-                <span className="df-mono text-xs tabular-nums">≥ {threshold}</span>
-                <span className="df-mono text-sm text-right text-[var(--df-ink)] tabular-nums">
-                  ×{fmtCoef.format(c)}
-                </span>
-              </div>
-            ))}
+      <Card className="max-w-2xl">
+        <div
+          className={`grid ${COLS} px-4 py-2.5 border-b border-[var(--df-border)] bg-[var(--df-surface-2)] gap-2`}
+        >
+          <div className="df-caps">Seuil (pièces ≥)</div>
+          <div className="df-caps">Coefficient ×</div>
+          <div />
+        </div>
+        {draft.map((row, i) => (
+          <div
+            key={i}
+            className={`grid ${COLS} px-4 py-2 border-b border-[var(--df-border)] last:border-b-0 items-center gap-2`}
+          >
+            <NumberField
+              value={row[0]}
+              onChange={(v) => {
+                update(i, 0, v);
+              }}
+              allowDecimal={false}
+              ariaLabel={`Seuil ligne ${String(i + 1)}`}
+            />
+            <NumberField
+              value={row[1]}
+              onChange={(v) => {
+                update(i, 1, v);
+              }}
+              ariaLabel={`Coefficient ligne ${String(i + 1)}`}
+            />
+            <DeleteRowButton
+              onClick={() => {
+                remove(i);
+              }}
+              label={`Supprimer le palier ${String(i + 1)}`}
+            />
           </div>
-        </section>
+        ))}
+        <div className="px-4 py-3 border-t border-[var(--df-border)]">
+          <AddRowButton onClick={add} label="Ajouter un palier" />
+        </div>
+      </Card>
 
-        <section>
-          <h2 className="df-caps mb-3">PV par zone DTF (selon palier de quantité)</h2>
-          <div className="rounded-[var(--df-radius-lg)] bg-[var(--df-surface)] border border-[var(--df-border)] overflow-hidden">
-            <div
-              className="grid px-4 py-2.5 border-b border-[var(--df-border)] bg-[var(--df-surface-2)]"
-              style={{ gridTemplateColumns: `80px repeat(${String(ZONE_IDS.length)}, 1fr)` }}
-            >
-              <div className="df-caps">Qté</div>
-              {ZONE_IDS.map((id) => (
-                <div key={id} className="df-caps text-right">
-                  {ZONES[id].label}
-                </div>
-              ))}
-            </div>
-            {COEFS.map(([threshold]) => (
-              <div
-                key={threshold}
-                className="grid px-4 py-2 border-b border-[var(--df-border)] last:border-b-0"
-                style={{ gridTemplateColumns: `80px repeat(${String(ZONE_IDS.length)}, 1fr)` }}
-              >
-                <span className="df-mono text-xs tabular-nums">≥ {threshold}</span>
-                {ZONE_IDS.map((id) => {
-                  const row = ZONES[id].salePrices.find(([t]) => t === threshold);
-                  return (
-                    <span
-                      key={id}
-                      className="df-mono text-sm text-right text-[var(--df-ink)] tabular-nums"
-                    >
-                      {row ? fmtEUR.format(row[1]) : '—'}
-                    </span>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-4 p-4 rounded-[var(--df-radius)] bg-[var(--df-accent-soft)] text-[var(--df-accent)] text-xs">
-            <strong>Formule §6.4 :</strong> PU HT = vierge + Σ PV_zone[qté]
-            <br />
-            vierge = ceil(prix_achat × coef × 10) / 10 (arrondi sup. 0,10 €).
-            <br />
-            Le palier de quantité s&apos;applique à toute la ligne, basé sur Σ qté du devis.
-          </div>
-        </section>
-      </div>
+      <SaveBar dirty={dirty} saving={saving} onSave={onSave} onCancel={onCancel} />
     </div>
   );
+}
+
+function updateTuple(row: CatalogCoef, pos: 0 | 1, value: number): CatalogCoef {
+  return pos === 0 ? [value, row[1]] : [row[0], value];
 }

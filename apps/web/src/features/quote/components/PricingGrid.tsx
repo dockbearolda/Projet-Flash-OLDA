@@ -1,16 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import {
-  COEFS,
-  PLACEMENTS,
-  PLACEMENT_BY_ID,
-  PRODUCTS,
-  PRODUCT_BY_REF,
-  TRANSPORT_OPTIONS,
-  ZONES,
-  zoneSalePriceForQty,
-} from '@df/shared';
-import type { Placement, Product, ProductFamily, ZoneId } from '@df/shared';
+import type { CatalogProduct, ProductFamily } from '@df/shared';
+import { useCatalog, zoneSalePriceForQty } from '@/features/catalog/useCatalog';
 import { fmtEUR } from '@/lib/format';
 import { coefFor, round2, roundUp10Cents, viergePriceHT } from '../pricing';
 
@@ -22,15 +13,12 @@ const FAMILY_LABEL: Record<ProductFamily, string> = {
 
 const FAMILY_ORDER: ProductFamily[] = ['unisexe', 'femme', 'enfant'];
 
-const QTY_TIERS = COEFS.map(([qty]) => qty);
-const CHRONO_PER_PIECE = TRANSPORT_OPTIONS.find((t) => t.id === 'chronopost')?.surcharge ?? 1.5;
-
 /** Largest tier ≤ qty (e.g. qty 27 → 20, qty 130 → 100, qty 200 → 150). */
-function tierForQty(qty: number): number | null {
-  const first = QTY_TIERS[0];
+function tierForQty(tiers: number[], qty: number): number | null {
+  const first = tiers[0];
   if (first === undefined || qty < first) return null;
   let last: number = first;
-  for (const t of QTY_TIERS) {
+  for (const t of tiers) {
     if (qty >= t) last = t;
     else return last;
   }
@@ -44,30 +32,43 @@ export function PricingGrid({
   defaultRef?: string;
   defaultPlacement?: string;
 }) {
+  const {
+    products,
+    productByRef,
+    placements,
+    placementById,
+    coefs,
+    zoneById,
+    transports,
+    version,
+  } = useCatalog();
   const [productRef, setProductRef] = useState(defaultRef);
   const [placementId, setPlacementId] = useState(defaultPlacement);
   const [codePct, setCodePct] = useState(10);
   const [qtyInput, setQtyInput] = useState('');
-  const product = PRODUCT_BY_REF[productRef];
-  const placement = (PLACEMENT_BY_ID as Record<string, Placement | undefined>)[placementId];
-  const zoneIds = useMemo<readonly ZoneId[]>(() => placement?.zones ?? [], [placement]);
+  const product = productByRef[productRef];
+  const placement = placementById[placementId];
+  const zoneIds = useMemo<string[]>(() => placement?.zones ?? [], [placement]);
+
+  const qtyTiers = useMemo(() => coefs.map(([qty]) => qty), [coefs]);
+  const chronoPerPiece = transports.find((t) => t.id === 'chronopost')?.surcharge ?? 1.5;
 
   const parsedQty = qtyInput === '' ? null : parseInt(qtyInput, 10);
   const activeTier =
-    parsedQty !== null && Number.isFinite(parsedQty) ? tierForQty(parsedQty) : null;
+    parsedQty !== null && Number.isFinite(parsedQty) ? tierForQty(qtyTiers, parsedQty) : null;
 
   const groupedProducts = useMemo(() => {
-    const byFamily = new Map<ProductFamily, Product[]>();
+    const byFamily = new Map<ProductFamily, CatalogProduct[]>();
     for (const f of FAMILY_ORDER) byFamily.set(f, []);
-    for (const p of PRODUCTS) byFamily.get(p.family)?.push(p);
+    for (const p of products) byFamily.get(p.family)?.push(p);
     for (const list of byFamily.values())
       list.sort((a, b) => a.ref.localeCompare(b.ref, undefined, { numeric: true }));
     return byFamily;
-  }, []);
+  }, [products]);
 
   const rows = useMemo(() => {
     if (!product) return [];
-    return QTY_TIERS.map((qty) => {
+    return qtyTiers.map((qty) => {
       const coef = coefFor(qty);
       const vierge = viergePriceHT(product.priceAchat, coef);
       const zonePrices = zoneIds.map((z) => round2(zoneSalePriceForQty(z, qty)));
@@ -75,7 +76,7 @@ export function PricingGrid({
       const base = vierge + zonesSum;
       const codeSurcharge = codePct > 0 ? roundUp10Cents(base * (codePct / 100)) : 0;
       const withCode = base + codeSurcharge;
-      const withTransport = withCode + CHRONO_PER_PIECE;
+      const withTransport = withCode + chronoPerPiece;
       return {
         qty,
         coef,
@@ -86,7 +87,8 @@ export function PricingGrid({
         withTransport: round2(withTransport),
       };
     });
-  }, [product, codePct, zoneIds]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product, codePct, zoneIds, qtyTiers, chronoPerPiece, version]);
 
   return (
     <div className="flex flex-col gap-5">
@@ -136,7 +138,7 @@ export function PricingGrid({
               }}
               aria-label="Placement DTF"
             >
-              {PLACEMENTS.map((p) => (
+              {placements.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.label}
                 </option>
@@ -199,7 +201,7 @@ export function PricingGrid({
         <div className="flex flex-col items-start gap-1">
           <span className="df-caps">Transport</span>
           <span className="df-mono text-base text-[var(--df-ink-2)]">
-            Chronopost · {fmtEUR.format(CHRONO_PER_PIECE)}/pièce
+            Chronopost · {fmtEUR.format(chronoPerPiece)}/pièce
           </span>
         </div>
       </div>
@@ -211,7 +213,7 @@ export function PricingGrid({
               <Th>Quantité</Th>
               <Th>Prix t-shirt Vierge</Th>
               {zoneIds.map((z) => (
-                <Th key={z}>Vente {ZONES[z].label}</Th>
+                <Th key={z}>Vente {zoneById[z]?.label ?? z}</Th>
               ))}
               <Th>PRIX {placement?.label ?? 'impression'} HT</Th>
               <Th>PRIX + CODE</Th>
