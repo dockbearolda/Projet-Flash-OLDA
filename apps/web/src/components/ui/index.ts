@@ -18,3 +18,5 @@ export type { CardProps, CardHeaderProps, CardBodyProps } from './Card';
 
 export { RollingNumber } from './RollingNumber';
 export type { RollingNumberProps } from './RollingNumber';
+
+export { Logo } from './Logo';

@@ -46,6 +46,7 @@ export function PricingGrid({
   const [placementId, setPlacementId] = useState(defaultPlacement);
   const [codePct, setCodePct] = useState(10);
   const [qtyInput, setQtyInput] = useState('');
+  const [showAchat, setShowAchat] = useState(false);
   const product = productByRef[productRef];
   const placement = placementById[placementId];
   const zoneIds = useMemo<string[]>(() => placement?.zones ?? [], [placement]);
@@ -170,32 +171,44 @@ export function PricingGrid({
         </label>
 
         <label className="flex flex-col gap-1.5 w-32">
-          <span className="df-caps">Code</span>
-          <div className="relative">
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={codePct}
-              onChange={(e) => {
-                const raw = e.target.value.replace(/[^\d]/g, '');
-                const n = raw === '' ? 0 : parseInt(raw, 10);
-                setCodePct(Math.max(0, Math.min(100, n)));
-              }}
-              className="df-input h-12 pr-8 text-center text-lg font-semibold tabular-nums"
-              aria-label="Code (%)"
-            />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--df-ink-3)] text-sm pointer-events-none">
-              %
-            </span>
-          </div>
+          <span className="df-caps">Code interne</span>
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={codePct}
+            onChange={(e) => {
+              const raw = e.target.value.replace(/[^\d]/g, '');
+              const n = raw === '' ? 0 : parseInt(raw, 10);
+              setCodePct(Math.max(0, Math.min(100, n)));
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setCodePct((c) => Math.min(100, c + 1));
+              } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setCodePct((c) => Math.max(0, c - 1));
+              }
+            }}
+            className="df-input h-12 text-center text-lg font-semibold tabular-nums"
+            aria-label="Code interne"
+          />
         </label>
 
         <div className="flex flex-col items-start gap-1">
           <span className="df-caps">PRIX ACHAT</span>
-          <span className="df-display text-2xl tabular-nums text-[var(--df-ink)]">
-            {fmtEUR.format(product?.priceAchat ?? 0)}
-          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setShowAchat((v) => !v);
+            }}
+            aria-label={showAchat ? 'Masquer le prix d’achat' : 'Afficher le prix d’achat'}
+            title={showAchat ? 'Cliquer pour masquer' : 'Cliquer pour afficher'}
+            className="df-display text-2xl tabular-nums text-[var(--df-ink)] cursor-pointer select-none"
+          >
+            {showAchat ? fmtEUR.format(product?.priceAchat ?? 0) : '••••'}
+          </button>
         </div>
 
         <div className="flex flex-col items-start gap-1">
@@ -216,8 +229,8 @@ export function PricingGrid({
                 <Th key={z}>Vente {zoneById[z]?.label ?? z}</Th>
               ))}
               <Th>PRIX {placement?.label ?? 'impression'} HT</Th>
-              <Th>PRIX + CODE</Th>
-              <Th highlight>PRIX + CODE + transport</Th>
+              <Th>PRIX + CODE INTERNE</Th>
+              <Th highlight>PRIX + CODE INTERNE + transport</Th>
             </tr>
           </thead>
           <tbody>

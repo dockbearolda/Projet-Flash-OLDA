@@ -191,6 +191,9 @@ function enrich(line: QuoteLine, quoteQty: number) {
 export function QuotePdf({ id, customer, lines, transport, revente, totals, createdAt }: Props) {
   const transportOpt = getCatalog().transportById[transport];
   const enriched = lines.map((l) => enrich(l, totals.qtyTotal));
+  const company = customer.company?.trim() ?? '';
+  const contactName = customer.name.trim();
+  const customerTitle = company || contactName || 'Client non renseigné';
 
   return (
     <Document
@@ -216,7 +219,8 @@ export function QuotePdf({ id, customer, lines, transport, revente, totals, crea
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Client</Text>
           <View style={styles.customerBox}>
-            <Text style={styles.customerName}>{customer.name || 'Client non renseigné'}</Text>
+            <Text style={styles.customerName}>{customerTitle}</Text>
+            {company && contactName ? <Text style={styles.customerLine}>{contactName}</Text> : null}
             {customer.email ? <Text style={styles.customerLine}>{customer.email}</Text> : null}
             {customer.phone ? <Text style={styles.customerLine}>{customer.phone}</Text> : null}
             {customer.address ? <Text style={styles.customerLine}>{customer.address}</Text> : null}

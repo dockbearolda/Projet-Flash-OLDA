@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Archive, Copy, Trash2, FileText, RotateCcw } from 'lucide-react';
+import { Archive, Copy, Trash2, FileText, RotateCcw, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useHistoryStore } from '@/features/quote/historyStore';
@@ -7,6 +7,7 @@ import { useQuoteStore } from '@/features/quote/quoteStore';
 import { nextQuoteId, newLineId } from '@/features/quote/quoteId';
 import { Chip } from '@/components/ui';
 import { fmtEUR, fmtInt, fmtShortDate } from '@/lib/format';
+import { quoteTotals } from '@/features/quote/pricing';
 import { cn } from '@/lib/cn';
 import type { HistoryEntry } from '@/features/quote/historyStore';
 
@@ -17,6 +18,7 @@ export default function QuotesPage() {
   const removeEntry = useHistoryStore((s) => s.remove);
   const archiveEntry = useHistoryStore((s) => s.archive);
   const restoreEntry = useHistoryStore((s) => s.restore);
+  const markSent = useHistoryStore((s) => s.markSent);
 
   const [showArchived, setShowArchived] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -64,6 +66,36 @@ export default function QuotesPage() {
       updatedAt: new Date().toISOString(),
     });
     navigate('/tablet');
+  }
+
+  async function resend(entry: HistoryEntry) {
+    try {
+      toast.loading('Génération du PDF…', { id: 'pdf' });
+      const { QuotePdf } = await import('@/features/pdf/QuotePdf');
+      const { downloadPdf } = await import('@/features/pdf/generate');
+      const totals = quoteTotals({
+        lines: entry.lines,
+        transport: entry.transport,
+        revente: entry.revente,
+      });
+      await downloadPdf(
+        `${entry.id}.pdf`,
+        <QuotePdf
+          id={entry.id}
+          customer={entry.customer}
+          lines={entry.lines.filter((l) => l.linked)}
+          transport={entry.transport}
+          revente={entry.revente}
+          totals={totals}
+          createdAt={entry.createdAt}
+        />,
+      );
+      markSent(entry.id);
+      toast.success('PDF renvoyé', { id: 'pdf', description: `${entry.id}.pdf téléchargé` });
+    } catch (err) {
+      console.error('PDF resend failed', err);
+      toast.error('Échec génération PDF', { id: 'pdf' });
+    }
   }
 
   return (
@@ -138,7 +170,7 @@ export default function QuotesPage() {
               >
                 <span className="df-mono text-xs text-[var(--df-ink)]">{e.id}</span>
                 <span className="text-sm font-medium truncate text-[var(--df-ink)]">
-                  {e.customer.name || '— sans nom —'}
+                  {(e.customer.company?.trim() ?? '') || e.customer.name || '— sans nom —'}
                 </span>
                 <span className="df-mono text-xs text-[var(--df-ink-2)]">
                   {fmtInt.format(e.lines.length)} · {fmtInt.format(e.qtyTotal)} pcs
@@ -190,7 +222,12 @@ export default function QuotesPage() {
         {active ? (
           <div className="rounded-[var(--df-radius-lg)] bg-[var(--df-surface)] border border-[var(--df-border)] p-5 sticky top-20">
             <div className="df-caps">{active.id}</div>
-            <h2 className="df-display text-2xl mt-1">{active.customer.name || 'Sans nom'}</h2>
+            <h2 className="df-display text-2xl mt-1">
+              {(active.customer.company?.trim() ?? '') || active.customer.name || 'Sans nom'}
+            </h2>
+            {active.customer.company?.trim() && active.customer.name.trim() ? (
+              <div className="text-sm text-[var(--df-ink-3)] mt-0.5">{active.customer.name}</div>
+            ) : null}
             <div className="mt-2">
               <StatusChip status={active.status} />
             </div>
@@ -222,6 +259,15 @@ export default function QuotesPage() {
                     className="inline-flex items-center justify-center gap-2 h-10 rounded-[var(--df-radius)] bg-[var(--df-accent)] text-[var(--df-accent-ink)] text-sm font-medium hover:bg-[var(--df-accent-2)]"
                   >
                     <FileText size={16} strokeWidth={1.8} /> Éditer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void resend(active);
+                    }}
+                    className="inline-flex items-center justify-center gap-2 h-10 rounded-[var(--df-radius)] bg-[var(--df-surface-2)] border border-[var(--df-border)] text-sm font-medium hover:bg-[var(--df-bg-2)]"
+                  >
+                    <Send size={16} strokeWidth={1.8} /> Renvoyer le PDF
                   </button>
                   <button
                     type="button"

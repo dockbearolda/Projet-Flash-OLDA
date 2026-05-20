@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { ReactNode } from 'react';
-import { Download, FileText } from 'lucide-react';
+import { Download, FileText, Mail, MessageCircle } from 'lucide-react';
 import { SIZE_KEYS, SIZE_LABELS } from '@df/shared';
 import type { Customer, QuoteLine, Transport } from '@df/shared';
 import { useCatalog } from '@/features/catalog/useCatalog';
@@ -25,6 +25,8 @@ interface Props {
   onTransport: (t: Transport) => void;
   onRevente: (v: boolean) => void;
   onGeneratePDF: () => void;
+  onSendWhatsApp: () => void;
+  onSendEmail: () => void;
   onExportJSON: () => void;
   /** Largeur du panneau en px (réglable par l'utilisateur). */
   width?: number;
@@ -40,6 +42,8 @@ export function RecapDrawer({
   onTransport,
   onRevente,
   onGeneratePDF,
+  onSendWhatsApp,
+  onSendEmail,
   onExportJSON,
   width = 460,
 }: Props) {
@@ -48,7 +52,11 @@ export function RecapDrawer({
     () => lines.map((l) => enrichLine(l, totals.qtyTotal, transport, revente, cat)),
     [lines, totals.qtyTotal, transport, revente, cat],
   );
-  const customerName = customer.name.trim() || 'Client non renseigné';
+  const company = customer.company?.trim() ?? '';
+  const contactName = customer.name.trim();
+  const customerTitle = company || contactName || 'Client non renseigné';
+  // Sous-titre = le contact quand la société tient déjà le titre.
+  const customerSubtitle = company && contactName ? contactName : '';
   const totalHTOnly = totals.subtotalHT + totals.transportHT;
 
   return (
@@ -61,7 +69,10 @@ export function RecapDrawer({
           <div className="df-caps">{quoteId}</div>
           <SyncIndicator />
         </div>
-        <div className="df-display text-3xl mt-1">{customerName}</div>
+        <div className="df-display text-3xl mt-1">{customerTitle}</div>
+        {customerSubtitle ? (
+          <div className="text-sm text-[var(--df-ink-3)] mt-0.5">{customerSubtitle}</div>
+        ) : null}
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
@@ -244,6 +255,19 @@ export function RecapDrawer({
           <FileText size={18} strokeWidth={1.8} />
           Générer le PDF
         </Button>
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            onClick={onSendWhatsApp}
+            className="bg-[#25D366] text-white border-transparent hover:bg-[#20bd5a]"
+          >
+            <MessageCircle size={16} strokeWidth={1.8} />
+            WhatsApp
+          </Button>
+          <Button onClick={onSendEmail}>
+            <Mail size={16} strokeWidth={1.8} />
+            Email
+          </Button>
+        </div>
         <Button onClick={onExportJSON}>
           <Download size={16} strokeWidth={1.8} />
           Exporter JSON

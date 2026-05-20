@@ -2,7 +2,12 @@ import { z } from 'zod';
 import { SIZE_KEYS } from '../catalog/products.js';
 
 export const CustomerSchema = z.object({
-  name: z.string().trim().min(1, 'Le nom du client est requis').max(120),
+  // Société et nom/prénom du contact. La règle « au moins l'un des deux
+  // renseigné » est appliquée à la saisie (validateClient dans TabletPage),
+  // pas ici : le schéma sert de source de types et doit accepter les
+  // brouillons partiels.
+  company: z.string().trim().max(120).optional(),
+  name: z.string().trim().max(120),
   email: z.string().trim().email().or(z.literal('')).optional(),
   phone: z.string().trim().max(40).optional(),
   address: z.string().trim().max(240).optional(),

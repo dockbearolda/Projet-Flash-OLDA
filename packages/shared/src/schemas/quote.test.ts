@@ -14,9 +14,15 @@ describe('CustomerSchema', () => {
     expect(r.success).toBe(true);
   });
 
-  it('rejects empty name', () => {
+  it('accepts an empty name at the schema level (company-or-name is enforced in the form)', () => {
     const r = CustomerSchema.safeParse({ name: '' });
-    expect(r.success).toBe(false);
+    expect(r.success).toBe(true);
+  });
+
+  it('accepts a company-only customer', () => {
+    const r = CustomerSchema.safeParse({ name: '', company: 'OLDA SARL' });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.company).toBe('OLDA SARL');
   });
 
   it('trims name', () => {

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Lock, ArrowRight } from 'lucide-react';
-import { Button, Input } from '@/components/ui';
+import { ArrowRight } from 'lucide-react';
+import { Button, Input, Logo } from '@/components/ui';
 import { loginRequest, checkAuth } from '@/features/auth/api';
 import { toast } from 'sonner';
 
@@ -61,7 +61,7 @@ export default function LoginPage() {
       >
         <div className="text-center mb-7">
           <div className="inline-flex w-12 h-12 items-center justify-center rounded-[var(--df-radius-lg)] bg-[var(--df-accent-soft)] text-[var(--df-accent)] mb-4">
-            <Lock size={20} strokeWidth={1.7} aria-hidden />
+            <Logo className="w-7 h-7" />
           </div>
           <div className="df-caps">Devis Flash · OLDA</div>
           <h1 className="df-display text-3xl mt-1">Connexion</h1>

@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { Plus, Table2, FileText as FileTextIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Table2, History, FileText as FileTextIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuoteStore, useQuoteTotals, attachIdbStorage } from '@/features/quote/quoteStore';
 import { useHistoryStore, attachHistoryIdb } from '@/features/quote/historyStore';
 import { useCatalogBoot } from '@/features/catalog/boot';
 import { nextQuoteId } from '@/features/quote/quoteId';
 import { lineQty } from '@/features/quote/pricing';
+import { buildQuoteMessage, whatsappUrl, mailtoUrl, DEFAULT_DIAL } from '@/features/quote/share';
 import { LineRow, CustomerInline, PricingGrid, RecapDrawer } from '@/features/quote/components';
 import { SegToggle } from '@/components/ui/SegToggle';
+import { Logo } from '@/components/ui';
 import { fmtShortDate } from '@/lib/format';
 import type { Customer } from '@df/shared';
 
@@ -39,10 +42,13 @@ export default function TabletPage() {
   useCatalogBoot();
   const [view, setView] = useState<'devis' | 'grille'>('devis');
   const [missingClient, setMissingClient] = useState<{
+    company?: boolean;
     name?: boolean;
     phone?: boolean;
     email?: boolean;
   }>({});
+
+  const navigate = useNavigate();
 
   const DRAWER_MIN = 360;
   const DRAWER_MAX = 760;
@@ -64,6 +70,22 @@ export default function TabletPage() {
       /* ignore */
     }
   }, [drawerWidth]);
+
+  // Indicatif pays pour l'envoi WhatsApp — sticky entre devis (St-Martin par défaut).
+  const [dialCode, setDialCode] = useState<string>(() => {
+    try {
+      return localStorage.getItem('df:dial-code') ?? DEFAULT_DIAL;
+    } catch {
+      return DEFAULT_DIAL;
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('df:dial-code', dialCode);
+    } catch {
+      /* ignore */
+    }
+  }, [dialCode]);
 
   function handleResizeStart(e: React.PointerEvent) {
     e.preventDefault();
@@ -116,7 +138,8 @@ export default function TabletPage() {
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(() => {
       const qty = lines.reduce((acc, l) => acc + lineQty(l.sizes), 0);
-      if (qty === 0 && customer.name.trim() === '') return;
+      if (qty === 0 && customer.name.trim() === '' && (customer.company ?? '').trim() === '')
+        return;
       useHistoryStore.getState().upsert({
         id,
         status: 'draft',
@@ -140,56 +163,147 @@ export default function TabletPage() {
     setCustomer(patch);
     setMissingClient((m) => {
       const next = { ...m };
-      if ('name' in patch) delete next.name;
+      // Société et nom satisfont la même exigence (au moins l'un des deux) :
+      // saisir l'un efface le signalement rouge des deux.
+      if ('company' in patch || 'name' in patch) {
+        delete next.company;
+        delete next.name;
+      }
       if ('phone' in patch) delete next.phone;
       if ('email' in patch) delete next.email;
       return next;
     });
   }
 
-  function handleGenerate() {
+  function validateClient(): boolean {
+    const company = (customer.company ?? '').trim();
     const name = customer.name.trim();
     const phone = (customer.phone ?? '').trim();
     const email = (customer.email ?? '').trim();
+    const identityMissing = company === '' && name === '';
     const miss = {
-      name: name === '',
+      company: identityMissing,
+      name: identityMissing,
       phone: phone === '',
       email: email === '' || !EMAIL_RE.test(email),
     };
-    if (miss.name || miss.phone || miss.email) {
+    if (identityMissing || miss.phone || miss.email) {
       setMissingClient(miss);
       const labels: string[] = [];
-      if (miss.name) labels.push('nom');
+      if (identityMissing) labels.push('société ou nom');
       if (miss.phone) labels.push('téléphone');
       if (miss.email) labels.push(email !== '' ? 'email valide' : 'email');
       toast.error('Infos client obligatoires', {
-        description: `À renseigner avant le PDF : ${labels.join(', ')}.`,
+        description: `À renseigner avant l'envoi : ${labels.join(', ')}.`,
       });
-      return;
+      return false;
     }
     setMissingClient({});
+    return true;
+  }
+
+  // Génère + télécharge le PDF, puis passe le devis en "Envoyé". Annule un
+  // enregistrement brouillon en attente (debounce) qui écraserait le statut.
+  async function downloadPdfAndMarkSent(): Promise<void> {
+    const { QuotePdf } = await import('@/features/pdf/QuotePdf');
+    const { downloadPdf } = await import('@/features/pdf/generate');
+    const createdAt = useQuoteStore.getState().createdAt;
+    await downloadPdf(
+      `${id}.pdf`,
+      <QuotePdf
+        id={id}
+        customer={customer}
+        lines={lines.filter((l) => l.linked)}
+        transport={transport}
+        revente={revente}
+        totals={totals}
+        createdAt={createdAt}
+      />,
+    );
+    if (saveTimer.current) window.clearTimeout(saveTimer.current);
+    useHistoryStore.getState().upsert({
+      id,
+      status: 'sent',
+      customer,
+      transport,
+      revente,
+      lines,
+      totalHT: totals.totalHT,
+      qtyTotal: totals.qtyTotal,
+      createdAt,
+      updatedAt: new Date().toISOString(),
+      deletedAt: null,
+    });
+  }
+
+  function handleGenerate() {
+    if (!validateClient()) return;
     void (async () => {
       try {
         toast.loading('Génération du PDF…', { id: 'pdf' });
-        const { QuotePdf } = await import('@/features/pdf/QuotePdf');
-        const { downloadPdf } = await import('@/features/pdf/generate');
-        const createdAt = useQuoteStore.getState().createdAt;
-        await downloadPdf(
-          `${id}.pdf`,
-          <QuotePdf
-            id={id}
-            customer={customer}
-            lines={lines.filter((l) => l.linked)}
-            transport={transport}
-            revente={revente}
-            totals={totals}
-            createdAt={createdAt}
-          />,
-        );
+        await downloadPdfAndMarkSent();
         toast.success('PDF généré', { id: 'pdf', description: `${id}.pdf téléchargé` });
       } catch (err) {
         console.error('PDF generation failed', err);
         toast.error('Échec génération PDF', { id: 'pdf' });
+      }
+    })();
+  }
+
+  function handleSendWhatsApp() {
+    if (!validateClient()) return;
+    const createdAt = useQuoteStore.getState().createdAt;
+    const { body } = buildQuoteMessage({
+      id,
+      customer,
+      lines: lines.filter((l) => l.linked),
+      transport,
+      revente,
+      totals,
+      createdAt,
+    });
+    // Ouvre WhatsApp dans le geste de clic (avant tout await) pour ne pas être
+    // bloqué par le bloqueur de pop-up.
+    window.open(whatsappUrl(customer.phone ?? '', body, dialCode), '_blank', 'noopener,noreferrer');
+    void (async () => {
+      try {
+        toast.loading('Préparation du PDF à joindre…', { id: 'pdf' });
+        await downloadPdfAndMarkSent();
+        toast.success('WhatsApp ouvert', {
+          id: 'pdf',
+          description: `${id}.pdf téléchargé — à joindre au message.`,
+        });
+      } catch (err) {
+        console.error('WhatsApp prepare failed', err);
+        toast.error('Échec préparation du PDF', { id: 'pdf' });
+      }
+    })();
+  }
+
+  function handleSendEmail() {
+    if (!validateClient()) return;
+    const createdAt = useQuoteStore.getState().createdAt;
+    const { subject, body } = buildQuoteMessage({
+      id,
+      customer,
+      lines: lines.filter((l) => l.linked),
+      transport,
+      revente,
+      totals,
+      createdAt,
+    });
+    window.location.href = mailtoUrl(customer.email ?? '', subject, body);
+    void (async () => {
+      try {
+        toast.loading('Préparation du PDF à joindre…', { id: 'pdf' });
+        await downloadPdfAndMarkSent();
+        toast.success('Email préparé', {
+          id: 'pdf',
+          description: `${id}.pdf téléchargé — à joindre au mail.`,
+        });
+      } catch (err) {
+        console.error('Email prepare failed', err);
+        toast.error('Échec préparation du PDF', { id: 'pdf' });
       }
     })();
   }
@@ -214,9 +328,12 @@ export default function TabletPage() {
       <main className="flex-1 flex flex-col min-w-0">
         <header className="px-6 py-4 border-b border-[var(--df-border)] bg-[var(--df-surface)] flex items-center justify-between gap-4">
           <div className="flex items-center gap-6">
-            <div>
-              <div className="df-caps">Devis Flash · OLDA · SXM</div>
-              <div className="df-display text-2xl">Nouveau devis</div>
+            <div className="flex items-center gap-3">
+              <Logo className="w-10 h-10 shrink-0 text-[var(--df-accent)]" />
+              <div>
+                <div className="df-caps">Devis Flash · OLDA · SXM</div>
+                <div className="df-display text-2xl">Nouveau devis</div>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <span className="df-mono text-sm text-[var(--df-ink-3)]">{id}</span>
@@ -229,10 +346,21 @@ export default function TabletPage() {
               options={VIEW_OPTIONS}
               ariaLabel="Mode d'affichage"
             />
+            <button
+              type="button"
+              onClick={() => {
+                navigate('/admin/quotes');
+              }}
+              className="inline-flex items-center gap-1.5 px-3 h-9 rounded-[var(--df-radius)] bg-[var(--df-surface-2)] border border-[var(--df-border)] text-sm font-medium text-[var(--df-ink-2)] hover:bg-[var(--df-bg-2)] hover:text-[var(--df-ink)] transition-colors"
+            >
+              <History size={15} strokeWidth={1.8} aria-hidden /> Historique
+            </button>
           </div>
           <CustomerInline
             customer={customer}
             onChange={handleCustomerChange}
+            dialCode={dialCode}
+            onDialCode={setDialCode}
             missing={missingClient}
           />
         </header>
@@ -319,6 +447,8 @@ export default function TabletPage() {
         onTransport={setTransport}
         onRevente={setRevente}
         onGeneratePDF={handleGenerate}
+        onSendWhatsApp={handleSendWhatsApp}
+        onSendEmail={handleSendEmail}
         onExportJSON={handleExportJSON}
         width={drawerWidth}
       />

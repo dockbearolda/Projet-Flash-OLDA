@@ -21,6 +21,7 @@ interface HistoryState {
   entries: HistoryEntry[];
   upsert: (entry: HistoryEntry) => void;
   archive: (id: string) => void;
+  markSent: (id: string) => void;
   remove: (id: string) => void; // soft delete
   restore: (id: string) => void;
   clearAll: () => void;
@@ -44,6 +45,11 @@ export const useHistoryStore = create<HistoryState>()(
       archive: (id) => {
         set((s) => ({
           entries: s.entries.map((e) => (e.id === id ? { ...e, status: 'archived' as const } : e)),
+        }));
+      },
+      markSent: (id) => {
+        set((s) => ({
+          entries: s.entries.map((e) => (e.id === id ? { ...e, status: 'sent' as const } : e)),
         }));
       },
       remove: (id) => {
