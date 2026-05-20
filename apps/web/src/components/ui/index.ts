@@ -15,3 +15,6 @@ export type { SegToggleProps, SegToggleOption } from './SegToggle';
 
 export { Card, CardHeader, CardBody } from './Card';
 export type { CardProps, CardHeaderProps, CardBodyProps } from './Card';
+
+export { RollingNumber } from './RollingNumber';
+export type { RollingNumberProps } from './RollingNumber';

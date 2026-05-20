@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import type { ReactNode } from 'react';
 import { Download, FileText } from 'lucide-react';
 import {
   PRODUCT_BY_REF,
@@ -19,9 +20,10 @@ import type {
 } from '@df/shared';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
+import { RollingNumber } from '@/components/ui/RollingNumber';
 import { SyncIndicator } from '@/components/SyncIndicator';
-import { fmtEUR, fmtCoef, fmtInt } from '@/lib/format';
-import { lineQty, unitPriceBreakdown, lineSubtotalHT } from '../pricing';
+import { fmtEUR, eur, fmtCoef, fmtInt } from '@/lib/format';
+import { lineQty, unitPriceBreakdown, lineTotals } from '../pricing';
 import type { QuoteTotals } from '../pricing';
 import { TransportPicker } from './TransportPicker';
 import { ReventeToggle } from './ReventeToggle';
@@ -59,6 +61,7 @@ export function RecapDrawer({
     [lines, totals.qtyTotal, transport, revente],
   );
   const customerName = customer.name.trim() || 'Client non renseigné';
+  const totalHTOnly = totals.subtotalHT + totals.transportHT;
 
   return (
     <aside
@@ -144,12 +147,35 @@ export function RecapDrawer({
                   </div>
                 )}
 
-                {/* Sous-total ligne */}
-                <div className="flex items-baseline justify-between gap-2 mt-2 pt-2 border-t border-[var(--df-border)]">
-                  <span className="df-caps">Sous-total</span>
-                  <span className="df-mono text-sm tabular-nums font-semibold text-[var(--df-ink)]">
-                    {e.subtotalHT != null ? fmtEUR.format(e.subtotalHT) : '—'}
-                  </span>
+                {/* Prix HT / TTC + moyenne par pièce */}
+                <div className="mt-2 pt-2 border-t border-[var(--df-border)] space-y-1">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="df-caps">Prix HT</span>
+                    <span className="df-mono text-sm tabular-nums font-semibold text-[var(--df-ink)]">
+                      {e.htWithTransport != null ? (
+                        <RollingNumber value={e.htWithTransport} format={eur} />
+                      ) : (
+                        '—'
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="df-caps text-[var(--df-accent)]">Prix TTC</span>
+                    <span className="df-mono text-sm tabular-nums font-semibold text-[var(--df-accent)]">
+                      {e.ttc != null ? <RollingNumber value={e.ttc} format={eur} /> : '—'}
+                    </span>
+                  </div>
+                  {e.avgHT != null && e.avgTTC != null && e.qty > 0 && (
+                    <div className="flex items-baseline justify-between gap-2 text-[11px] text-[var(--df-ink-3)]">
+                      <span>Moy. / pièce</span>
+                      <span className="df-mono tabular-nums">
+                        HT&nbsp;
+                        <RollingNumber value={e.avgHT} format={eur} />
+                        {' · '}TTC&nbsp;
+                        <RollingNumber value={e.avgTTC} format={eur} />
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -166,20 +192,31 @@ export function RecapDrawer({
         </div>
 
         <div className="space-y-1.5">
-          <Row label="Sous-total HT" value={fmtEUR.format(totals.subtotalHT)} />
+          <Row
+            label="Sous-total HT"
+            value={<RollingNumber value={totals.subtotalHT} format={eur} />}
+          />
           <Row
             label="Transport"
-            value={totals.transportHT > 0 ? fmtEUR.format(totals.transportHT) : 'Gratuit'}
+            value={
+              totals.transportHT > 0 ? (
+                <RollingNumber value={totals.transportHT} format={eur} />
+              ) : (
+                'Gratuit'
+              )
+            }
             muted={totals.transportHT === 0}
           />
           <Row
             label="TGCA 4 %"
-            value={revente ? 'Exonéré — revente' : fmtEUR.format(totals.tgcaHT)}
+            value={
+              revente ? 'Exonéré — revente' : <RollingNumber value={totals.tgcaHT} format={eur} />
+            }
             muted={revente}
           />
           <div className="pt-3 mt-3 border-t border-[var(--df-border)]">
             <div className="flex items-baseline justify-between">
-              <div className="df-caps">Total HT</div>
+              <div className="df-caps">Total TTC</div>
               <div className="flex items-center gap-3">
                 <Chip variant="accent">
                   {fmtInt.format(totals.qtyTotal)} pièces · ×{fmtCoef.format(totals.coef)}
@@ -189,17 +226,24 @@ export function RecapDrawer({
             <output
               role="status"
               aria-live="polite"
-              className="df-display text-5xl mt-1 block tabular-nums"
+              className="df-display text-5xl mt-1 block tabular-nums text-[var(--df-accent)]"
             >
-              {fmtEUR.format(totals.totalHT)}
+              <RollingNumber value={totals.totalHT} format={eur} />
             </output>
+            <div className="mt-1 flex items-baseline justify-between">
+              <div className="df-caps">Total HT</div>
+              <div className="df-display text-2xl tabular-nums text-[var(--df-ink-2)]">
+                <RollingNumber value={totalHTOnly} format={eur} />
+              </div>
+            </div>
             {totals.qtyTotal > 0 && (
-              <div className="mt-2 flex items-baseline justify-between">
-                <div className="text-xs text-[var(--df-ink-3)]">
-                  Prix moyen / pièce (avec transport)
-                </div>
-                <div className="df-mono text-sm tabular-nums text-[var(--df-ink-2)]">
-                  {fmtEUR.format((totals.subtotalHT + totals.transportHT) / totals.qtyTotal)}
+              <div className="mt-2 flex items-baseline justify-between text-xs text-[var(--df-ink-3)]">
+                <div>Prix moyen / pièce</div>
+                <div className="df-mono tabular-nums">
+                  HT&nbsp;
+                  <RollingNumber value={totalHTOnly / totals.qtyTotal} format={eur} />
+                  {' · '}TTC&nbsp;
+                  <RollingNumber value={totals.totalHT / totals.qtyTotal} format={eur} />
                 </div>
               </div>
             )}
@@ -221,7 +265,7 @@ export function RecapDrawer({
   );
 }
 
-function Row({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
+function Row({ label, value, muted }: { label: string; value: ReactNode; muted?: boolean }) {
   return (
     <div className="flex items-baseline justify-between">
       <div className="text-sm text-[var(--df-ink-2)]">{label}</div>
@@ -273,7 +317,10 @@ function enrichLine(
   const tgcaLabel = isRevente ? 'TGCA exonérée' : 'TGCA 4 %';
 
   let unitHT: number | null = null;
-  let subtotalHT: number | null = null;
+  let htWithTransport: number | null = null;
+  let ttc: number | null = null;
+  let avgHT: number | null = null;
+  let avgTTC: number | null = null;
   if (quoteQty > 0) {
     try {
       unitHT = unitPriceBreakdown({
@@ -283,10 +330,17 @@ function enrichLine(
         code: line.code,
         priceAchatOverride: line.custom?.priceAchat,
       }).unitHT;
-      subtotalHT = lineSubtotalHT(line, quoteQty);
+      const lt = lineTotals(line, quoteQty, quoteTransport, quoteRevente);
+      htWithTransport = lt.htWithTransport;
+      ttc = lt.ttc;
+      avgHT = lt.avgHT;
+      avgTTC = lt.avgTTC;
     } catch {
       unitHT = null;
-      subtotalHT = null;
+      htWithTransport = null;
+      ttc = null;
+      avgHT = null;
+      avgTTC = null;
     }
   }
 
@@ -304,7 +358,10 @@ function enrichLine(
     tgcaLabel,
     note: line.note?.trim() ?? '',
     unitHT,
-    subtotalHT,
+    htWithTransport,
+    ttc,
+    avgHT,
+    avgTTC,
     qty: lineQty(line.sizes),
   };
 }

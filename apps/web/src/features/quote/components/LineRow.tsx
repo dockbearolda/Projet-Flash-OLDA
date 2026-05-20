@@ -7,6 +7,7 @@ import {
   FLOCK_COLORS,
   PRODUCT_BY_REF,
   TRANSPORT_OPTIONS,
+  TGCA_RATE,
 } from '@df/shared';
 import type {
   Product,
@@ -17,9 +18,10 @@ import type {
   TextileColor,
   Transport,
 } from '@df/shared';
-import { fmtEUR } from '@/lib/format';
+import { eur } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { SegToggle } from '@/components/ui/SegToggle';
+import { RollingNumber } from '@/components/ui/RollingNumber';
 import { lineQty, unitPriceBreakdown, lineSubtotalHT } from '../pricing';
 import { QtyGrid } from './QtyGrid';
 
@@ -167,6 +169,17 @@ export function LineRow({
       return 0;
     }
   }, [hasPricing, line, pricingQty]);
+
+  // Prix unitaire (1 t-shirt, transport/pièce inclus → bouge avec Chrono) et
+  // prix total de la ligne, chacun en HT et TTC (TGCA 4 % sauf exonération).
+  const money = useMemo(() => {
+    const tgcaFactor = effectiveRevente ? 1 : 1 + TGCA_RATE;
+    const unitHT = breakdown?.unitWithTransportHT ?? 0;
+    const unitTTC = unitHT * tgcaFactor;
+    const ht = subtotal + transportPerPiece * qty;
+    const ttc = ht * tgcaFactor;
+    return { unitHT, unitTTC, ht, ttc };
+  }, [breakdown, subtotal, transportPerPiece, qty, effectiveRevente]);
 
   const groupedProducts = useMemo(() => {
     const byFamily = new Map<ProductFamily, Product[]>();
@@ -396,7 +409,7 @@ export function LineRow({
       </div>
 
       {/* Row 2: qty + price breakdown + totals */}
-      <div className="px-5 pb-4 flex items-stretch gap-3 flex-wrap">
+      <div className="px-5 pb-4 flex items-end gap-3 flex-wrap">
         <div className="flex items-center gap-3 px-4 h-14 rounded-[var(--df-radius)] border border-[var(--df-border)] bg-[var(--df-surface-2)]">
           <div className="flex flex-col items-start">
             <span className="df-caps">Quantités</span>
@@ -408,18 +421,35 @@ export function LineRow({
 
         <div className="flex-1" />
 
-        <div className="flex items-center gap-6 px-4 h-14 rounded-[var(--df-radius)] bg-[var(--df-surface-2)] border border-[var(--df-border)]">
-          <div className="flex flex-col items-end">
-            <span className="df-caps">PU HT</span>
-            <span className="df-mono text-base tabular-nums text-[var(--df-ink-2)]">
-              {hasPricing && breakdown ? fmtEUR.format(breakdown.unitHT) : '—'}
-            </span>
+        <div className="flex flex-col gap-2 px-4 py-3 rounded-[var(--df-radius)] bg-[var(--df-surface-2)] border border-[var(--df-border)] min-w-[260px]">
+          {/* Prix unitaire (1 t-shirt) */}
+          <div className="flex items-baseline justify-between gap-4">
+            <span className="df-caps shrink-0">Prix / pièce</span>
+            <div className="flex items-baseline gap-5">
+              <span className="df-mono text-base tabular-nums text-[var(--df-ink)]">
+                <span className="df-caps mr-1">HT</span>
+                {hasPricing ? <RollingNumber value={money.unitHT} format={eur} /> : '—'}
+              </span>
+              <span className="df-mono text-base tabular-nums text-[var(--df-accent)]">
+                <span className="df-caps mr-1 text-[var(--df-accent)]">TTC</span>
+                {hasPricing ? <RollingNumber value={money.unitTTC} format={eur} /> : '—'}
+              </span>
+            </div>
           </div>
-          <div className="flex flex-col items-end">
-            <span className="df-caps">Sous-total HT</span>
-            <span className="df-display text-2xl tabular-nums text-[var(--df-ink)]">
-              {hasPricing ? fmtEUR.format(subtotal) : '—'}
-            </span>
+
+          {/* Prix total de la ligne */}
+          <div className="flex items-baseline justify-between gap-4 border-t border-[var(--df-border)] pt-2">
+            <span className="df-caps shrink-0">Total</span>
+            <div className="flex items-baseline gap-5">
+              <span className="df-display text-2xl tabular-nums text-[var(--df-ink)]">
+                <span className="df-caps mr-1">HT</span>
+                {hasPricing ? <RollingNumber value={money.ht} format={eur} /> : '—'}
+              </span>
+              <span className="df-display text-2xl tabular-nums text-[var(--df-accent)]">
+                <span className="df-caps mr-1 text-[var(--df-accent)]">TTC</span>
+                {hasPricing ? <RollingNumber value={money.ttc} format={eur} /> : '—'}
+              </span>
+            </div>
           </div>
         </div>
       </div>

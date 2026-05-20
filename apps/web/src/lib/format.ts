@@ -7,6 +7,9 @@ export const fmtEUR = new Intl.NumberFormat('fr-FR', {
   minimumFractionDigits: 2,
 });
 
+/** Standalone EUR formatter — safe to pass by reference (e.g. as a prop). */
+export const eur = (n: number): string => fmtEUR.format(n);
+
 export const fmtInt = new Intl.NumberFormat('fr-FR');
 
 export const fmtCoef = new Intl.NumberFormat('fr-FR', {

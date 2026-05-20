@@ -181,6 +181,50 @@ export function lineSubtotalHT(line: LineForPricing, quoteQty: number): number {
   return unit * lineQty(line.sizes);
 }
 
+export interface LineTotals {
+  /** Σ qty across all sizes for this line. */
+  qty: number;
+  /** Line subtotal + per-piece transport surcharge (no TGCA). */
+  htWithTransport: number;
+  /** TGCA on (subtotal + transport), 0 when the line is revente-exonerated. */
+  tgcaHT: number;
+  /** htWithTransport + tgcaHT — the all-in price for the line. */
+  ttc: number;
+  /** htWithTransport / qty. */
+  avgHT: number;
+  /** ttc / qty. */
+  avgTTC: number;
+}
+
+/**
+ * Per-line HT/TTC totals, mirroring the per-line maths in {@link quoteTotals}.
+ * Transport (chronopost +1.50 €/pièce) is folded into the HT figure so the
+ * recap bubbles react to the transport toggle; TTC adds the 4 % TGCA unless
+ * the line is exonerated for resale.
+ */
+export function lineTotals(
+  line: LineForPricing,
+  quoteQty: number,
+  quoteTransport: Transport,
+  quoteRevente: boolean,
+): LineTotals {
+  const qty = lineQty(line.sizes);
+  const sub = lineSubtotalHT(line, quoteQty);
+  const eff = transportSurcharge(line.transport ?? quoteTransport);
+  const ht = sub + eff * qty;
+  const isRevente = line.revente ?? quoteRevente;
+  const tgca = isRevente ? 0 : ht * TGCA_RATE;
+  const ttc = ht + tgca;
+  return {
+    qty,
+    htWithTransport: round2(ht),
+    tgcaHT: round2(tgca),
+    ttc: round2(ttc),
+    avgHT: qty > 0 ? round2(ht / qty) : 0,
+    avgTTC: qty > 0 ? round2(ttc / qty) : 0,
+  };
+}
+
 export interface QuoteTotals {
   qtyTotal: number;
   coef: number;
