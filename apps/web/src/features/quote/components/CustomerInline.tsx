@@ -67,9 +67,9 @@ function Field({
   ariaLabel: string;
   value: string;
   onChange: (v: string) => void;
-  invalid?: boolean;
+  invalid?: boolean | undefined;
   widthClass: string;
-  type?: string;
+  type?: string | undefined;
 }) {
   return (
     <div className="flex items-center gap-1.5 px-1">
