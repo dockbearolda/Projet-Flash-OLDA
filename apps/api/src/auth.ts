@@ -14,12 +14,18 @@ function appPassword(): string {
   return v;
 }
 
+let generatedSecret: string | undefined;
 function sessionSecret(): string {
   const v = process.env.SESSION_SECRET;
-  if (!v || v.length < 16) {
-    throw new Error('SESSION_SECRET env var must be at least 16 chars');
+  if (v && v.length >= 16) return v;
+  // Fall back to an ephemeral secret so the app stays usable without manual
+  // config. Sessions don't survive a restart in this mode — set SESSION_SECRET
+  // for stable logins.
+  if (!generatedSecret) {
+    generatedSecret = randomBytes(32).toString('hex');
+    console.warn('[auth] SESSION_SECRET not set — using a random secret (logins reset on restart)');
   }
-  return v;
+  return generatedSecret;
 }
 
 function sign(token: string): string {

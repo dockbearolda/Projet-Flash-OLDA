@@ -47,6 +47,8 @@ COPY --from=build /app/packages/shared ./packages/shared
 RUN pnpm install --prod --frozen-lockfile --filter @df/api...
 RUN pnpm --filter @df/api db:generate
 
-ENV PORT=3001
 EXPOSE 3001
-CMD ["sh", "-c", "pnpm --filter @df/api db:deploy && pnpm --filter @df/api start"]
+# Run migrations, but never let a DB hiccup stop the server from booting.
+# A live server (even with a degraded DB) lets the public domain respond
+# instead of failing with "Application failed to respond".
+CMD ["sh", "-c", "pnpm --filter @df/api db:deploy || echo '[boot] db:deploy failed — starting server anyway'; pnpm --filter @df/api start"]
