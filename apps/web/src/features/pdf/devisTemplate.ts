@@ -158,7 +158,7 @@ function renderRow(e: EnrichedLine): string {
 
 /** Construit le document HTML complet, prêt à imprimer (A4 portrait). */
 export function buildDevisHtml(data: DevisData): string {
-  const { id, customer, lines, transport, revente, totals, createdAt } = data;
+  const { id, customer, lines, transport, totals, createdAt } = data;
 
   // Émetteur
   const issuerContact = OLDA_ISSUER.contact ? `<p>${esc(OLDA_ISSUER.contact)}</p>` : '';
@@ -175,11 +175,15 @@ export function buildDevisHtml(data: DevisData): string {
   // Lignes
   const rows = lines.map((l) => renderRow(enrich(l, totals.qtyTotal))).join('\n          ');
 
-  // Totaux
-  const transportOpt = TRANSPORT_OPTIONS.find((t) => t.id === transport);
-  const transportLabel = `Transport · ${transportOpt?.label ?? '—'}`;
+  // Totaux — le transport peut être réglé ligne par ligne : on n'affiche un
+  // mode précis que si toutes les lignes facturables le partagent.
+  const lineTransports = [...new Set(lines.map((l) => l.transport ?? transport))];
+  const onlyTransport = lineTransports.length === 1 ? lineTransports[0] : null;
+  const transportLabel = onlyTransport
+    ? `Transport · ${TRANSPORT_OPTIONS.find((t) => t.id === onlyTransport)?.label ?? '—'}`
+    : 'Transport';
   const transportValue = totals.transportHT > 0 ? eur(totals.transportHT) : 'Gratuit';
-  const tgcaValue = revente ? 'Exonéré — revente' : eur(totals.tgcaHT);
+  const tgcaValue = totals.tgcaHT > 0 ? eur(totals.tgcaHT) : 'Exonéré — revente';
 
   return `<!doctype html>
 <html lang="fr">

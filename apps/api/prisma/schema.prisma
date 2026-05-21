@@ -9,15 +9,19 @@ datasource db {
 }
 
 model Product {
-  id          String   @id @default(cuid())
-  ref         String   @unique
-  supplierRef String
-  name        String
-  family      String   // unisexe | femme | enfant
-  priceAchat  Decimal  @db.Decimal(10, 2)
-  archived    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  ref          String   @unique
+  supplierRef  String
+  name         String
+  family       String   // unisexe | femme | enfant
+  priceAchat   Decimal  @db.Decimal(10, 2)
+  // Configuration par référence (vide ⇒ « tout »).
+  sizes        String[] @default([]) // ['xs','s',...]
+  colorIds     String[] @default([]) // ids coloris textile dispo
+  bestColorIds String[] @default([]) // ids coloris best-seller (ordre d'affichage)
+  archived     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model TextileColor {

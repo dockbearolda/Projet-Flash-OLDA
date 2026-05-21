@@ -48,6 +48,9 @@ export async function readSnapshot(): Promise<CatalogSnapshot> {
         name: p.name,
         family: p.family as CatalogProduct['family'],
         priceAchat: Number(p.priceAchat),
+        sizes: p.sizes as CatalogProduct['sizes'],
+        colorIds: p.colorIds,
+        bestColorIds: p.bestColorIds,
       }),
     ),
     zones: zones.map(
@@ -114,6 +117,9 @@ export async function ensureCatalogSeeded(): Promise<void> {
         name: p.name,
         family: p.family,
         priceAchat: p.priceAchat,
+        sizes: p.sizes,
+        colorIds: p.colorIds,
+        bestColorIds: p.bestColorIds,
       })),
     });
   }

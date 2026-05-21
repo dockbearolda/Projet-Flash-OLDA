@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { defaultCatalogSnapshot } from '@df/shared';
+import { CatalogSnapshotSchema, defaultCatalogSnapshot } from '@df/shared';
 import type { CatalogSnapshot } from '@df/shared';
 import { createIdbStorage } from '@/features/quote/idbStorage';
 
@@ -34,10 +34,15 @@ export const useCatalogStore = create<CatalogState>()(
       })),
       partialize: (s) => ({ snapshot: s.snapshot }) as CatalogState,
       // Keep only the cached snapshot; bump the version so derived caches refresh.
+      // The snapshot is normalised through the schema so a cache predating the
+      // per-reference config (sizes / colorIds / bestColorIds) is backfilled with
+      // their defaults instead of leaving products with missing fields.
       merge: (persisted, current) => {
-        const p = persisted as { snapshot?: CatalogSnapshot } | undefined;
-        return p?.snapshot
-          ? { ...current, snapshot: p.snapshot, version: current.version + 1 }
+        const p = persisted as { snapshot?: unknown } | undefined;
+        if (!p?.snapshot) return current;
+        const parsed = CatalogSnapshotSchema.safeParse(p.snapshot);
+        return parsed.success
+          ? { ...current, snapshot: parsed.data, version: current.version + 1 }
           : current;
       },
     },

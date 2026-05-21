@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import {
   PRODUCTS,
+  SIZE_KEYS,
   TEXTILE_COLORS,
   FLOCK_COLORS,
   PLACEMENTS,
@@ -14,7 +15,14 @@ import {
 const prisma = new PrismaClient();
 
 async function main() {
-  // Products
+  // Défauts par référence (vide ⇒ « tout » au runtime, mais on sème explicitement
+  // toutes les tailles / tous les coloris + les best-sellers globaux).
+  const defaultSizes = [...SIZE_KEYS];
+  const defaultColorIds = TEXTILE_COLORS.map((c) => c.id);
+  const defaultBestColorIds = TEXTILE_COLORS.filter((c) => c.best).map((c) => c.id);
+
+  // Products — on ne touche pas à la config par réf (sizes/colorIds/bestColorIds)
+  // lors d'un update afin de préserver les réglages du patron.
   for (const p of PRODUCTS) {
     await prisma.product.upsert({
       where: { ref: p.ref },
@@ -24,6 +32,9 @@ async function main() {
         name: p.name,
         family: p.family,
         priceAchat: p.priceAchat,
+        sizes: defaultSizes,
+        colorIds: defaultColorIds,
+        bestColorIds: defaultBestColorIds,
       },
       update: {
         supplierRef: p.supplierRef,

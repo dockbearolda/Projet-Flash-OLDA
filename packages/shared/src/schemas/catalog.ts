@@ -1,6 +1,9 @@
 import { z } from 'zod';
+import { SIZE_KEYS } from '../catalog/products.js';
 
 export const ProductFamilySchema = z.enum(['unisexe', 'femme', 'enfant']);
+
+export const SizeKeySchema = z.enum(SIZE_KEYS);
 
 export const CatalogProductSchema = z.object({
   ref: z.string().trim().min(1, 'Référence requise').max(40),
@@ -8,6 +11,11 @@ export const CatalogProductSchema = z.object({
   name: z.string().trim().min(1, 'Nom requis').max(120),
   family: ProductFamilySchema,
   priceAchat: z.number().min(0),
+  // Configuration par référence. Tableaux vides ⇒ « tout » (rétro-compatible :
+  // les snapshots et lignes antérieurs n'avaient pas ces champs).
+  sizes: z.array(SizeKeySchema).default([]),
+  colorIds: z.array(z.string().trim().min(1)).default([]),
+  bestColorIds: z.array(z.string().trim().min(1)).default([]),
 });
 
 export const CatalogCoefSchema = z.tuple([z.number().int().min(0), z.number().min(0)]);

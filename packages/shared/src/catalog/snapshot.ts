@@ -6,8 +6,8 @@
  * server-side, so the app reads a {@link CatalogSnapshot} (loosely typed with
  * string ids) instead of the frozen `as const` literals.
  */
-import { PRODUCTS, TRANSPORT_OPTIONS, TGCA_RATE } from './products.js';
-import type { ProductFamily } from './products.js';
+import { PRODUCTS, TRANSPORT_OPTIONS, TGCA_RATE, SIZE_KEYS } from './products.js';
+import type { ProductFamily, SizeKey } from './products.js';
 import { ZONES, ZONE_IDS } from './zones.js';
 import { COEFS } from './coefs.js';
 import { TEXTILE_COLORS, FLOCK_COLORS } from './colors.js';
@@ -19,7 +19,20 @@ export interface CatalogProduct {
   name: string;
   family: ProductFamily;
   priceAchat: number;
+  /** Tailles proposées pour cette réf. Vide ⇒ toutes les tailles. */
+  sizes: SizeKey[];
+  /** Coloris textile disponibles pour cette réf (ids). Vide ⇒ tous les coloris. */
+  colorIds: string[];
+  /** Sous-ensemble de `colorIds` mis en avant (best-sellers), dans l'ordre d'affichage. */
+  bestColorIds: string[];
 }
+
+/** Défauts d'une réf sans configuration explicite (toutes tailles / tous coloris). */
+export const DEFAULT_PRODUCT_SIZES: readonly SizeKey[] = [...SIZE_KEYS];
+export const DEFAULT_PRODUCT_COLOR_IDS: readonly string[] = TEXTILE_COLORS.map((c) => c.id);
+export const DEFAULT_PRODUCT_BEST_COLOR_IDS: readonly string[] = TEXTILE_COLORS.filter(
+  (c) => c.best,
+).map((c) => c.id);
 
 /** Tiered sale price table: `[qtyThreshold, priceHT]` rows, ascending. */
 export type CatalogSalePrices = [number, number][];
@@ -83,6 +96,9 @@ export function defaultCatalogSnapshot(): CatalogSnapshot {
       name: p.name,
       family: p.family,
       priceAchat: p.priceAchat,
+      sizes: [...DEFAULT_PRODUCT_SIZES],
+      colorIds: [...DEFAULT_PRODUCT_COLOR_IDS],
+      bestColorIds: [...DEFAULT_PRODUCT_BEST_COLOR_IDS],
     })),
     zones: ZONE_IDS.map((id) => ({
       id: ZONES[id].id,

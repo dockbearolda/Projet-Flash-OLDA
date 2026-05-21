@@ -133,15 +133,21 @@ export function RecapDrawer({
           )}
         </section>
 
-        {/* Transport — niveau devis */}
+        {/* Transport — défaut du devis, appliqué à toutes les lignes */}
         <section className="space-y-2">
           <div className="df-caps">Transport</div>
           <TransportPicker value={transport} onChange={onTransport} />
+          <p className="text-[11px] text-[var(--df-ink-3)]">
+            Appliqué à toutes les lignes · ajustable ligne par ligne.
+          </p>
         </section>
 
-        {/* TGCA / Revente — niveau devis */}
-        <section>
+        {/* TGCA / Revente — défaut du devis, appliqué à toutes les lignes */}
+        <section className="space-y-1.5">
           <ReventeToggle value={revente} onChange={onRevente} />
+          <p className="text-[11px] text-[var(--df-ink-3)]">
+            Appliqué à toutes les lignes · ajustable ligne par ligne.
+          </p>
         </section>
 
         {/* Totaux */}
@@ -164,9 +170,13 @@ export function RecapDrawer({
           <Row
             label="TGCA 4 %"
             value={
-              revente ? 'Exonéré — revente' : <RollingNumber value={totals.tgcaHT} format={eur} />
+              totals.tgcaHT > 0 ? (
+                <RollingNumber value={totals.tgcaHT} format={eur} />
+              ) : (
+                'Exonéré — revente'
+              )
             }
-            muted={revente}
+            muted={totals.tgcaHT === 0}
           />
           <div className="pt-3 mt-3 border-t border-[var(--df-border)]">
             <div className="flex items-baseline justify-between">

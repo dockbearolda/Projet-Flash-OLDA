@@ -14,6 +14,7 @@ import {
   PencilLine,
   Percent,
   Plus,
+  Settings,
   Table2,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -360,8 +361,8 @@ export default function TabletPage() {
         onStart={() => {
           newQuote();
         }}
-        onHistory={() => {
-          navigate('/admin/quotes');
+        onAdmin={() => {
+          navigate('/admin');
         }}
       />
     );
@@ -397,12 +398,12 @@ export default function TabletPage() {
           <button
             type="button"
             onClick={() => {
-              navigate('/admin/quotes');
+              navigate('/admin');
             }}
             className="inline-flex items-center gap-1.5 px-3 h-9 rounded-[var(--df-radius)] bg-[var(--df-surface-2)] border border-[var(--df-border)] text-sm font-medium text-[var(--df-ink-2)] hover:bg-[var(--df-bg-2)] hover:text-[var(--df-ink)] transition-colors duration-[var(--df-dur-fast)] ease-[var(--df-ease-out)]"
           >
-            <History size={15} strokeWidth={1.8} aria-hidden />
-            <span className="hidden xl:inline">Historique</span>
+            <Settings size={15} strokeWidth={1.8} aria-hidden />
+            <span className="hidden xl:inline">Admin</span>
           </button>
 
           <div className="relative shrink-0">
@@ -629,7 +630,7 @@ function MenuItem({
 
 // Page d'ouverture sans devis : uniquement la barre du haut. On démarre un
 // devis (et donc une référence) seulement au clic sur « Nouveau devis ».
-function EmptyEditor({ onStart, onHistory }: { onStart: () => void; onHistory: () => void }) {
+function EmptyEditor({ onStart, onAdmin }: { onStart: () => void; onAdmin: () => void }) {
   return (
     <div className="flex min-h-screen flex-col bg-[var(--df-bg)]">
       <header className="df-glass h-[var(--df-titlebar-height)] shrink-0 px-4 border-b border-[var(--df-glass-border)] flex items-center gap-2">
@@ -643,11 +644,11 @@ function EmptyEditor({ onStart, onHistory }: { onStart: () => void; onHistory: (
 
         <button
           type="button"
-          onClick={onHistory}
+          onClick={onAdmin}
           className="inline-flex items-center gap-1.5 px-3 h-9 rounded-[var(--df-radius)] bg-[var(--df-surface-2)] border border-[var(--df-border)] text-sm font-medium text-[var(--df-ink-2)] hover:bg-[var(--df-bg-2)] hover:text-[var(--df-ink)] transition-colors duration-[var(--df-dur-fast)] ease-[var(--df-ease-out)]"
         >
-          <History size={15} strokeWidth={1.8} aria-hidden />
-          <span className="hidden xl:inline">Historique</span>
+          <Settings size={15} strokeWidth={1.8} aria-hidden />
+          <span className="hidden xl:inline">Admin</span>
         </button>
 
         <button

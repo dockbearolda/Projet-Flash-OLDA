@@ -49,6 +49,9 @@ export const catalogRoute = new Hono()
           name: p.name,
           family: p.family,
           priceAchat: p.priceAchat,
+          sizes: p.sizes,
+          colorIds: p.colorIds,
+          bestColorIds: p.bestColorIds,
         })),
       }),
     ]);

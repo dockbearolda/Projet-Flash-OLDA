@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, Link2, Link2Off, Trash2 } from 'lucide-react';
+import { SIZE_KEYS } from '@df/shared';
 import type {
   CatalogProduct,
   CatalogTextileColor,
   ProductFamily,
   QuoteLine,
   Sizes,
+  SizeKey,
   FlockMode,
   Transport,
 } from '@df/shared';
@@ -13,6 +15,7 @@ import { useCatalog } from '@/features/catalog/useCatalog';
 import { eur } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { RollingNumber } from '@/components/ui/RollingNumber';
+import { SegToggle } from '@/components/ui/SegToggle';
 import { lineQty, unitPriceBreakdown, lineSubtotalHT } from '../pricing';
 import { QtyGrid } from './QtyGrid';
 
@@ -39,6 +42,12 @@ const FAMILY_LABEL: Record<ProductFamily, string> = {
 };
 
 const FAMILY_ORDER: ProductFamily[] = ['unisexe', 'femme', 'enfant'];
+
+// TGCA par ligne : « Exonérée » ⇔ revente = true (cf. ReventeToggle au niveau devis).
+const TGCA_OPTIONS = [
+  { value: 'apply' as const, label: 'Appliquée' },
+  { value: 'exo' as const, label: 'Exonérée' },
+];
 
 export function LineRow({
   index,
@@ -150,6 +159,29 @@ export function LineRow({
       list.sort((a, b) => a.ref.localeCompare(b.ref, undefined, { numeric: true }));
     return byFamily;
   }, [products]);
+
+  // Tailles proposées par la référence (undefined ⇒ toutes). Ordre canonique.
+  const availableSizes = useMemo<SizeKey[] | undefined>(() => {
+    const s = product?.sizes;
+    return s && s.length > 0 ? SIZE_KEYS.filter((k) => s.includes(k)) : undefined;
+  }, [product]);
+  const availableSizesKey = availableSizes ? availableSizes.join(',') : 'all';
+
+  // Quand la réf change pour une qui n'offre pas certaines tailles, on remet à
+  // zéro les quantités masquées : sinon un reliquat invisible gonflerait le prix.
+  useEffect(() => {
+    if (!availableSizes) return;
+    let changed = false;
+    const next: Sizes = { ...line.sizes };
+    for (const k of SIZE_KEYS) {
+      if (!availableSizes.includes(k) && next[k] !== 0) {
+        next[k] = 0;
+        changed = true;
+      }
+    }
+    if (changed) onSizes(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availableSizesKey]);
 
   return (
     <section
@@ -294,13 +326,14 @@ export function LineRow({
         )}
 
         <Field label="Coloris textile" className="col-span-3">
-          <ColorSelect
+          <TextileColorPicker
             options={textileColors}
+            availableIds={product?.colorIds ?? []}
+            bestIds={product?.bestColorIds ?? []}
             value={line.textileColorId}
             onChange={(v) => {
               onChange({ textileColorId: v });
             }}
-            aria-label="Coloris textile"
           />
         </Field>
 
@@ -350,8 +383,40 @@ export function LineRow({
       </div>
 
       {/* Grille tailles + prix dérivé (le prix n'apparaît qu'une fois saisie) */}
-      <div className="px-5 pb-5 pt-1 border-t border-[var(--df-border)] flex flex-col gap-4">
-        <QtyGrid sizes={line.sizes} onChange={onSizes} />
+      <div className="px-5 pb-5 pt-4 border-t border-[var(--df-border)] flex flex-col gap-4">
+        {/* Transport + TGCA propres à la ligne (surchargent le niveau devis) */}
+        <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
+          <Field label="Transport (ligne)" className="flex-1 min-w-[220px]">
+            <SelectInput
+              value={effectiveTransport}
+              onChange={(v) => {
+                onChange({ transport: v as Transport });
+              }}
+              aria-label={`Transport ligne ${String(index + 1)}`}
+            >
+              {transports.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.label}
+                  {t.surcharge > 0 ? ` · +${eur(t.surcharge)}/pièce` : ' · gratuit'}
+                </option>
+              ))}
+            </SelectInput>
+          </Field>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="df-caps">TGCA {Math.round(tgcaRate * 100)} %</span>
+            <SegToggle
+              value={effectiveRevente ? 'exo' : 'apply'}
+              onChange={(v) => {
+                onChange({ revente: v === 'exo' });
+              }}
+              options={TGCA_OPTIONS}
+              ariaLabel={`TGCA ligne ${String(index + 1)}`}
+            />
+          </div>
+        </div>
+
+        <QtyGrid sizes={line.sizes} onChange={onSizes} availableSizes={availableSizes} />
 
         {qty > 0 && (
           <div className="flex flex-col gap-2 px-4 py-3 rounded-[var(--df-radius)] bg-[var(--df-surface-2)] border border-[var(--df-border)]">
@@ -440,45 +505,199 @@ function SelectInput({
   );
 }
 
-function ColorSelect({
+/**
+ * Sélecteur de coloris textile par référence : pastilles best-sellers d'abord,
+ * une flèche « Plus de couleurs » déplie les autres coloris disponibles de la réf.
+ * `availableIds` vide ⇒ tous les coloris ; `bestIds` vide ⇒ repli sur le flag global.
+ */
+function TextileColorPicker({
   options,
+  availableIds,
+  bestIds,
   value,
   onChange,
-  ...rest
 }: {
   options: readonly CatalogTextileColor[];
+  availableIds: readonly string[];
+  bestIds: readonly string[];
   value: string;
   onChange: (v: string) => void;
-} & Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'value' | 'onChange'>) {
-  const current = options.find((c) => c.id === value);
+}) {
+  const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  const byId = useMemo(() => {
+    const m = new Map<string, CatalogTextileColor>();
+    for (const c of options) m.set(c.id, c);
+    return m;
+  }, [options]);
+
+  // Coloris disponibles pour la réf (vide ⇒ tous), dans l'ordre du catalogue.
+  const available = useMemo(() => {
+    if (availableIds.length === 0) return [...options];
+    const set = new Set(availableIds);
+    return options.filter((c) => set.has(c.id));
+  }, [options, availableIds]);
+
+  // Best-sellers : ordre explicite de la réf, sinon repli sur le flag global `best`.
+  const best = useMemo(() => {
+    const avail = new Set(available.map((c) => c.id));
+    if (bestIds.length > 0) {
+      return bestIds
+        .map((id) => byId.get(id))
+        .filter((c): c is CatalogTextileColor => !!c && avail.has(c.id));
+    }
+    const flagged = available.filter((c) => c.best);
+    return flagged.length > 0 ? flagged : available;
+  }, [available, bestIds, byId]);
+
+  const others = useMemo(() => {
+    const bestSet = new Set(best.map((c) => c.id));
+    return available.filter((c) => !bestSet.has(c.id));
+  }, [available, best]);
+
+  const current = byId.get(value);
+
+  // Si la couleur choisie n'est pas un best-seller, on déplie pour la rendre visible.
+  useEffect(() => {
+    if (open && others.some((c) => c.id === value)) setExpanded(true);
+  }, [open, others, value]);
+
+  function pick(id: string) {
+    onChange(id);
+    setOpen(false);
+  }
+
   return (
     <div className="relative">
-      <select
-        className="df-input appearance-none pl-10 pr-9 cursor-pointer h-12"
-        value={value}
-        onChange={(e) => {
-          onChange(e.target.value);
+      <button
+        type="button"
+        onClick={() => {
+          setOpen((o) => !o);
         }}
-        {...rest}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label="Coloris textile"
+        className="df-input appearance-none pl-10 pr-9 h-12 w-full cursor-pointer text-left flex items-center"
       >
-        {options.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.name}
-          </option>
-        ))}
-      </select>
+        <span className="truncate">{current?.name ?? 'Choisir…'}</span>
+      </button>
       <span
         className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full pointer-events-none border border-[rgba(0,0,0,0.1)]"
         style={{ background: current?.hex ?? '#a4adb6' }}
         aria-hidden
       />
       <ChevronDown
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--df-ink-3)] pointer-events-none"
+        className={cn(
+          'absolute right-3 top-1/2 -translate-y-1/2 text-[var(--df-ink-3)] pointer-events-none transition-transform',
+          open && 'rotate-180',
+        )}
         size={16}
         strokeWidth={1.8}
         aria-hidden
       />
+
+      {open && (
+        <>
+          <button
+            type="button"
+            aria-hidden
+            tabIndex={-1}
+            onClick={() => {
+              setOpen(false);
+            }}
+            className="fixed inset-0 z-40 cursor-default"
+          />
+          <div
+            role="listbox"
+            aria-label="Coloris disponibles"
+            className="absolute left-0 top-full mt-1.5 z-50 w-[min(20rem,80vw)] p-2 rounded-[var(--df-radius)] border border-[var(--df-border)] bg-[var(--df-surface)] shadow-[var(--df-shadow-3)]"
+          >
+            <span className="df-caps block px-1 pb-1.5">Best-sellers</span>
+            <div className="grid grid-cols-2 gap-1.5">
+              {best.map((c) => (
+                <SwatchOption
+                  key={c.id}
+                  color={c}
+                  selected={c.id === value}
+                  onPick={() => {
+                    pick(c.id);
+                  }}
+                />
+              ))}
+            </div>
+
+            {others.length > 0 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setExpanded((e) => !e);
+                  }}
+                  aria-expanded={expanded}
+                  className="mt-2 w-full inline-flex items-center justify-center gap-1.5 h-8 rounded-[var(--df-radius-sm)] text-xs font-medium text-[var(--df-ink-2)] hover:bg-[var(--df-surface-2)]"
+                >
+                  <ChevronDown
+                    size={14}
+                    strokeWidth={1.8}
+                    className={cn('transition-transform', expanded && 'rotate-180')}
+                    aria-hidden
+                  />
+                  {expanded ? 'Moins de couleurs' : `Plus de couleurs (${String(others.length)})`}
+                </button>
+                {expanded && (
+                  <div className="grid grid-cols-2 gap-1.5 pt-1.5">
+                    {others.map((c) => (
+                      <SwatchOption
+                        key={c.id}
+                        color={c}
+                        selected={c.id === value}
+                        onPick={() => {
+                          pick(c.id);
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </>
+      )}
     </div>
+  );
+}
+
+function SwatchOption({
+  color,
+  selected,
+  onPick,
+}: {
+  color: CatalogTextileColor;
+  selected: boolean;
+  onPick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="option"
+      aria-selected={selected}
+      onClick={onPick}
+      title={color.name}
+      className={cn(
+        'flex items-center gap-2 px-2 h-9 rounded-[var(--df-radius-sm)] border text-left transition-colors',
+        selected
+          ? 'border-[var(--df-accent)] bg-[var(--df-accent-soft)]'
+          : 'border-[var(--df-border)] hover:bg-[var(--df-surface-2)]',
+      )}
+    >
+      <span
+        className="w-4 h-4 rounded-full shrink-0 border border-[rgba(0,0,0,0.12)]"
+        style={{ background: color.hex }}
+        aria-hidden
+      />
+      <span className="text-xs truncate text-[var(--df-ink)]">{color.name}</span>
+    </button>
   );
 }
 

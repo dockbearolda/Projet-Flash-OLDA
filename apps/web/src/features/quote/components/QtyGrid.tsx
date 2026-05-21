@@ -5,10 +5,16 @@ import { fmtInt } from '@/lib/format';
 interface Props {
   sizes: Sizes;
   onChange: (sizes: Sizes) => void;
+  /** Tailles proposées par la référence. Vide / non fourni ⇒ toutes les tailles. */
+  availableSizes?: readonly SizeKey[] | undefined;
 }
 
-export function QtyGrid({ sizes, onChange }: Props) {
-  const total = SIZE_KEYS.reduce((acc, k) => acc + sizes[k], 0);
+export function QtyGrid({ sizes, onChange, availableSizes }: Props) {
+  const keys: readonly SizeKey[] =
+    availableSizes && availableSizes.length > 0
+      ? SIZE_KEYS.filter((k) => availableSizes.includes(k))
+      : SIZE_KEYS;
+  const total = keys.reduce((acc, k) => acc + sizes[k], 0);
 
   function set(k: SizeKey, raw: string) {
     const n = parseInt(raw, 10);
@@ -21,9 +27,9 @@ export function QtyGrid({ sizes, onChange }: Props) {
       <span className="text-[11px] text-[var(--df-ink-4)]">Répartition de la quantité totale</span>
       <div
         className="grid gap-1.5"
-        style={{ gridTemplateColumns: `repeat(${String(SIZE_KEYS.length + 1)}, minmax(0, 1fr))` }}
+        style={{ gridTemplateColumns: `repeat(${String(keys.length + 1)}, minmax(0, 1fr))` }}
       >
-        {SIZE_KEYS.map((k) => (
+        {keys.map((k) => (
           <SizeCell
             key={k}
             label={SIZE_LABELS[k]}

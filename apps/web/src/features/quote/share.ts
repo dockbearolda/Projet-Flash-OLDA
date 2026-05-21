@@ -55,7 +55,7 @@ export function buildQuoteMessage({
     ...lineStrs,
     '',
     `Total HT : ${eur(totalHTOnly)}`,
-    revente ? 'TGCA : exonéré (revente)' : `TGCA 4 % : ${eur(totals.tgcaHT)}`,
+    totals.tgcaHT > 0 ? `TGCA 4 % : ${eur(totals.tgcaHT)}` : 'TGCA : exonéré (revente)',
     `Total TTC : ${eur(totals.totalHT)} · ${fmtInt.format(totals.qtyTotal)} pièces`,
     '',
     'Le détail complet est dans le PDF joint.',
