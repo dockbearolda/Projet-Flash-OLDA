@@ -239,13 +239,12 @@ export default function TabletPage() {
     });
   }
 
-  // Construit le devis (design éditorial) et ouvre la fenêtre d'impression du
-  // navigateur → « Enregistrer au format PDF » (rendu vectoriel, 100 % client).
-  // Passe ensuite le devis en "Envoyé".
+  // Construit le devis (design éditorial), le télécharge en PDF A4 (100 % client)
+  // sous le nom « société client - date.pdf », puis passe le devis en "Envoyé".
   async function generateDevisPdf(): Promise<void> {
     const createdAt = useQuoteStore.getState().createdAt;
-    const { buildDevisHtml } = await import('@/features/pdf/devisTemplate');
-    const { printDevisHtml } = await import('@/features/pdf/printDevis');
+    const { buildDevisHtml, devisPdfFilename } = await import('@/features/pdf/devisTemplate');
+    const { downloadDevisPdf } = await import('@/features/pdf/downloadDevisPdf');
     const html = buildDevisHtml({
       id,
       customer,
@@ -255,10 +254,7 @@ export default function TabletPage() {
       totals,
       createdAt,
     });
-    // L'iframe d'impression vit sur document.body, indépendamment de l'état
-    // React : on déclenche l'impression sans l'attendre, puis on marque le
-    // devis comme envoyé. Le devis reste affiché pour le relancer ou l'ajuster.
-    void printDevisHtml(html);
+    await downloadDevisPdf(html, devisPdfFilename(customer, createdAt));
     markSent(createdAt);
   }
 
@@ -267,9 +263,9 @@ export default function TabletPage() {
     void (async () => {
       try {
         await generateDevisPdf();
-        toast.success('Devis prêt', {
+        toast.success('Devis téléchargé', {
           id: 'pdf',
-          description: 'Choisis « Enregistrer au format PDF » dans la fenêtre d’impression.',
+          description: 'Le PDF est dans tes téléchargements.',
         });
       } catch (err) {
         console.error('PDF generation failed', err);
@@ -298,8 +294,7 @@ export default function TabletPage() {
         await generateDevisPdf();
         toast.success('WhatsApp ouvert', {
           id: 'pdf',
-          description:
-            'Enregistre le devis en PDF (fenêtre d’impression) pour le joindre au message.',
+          description: 'Le devis PDF est téléchargé — joins-le au message.',
         });
       } catch (err) {
         console.error('WhatsApp prepare failed', err);
@@ -326,7 +321,7 @@ export default function TabletPage() {
         await generateDevisPdf();
         toast.success('Email préparé', {
           id: 'pdf',
-          description: 'Enregistre le devis en PDF (fenêtre d’impression) pour le joindre au mail.',
+          description: 'Le devis PDF est téléchargé — joins-le au mail.',
         });
       } catch (err) {
         console.error('Email prepare failed', err);

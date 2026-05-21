@@ -15,7 +15,7 @@ import type {
   TextileColor,
   FlockColor,
 } from '@df/shared';
-import { eur, fmtInt, fmtShortDate } from '@/lib/format';
+import { eur, fmtInt, fmtShortDate, fmtFileDate } from '@/lib/format';
 import type { QuoteTotals } from '../quote/pricing';
 import { lineQty, unitPriceHT } from '../quote/pricing';
 
@@ -40,6 +40,21 @@ export interface DevisData {
   revente: boolean;
   totals: QuoteTotals;
   createdAt: string;
+}
+
+/**
+ * Nom du fichier PDF téléchargé : société du client (sinon son nom) + date
+ * d'établissement, p. ex. « Dupont SARL - 2026-05-21.pdf ». On retire les
+ * caractères interdits dans un nom de fichier.
+ */
+export function devisPdfFilename(customer: Customer, createdAt: string): string {
+  const company = customer.company?.trim() ?? '';
+  const who = (company || customer.name.trim() || 'Devis')
+    .replace(/[\\/:*?"<>|]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 80);
+  return `${who || 'Devis'} - ${fmtFileDate(createdAt)}.pdf`;
 }
 
 /** Échappe le texte destiné à l'HTML (les champs client/notes sont libres). */
@@ -153,7 +168,7 @@ function renderRow(e: EnrichedLine): string {
           </tr>`;
 }
 
-/** Construit le document HTML complet, prêt à imprimer (A4 portrait). */
+/** Construit le document HTML complet, prêt à convertir en PDF (A4 portrait). */
 export function buildDevisHtml(data: DevisData): string {
   const { id, customer, lines, transport, totals, createdAt } = data;
 

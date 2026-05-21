@@ -70,8 +70,8 @@ export default function QuotesPage() {
 
   async function resend(entry: HistoryEntry) {
     try {
-      const { buildDevisHtml } = await import('@/features/pdf/devisTemplate');
-      const { printDevisHtml } = await import('@/features/pdf/printDevis');
+      const { buildDevisHtml, devisPdfFilename } = await import('@/features/pdf/devisTemplate');
+      const { downloadDevisPdf } = await import('@/features/pdf/downloadDevisPdf');
       const totals = quoteTotals({
         lines: entry.lines,
         transport: entry.transport,
@@ -86,11 +86,11 @@ export default function QuotesPage() {
         totals,
         createdAt: entry.createdAt,
       });
-      void printDevisHtml(html);
+      await downloadDevisPdf(html, devisPdfFilename(entry.customer, entry.createdAt));
       markSent(entry.id);
-      toast.success('Devis prêt', {
+      toast.success('Devis téléchargé', {
         id: 'pdf',
-        description: 'Choisis « Enregistrer au format PDF » dans la fenêtre d’impression.',
+        description: 'Le PDF est dans tes téléchargements.',
       });
     } catch (err) {
       console.error('PDF resend failed', err);

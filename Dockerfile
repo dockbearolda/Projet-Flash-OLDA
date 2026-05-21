@@ -31,7 +31,13 @@ RUN pnpm --filter @df/api build
 # ---------- runner ----------
 FROM node:20-slim AS runner
 ENV NODE_ENV=production
-RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+# chromium + polices : génération du devis PDF côté serveur (puppeteer-core).
+# fonts-liberation couvre la pile Helvetica/Arial du gabarit ; dejavu complète les glyphes.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      openssl ca-certificates \
+      chromium fonts-liberation fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/*
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 RUN corepack enable && corepack prepare pnpm@10.33.4 --activate
 WORKDIR /app
 

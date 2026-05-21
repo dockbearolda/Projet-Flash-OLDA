@@ -27,6 +27,12 @@ export function fmtShortDate(d: Date | string): string {
   return format(date, 'd MMM yyyy', { locale: fr });
 }
 
+/** Date compacte et triable pour les noms de fichiers : « 2026-05-21 ». */
+export function fmtFileDate(d: Date | string): string {
+  const date = typeof d === 'string' ? new Date(d) : d;
+  return format(date, 'yyyy-MM-dd');
+}
+
 /**
  * Met une majuscule à la première lettre de chaque mot (séparé par un espace
  * ou un tiret), en préservant le reste de la saisie — ainsi « jean dupont »
