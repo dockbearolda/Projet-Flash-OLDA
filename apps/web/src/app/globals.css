@@ -96,6 +96,12 @@
 
   --df-display-letter: -0.04em;
   --df-display-leading: 0.92;
+
+  /* Chrome — barre de titre + cadences d'animation partagées */
+  --df-titlebar-height: 56px;
+  --df-dur-fast: 140ms;
+  --df-dur-press: 80ms;
+  --df-ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
 html,
@@ -151,6 +157,13 @@ button:active:not(:disabled) {
   line-height: var(--df-display-leading);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+
+/* Verre dépoli — titlebar + panneau récapitulatif */
+.df-glass {
+  background: var(--df-glass);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
 }
 
 @layer components {

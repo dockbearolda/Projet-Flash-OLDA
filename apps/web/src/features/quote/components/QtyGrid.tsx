@@ -17,21 +17,24 @@ export function QtyGrid({ sizes, onChange }: Props) {
   }
 
   return (
-    <div
-      className="grid gap-1.5"
-      style={{ gridTemplateColumns: `repeat(${String(SIZE_KEYS.length + 1)}, minmax(0, 1fr))` }}
-    >
-      {SIZE_KEYS.map((k) => (
-        <SizeCell
-          key={k}
-          label={SIZE_LABELS[k]}
-          value={sizes[k]}
-          onChange={(v) => {
-            set(k, v);
-          }}
-        />
-      ))}
-      <TotalCell value={total} />
+    <div className="flex flex-col gap-1.5">
+      <span className="text-[11px] text-[var(--df-ink-4)]">Répartition de la quantité totale</span>
+      <div
+        className="grid gap-1.5"
+        style={{ gridTemplateColumns: `repeat(${String(SIZE_KEYS.length + 1)}, minmax(0, 1fr))` }}
+      >
+        {SIZE_KEYS.map((k) => (
+          <SizeCell
+            key={k}
+            label={SIZE_LABELS[k]}
+            value={sizes[k]}
+            onChange={(v) => {
+              set(k, v);
+            }}
+          />
+        ))}
+        <TotalCell value={total} />
+      </div>
     </div>
   );
 }
@@ -71,7 +74,7 @@ function TotalCell({ value }: { value: number }) {
       <div
         role="status"
         aria-live="polite"
-        className="h-11 px-2 flex items-center justify-center text-lg font-bold rounded-[var(--df-radius-sm)] bg-[var(--df-accent-soft)] text-[var(--df-accent)] tabular-nums"
+        className="h-11 px-2 flex items-center justify-center text-lg font-bold rounded-[var(--df-radius-sm)] bg-[var(--df-accent)] text-[var(--df-accent-ink)] shadow-[var(--df-shadow-1)] tabular-nums"
       >
         {fmtInt.format(value)}
       </div>

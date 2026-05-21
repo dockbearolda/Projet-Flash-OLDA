@@ -42,9 +42,9 @@ export function SegToggle<T extends string>({
               onChange(opt.value);
             }}
             className={cn(
-              'inline-flex items-center justify-center px-3 h-8 text-xs font-medium rounded-[calc(var(--df-radius)-3px)] transition-colors',
+              'inline-flex items-center justify-center px-3 h-8 text-xs font-medium rounded-[calc(var(--df-radius)-3px)] transition-colors duration-[var(--df-dur-fast)] ease-[var(--df-ease-out)]',
               active
-                ? 'bg-[var(--df-accent)] text-[var(--df-accent-ink)] shadow-[var(--df-shadow-1)]'
+                ? 'bg-[var(--df-surface)] text-[var(--df-ink)] shadow-[var(--df-shadow-2)]'
                 : 'bg-transparent text-[var(--df-ink-2)] hover:text-[var(--df-ink)]',
             )}
           >

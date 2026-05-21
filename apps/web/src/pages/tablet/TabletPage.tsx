@@ -1,6 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Table2, History, FileText as FileTextIcon } from 'lucide-react';
+import {
+  ChevronDown,
+  Copy,
+  Download,
+  FileText as FileTextIcon,
+  History,
+  Image as ImageIcon,
+  MoreHorizontal,
+  Package,
+  PencilLine,
+  Percent,
+  Plus,
+  Table2,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuoteStore, useQuoteTotals, attachIdbStorage } from '@/features/quote/quoteStore';
 import { useHistoryStore, attachHistoryIdb } from '@/features/quote/historyStore';
@@ -8,9 +22,10 @@ import { useCatalogBoot } from '@/features/catalog/boot';
 import { nextQuoteId } from '@/features/quote/quoteId';
 import { lineQty } from '@/features/quote/pricing';
 import { buildQuoteMessage, whatsappUrl, mailtoUrl, DEFAULT_DIAL } from '@/features/quote/share';
-import { LineRow, CustomerInline, PricingGrid, RecapDrawer } from '@/features/quote/components';
+import { LineRow, PricingGrid, RecapDrawer } from '@/features/quote/components';
 import { SegToggle } from '@/components/ui/SegToggle';
 import { Logo } from '@/components/ui';
+import { cn } from '@/lib/cn';
 import { fmtShortDate } from '@/lib/format';
 import type { Customer } from '@df/shared';
 
@@ -24,7 +39,8 @@ const VIEW_OPTIONS = [
     value: 'devis' as const,
     label: (
       <span className="inline-flex items-center gap-1.5">
-        <FileTextIcon size={14} strokeWidth={1.8} aria-hidden /> Devis
+        <FileTextIcon size={14} strokeWidth={1.8} aria-hidden />
+        <span className="sr-only xl:not-sr-only">Devis</span>
       </span>
     ),
   },
@@ -32,7 +48,8 @@ const VIEW_OPTIONS = [
     value: 'grille' as const,
     label: (
       <span className="inline-flex items-center gap-1.5">
-        <Table2 size={14} strokeWidth={1.8} aria-hidden /> Grille
+        <Table2 size={14} strokeWidth={1.8} aria-hidden />
+        <span className="sr-only xl:not-sr-only">Grille</span>
       </span>
     ),
   },
@@ -47,6 +64,8 @@ export default function TabletPage() {
     phone?: boolean;
     email?: boolean;
   }>({});
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
 
   const navigate = useNavigate();
 
@@ -118,8 +137,6 @@ export default function TabletPage() {
   const setSizes = useQuoteStore((s) => s.setSizes);
   const setFlockMode = useQuoteStore((s) => s.setFlockMode);
   const setLinked = useQuoteStore((s) => s.setLinked);
-  const setLineTransport = useQuoteStore((s) => s.setLineTransport);
-  const setLineRevente = useQuoteStore((s) => s.setLineRevente);
   const setCustomer = useQuoteStore((s) => s.setCustomer);
   const setTransport = useQuoteStore((s) => s.setTransport);
   const setRevente = useQuoteStore((s) => s.setRevente);
@@ -321,48 +338,108 @@ export default function TabletPage() {
     URL.revokeObjectURL(url);
   }
 
+  // Forke le devis courant sous un nouvel ID : l'original reste en historique
+  // (auto-sauvegardé), l'édition continue sur la copie.
+  function handleDuplicate() {
+    const newId = nextQuoteId();
+    const now = new Date().toISOString();
+    useQuoteStore.setState({ id: newId, status: 'draft', createdAt: now, updatedAt: now });
+    toast.success('Devis dupliqué', { description: newId });
+  }
+
   const activeLine = lines.find((l) => l.id === useQuoteStore.getState().activeLineId) ?? lines[0];
 
   return (
     <div className="flex min-h-screen bg-[var(--df-bg)]">
       <main className="flex-1 flex flex-col min-w-0">
-        <header className="px-6 py-4 border-b border-[var(--df-border)] bg-[var(--df-surface)] flex items-center justify-between gap-4">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-3">
-              <Logo className="w-10 h-10 shrink-0 text-[var(--df-accent)]" />
-              <div>
-                <div className="df-caps">Devis Flash · OLDA · SXM</div>
-                <div className="df-display text-2xl">Nouveau devis</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="df-mono text-sm text-[var(--df-ink-3)]">{id}</span>
-              <span className="text-xs text-[var(--df-ink-4)]">·</span>
-              <span className="text-xs text-[var(--df-ink-3)]">{fmtShortDate(updatedAt)}</span>
-            </div>
-            <SegToggle
-              value={view}
-              onChange={setView}
-              options={VIEW_OPTIONS}
-              ariaLabel="Mode d'affichage"
-            />
+        <header className="df-glass h-[var(--df-titlebar-height)] shrink-0 px-4 border-b border-[var(--df-glass-border)] flex items-center gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Logo className="w-7 h-7 shrink-0 text-[var(--df-accent)]" />
+            <h1 className="df-display text-lg text-[var(--df-ink)] truncate">Nouveau devis</h1>
+            <span className="df-caps shrink-0 hidden xl:inline">OLDA · SXM</span>
+          </div>
+
+          <span className="shrink-0 inline-flex items-center gap-1.5 px-2.5 h-8 rounded-[var(--df-radius)] bg-[var(--df-surface-2)] border border-[var(--df-border)] whitespace-nowrap tabular-nums">
+            <span className="df-mono text-xs text-[var(--df-ink-2)]">{id}</span>
+            <span className="hidden xl:inline text-[var(--df-ink-4)]">·</span>
+            <span className="hidden xl:inline text-xs text-[var(--df-ink-3)]">
+              {fmtShortDate(updatedAt)}
+            </span>
+          </span>
+
+          <div className="flex-1" />
+
+          <SegToggle
+            value={view}
+            onChange={setView}
+            options={VIEW_OPTIONS}
+            ariaLabel="Mode d'affichage"
+          />
+
+          <button
+            type="button"
+            onClick={() => {
+              navigate('/admin/quotes');
+            }}
+            className="inline-flex items-center gap-1.5 px-3 h-9 rounded-[var(--df-radius)] bg-[var(--df-surface-2)] border border-[var(--df-border)] text-sm font-medium text-[var(--df-ink-2)] hover:bg-[var(--df-bg-2)] hover:text-[var(--df-ink)] transition-colors duration-[var(--df-dur-fast)] ease-[var(--df-ease-out)]"
+          >
+            <History size={15} strokeWidth={1.8} aria-hidden />
+            <span className="hidden xl:inline">Historique</span>
+          </button>
+
+          <div className="relative shrink-0">
             <button
               type="button"
               onClick={() => {
-                navigate('/admin/quotes');
+                setMenuOpen((o) => !o);
               }}
-              className="inline-flex items-center gap-1.5 px-3 h-9 rounded-[var(--df-radius)] bg-[var(--df-surface-2)] border border-[var(--df-border)] text-sm font-medium text-[var(--df-ink-2)] hover:bg-[var(--df-bg-2)] hover:text-[var(--df-ink)] transition-colors"
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              aria-label="Plus d'actions"
+              className="inline-flex items-center justify-center w-9 h-9 rounded-[var(--df-radius)] bg-[var(--df-surface-2)] border border-[var(--df-border)] text-[var(--df-ink-2)] hover:bg-[var(--df-bg-2)] hover:text-[var(--df-ink)] transition-colors duration-[var(--df-dur-fast)] ease-[var(--df-ease-out)]"
             >
-              <History size={15} strokeWidth={1.8} aria-hidden /> Historique
+              <MoreHorizontal size={18} strokeWidth={1.8} aria-hidden />
             </button>
+            {menuOpen && (
+              <>
+                <button
+                  type="button"
+                  aria-hidden
+                  tabIndex={-1}
+                  onClick={() => {
+                    setMenuOpen(false);
+                  }}
+                  className="fixed inset-0 z-40 cursor-default"
+                />
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full mt-1.5 z-50 w-60 p-1 rounded-[var(--df-radius)] border border-[var(--df-border)] bg-[var(--df-surface)] shadow-[var(--df-shadow-3)]"
+                >
+                  <MenuItem
+                    icon={Copy}
+                    onClick={() => {
+                      handleDuplicate();
+                      setMenuOpen(false);
+                    }}
+                  >
+                    Dupliquer ce devis
+                  </MenuItem>
+                  <MenuItem
+                    icon={Download}
+                    onClick={() => {
+                      handleExportJSON();
+                      setMenuOpen(false);
+                    }}
+                  >
+                    Exporter JSON
+                  </MenuItem>
+                  <MenuItem icon={History} disabled>
+                    Voir l’historique de la ligne
+                  </MenuItem>
+                </div>
+              </>
+            )}
           </div>
-          <CustomerInline
-            customer={customer}
-            onChange={handleCustomerChange}
-            dialCode={dialCode}
-            onDialCode={setDialCode}
-            missing={missingClient}
-          />
         </header>
 
         <div className="flex-1 px-6 py-5 flex flex-col gap-5 overflow-y-auto">
@@ -394,35 +471,68 @@ export default function TabletPage() {
                   onLinked={(b) => {
                     setLinked(line.id, b);
                   }}
-                  onLineTransport={(t) => {
-                    setLineTransport(line.id, t);
-                  }}
-                  onLineRevente={(b) => {
-                    setLineRevente(line.id, b);
-                  }}
                   onRemove={() => {
                     removeLine(line.id);
                   }}
                 />
               ))}
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="relative">
                 <button
                   type="button"
-                  onClick={addLine}
-                  className="flex items-center justify-center gap-2 h-14 rounded-[var(--df-radius-lg)] border-2 border-dashed border-[var(--df-border-strong)] text-[var(--df-ink-2)] text-sm font-medium hover:bg-[var(--df-surface-2)] hover:text-[var(--df-ink)] transition-colors"
+                  onClick={() => {
+                    setAddOpen((o) => !o);
+                  }}
+                  aria-haspopup="menu"
+                  aria-expanded={addOpen}
+                  className="w-full flex items-center justify-center gap-2 h-14 rounded-[var(--df-radius-lg)] border-2 border-dashed border-[var(--df-border-strong)] text-[var(--df-ink-2)] text-sm font-medium hover:bg-[var(--df-surface-2)] hover:text-[var(--df-ink)] transition-colors duration-[var(--df-dur-fast)] ease-[var(--df-ease-out)]"
                 >
                   <Plus size={18} strokeWidth={1.8} aria-hidden />
-                  Ajouter une référence
+                  Ajouter
+                  <ChevronDown size={16} strokeWidth={1.8} aria-hidden />
                 </button>
-                <button
-                  type="button"
-                  onClick={addCustomLine}
-                  className="flex items-center justify-center gap-2 h-14 rounded-[var(--df-radius-lg)] border-2 border-dashed border-[var(--df-border-strong)] text-[var(--df-ink-2)] text-sm font-medium hover:bg-[var(--df-surface-2)] hover:text-[var(--df-ink)] transition-colors"
-                >
-                  <Plus size={18} strokeWidth={1.8} aria-hidden />
-                  Ajouter une ligne libre
-                </button>
+                {addOpen && (
+                  <>
+                    <button
+                      type="button"
+                      aria-hidden
+                      tabIndex={-1}
+                      onClick={() => {
+                        setAddOpen(false);
+                      }}
+                      className="fixed inset-0 z-40 cursor-default"
+                    />
+                    <div
+                      role="menu"
+                      className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-50 w-64 p-1 rounded-[var(--df-radius)] border border-[var(--df-border)] bg-[var(--df-surface)] shadow-[var(--df-shadow-3)]"
+                    >
+                      <MenuItem
+                        icon={Package}
+                        onClick={() => {
+                          addLine();
+                          setAddOpen(false);
+                        }}
+                      >
+                        Référence catalogue
+                      </MenuItem>
+                      <MenuItem
+                        icon={PencilLine}
+                        onClick={() => {
+                          addCustomLine();
+                          setAddOpen(false);
+                        }}
+                      >
+                        Ligne libre
+                      </MenuItem>
+                      <MenuItem icon={ImageIcon} disabled>
+                        Frais de maquette
+                      </MenuItem>
+                      <MenuItem icon={Percent} disabled>
+                        Remise
+                      </MenuItem>
+                    </div>
+                  </>
+                )}
               </div>
             </>
           )}
@@ -440,7 +550,10 @@ export default function TabletPage() {
       <RecapDrawer
         quoteId={id}
         customer={customer}
-        lines={lines.filter((l) => l.linked)}
+        onCustomerChange={handleCustomerChange}
+        dialCode={dialCode}
+        onDialCode={setDialCode}
+        missing={missingClient}
         totals={totals}
         transport={transport}
         revente={revente}
@@ -449,9 +562,40 @@ export default function TabletPage() {
         onGeneratePDF={handleGenerate}
         onSendWhatsApp={handleSendWhatsApp}
         onSendEmail={handleSendEmail}
-        onExportJSON={handleExportJSON}
         width={drawerWidth}
       />
     </div>
+  );
+}
+
+function MenuItem({
+  icon: Icon,
+  children,
+  onClick,
+  disabled,
+}: {
+  icon: typeof Plus;
+  children: ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onClick}
+      disabled={disabled}
+      title={disabled ? 'Bientôt disponible' : undefined}
+      className={cn(
+        'w-full flex items-center gap-2.5 px-3 h-10 rounded-[calc(var(--df-radius)-2px)] text-sm text-left transition-colors duration-[var(--df-dur-fast)] ease-[var(--df-ease-out)]',
+        disabled
+          ? 'text-[var(--df-ink-4)] cursor-not-allowed'
+          : 'text-[var(--df-ink-2)] hover:bg-[var(--df-surface-2)] hover:text-[var(--df-ink)]',
+      )}
+    >
+      <Icon size={16} strokeWidth={1.8} aria-hidden />
+      <span className="flex-1">{children}</span>
+      {disabled && <span className="df-caps text-[var(--df-ink-4)]">Bientôt</span>}
+    </button>
   );
 }

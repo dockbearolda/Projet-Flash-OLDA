@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Boxes, ChevronDown, Link2, Link2Off, Plane, Ship, Trash2 } from 'lucide-react';
+import { ChevronDown, Link2, Link2Off, Trash2 } from 'lucide-react';
 import type {
   CatalogProduct,
   CatalogTextileColor,
@@ -12,7 +12,6 @@ import type {
 import { useCatalog } from '@/features/catalog/useCatalog';
 import { eur } from '@/lib/format';
 import { cn } from '@/lib/cn';
-import { SegToggle } from '@/components/ui/SegToggle';
 import { RollingNumber } from '@/components/ui/RollingNumber';
 import { lineQty, unitPriceBreakdown, lineSubtotalHT } from '../pricing';
 import { QtyGrid } from './QtyGrid';
@@ -30,8 +29,6 @@ interface Props {
   onSizes: (sizes: Sizes) => void;
   onFlockMode: (m: FlockMode) => void;
   onLinked: (b: boolean) => void;
-  onLineTransport: (t: Transport) => void;
-  onLineRevente: (b: boolean) => void;
   onRemove: () => void;
 }
 
@@ -42,38 +39,6 @@ const FAMILY_LABEL: Record<ProductFamily, string> = {
 };
 
 const FAMILY_ORDER: ProductFamily[] = ['unisexe', 'femme', 'enfant'];
-
-const TRANSPORT_SEG_OPTIONS = [
-  {
-    value: 'maritime' as Transport,
-    label: (
-      <span className="inline-flex items-center gap-1">
-        <Ship size={14} strokeWidth={1.8} aria-hidden /> Maritime
-      </span>
-    ),
-  },
-  {
-    value: 'chronopost' as Transport,
-    label: (
-      <span className="inline-flex items-center gap-1">
-        <Plane size={14} strokeWidth={1.8} aria-hidden /> Chrono
-      </span>
-    ),
-  },
-  {
-    value: 'stock' as Transport,
-    label: (
-      <span className="inline-flex items-center gap-1">
-        <Boxes size={14} strokeWidth={1.8} aria-hidden /> Stock
-      </span>
-    ),
-  },
-];
-
-const TGCA_SEG_OPTIONS = [
-  { value: 'apply' as const, label: 'Appliquée' },
-  { value: 'exo' as const, label: 'Exonérée' },
-];
 
 export function LineRow({
   index,
@@ -86,8 +51,6 @@ export function LineRow({
   onSizes,
   onFlockMode,
   onLinked,
-  onLineTransport,
-  onLineRevente,
   onRemove,
 }: Props) {
   const { products, productByRef, placements, textileColors, transports, tgcaRate, version } =
@@ -216,27 +179,7 @@ export function LineRow({
             aria-label="Code multi-couleurs"
             className="df-mono text-base text-[var(--df-ink-3)] shrink-0 bg-transparent border border-[var(--df-border)] rounded px-2 py-0.5 w-14 text-center tabular-nums focus:outline-none focus:border-[var(--df-accent)] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           />
-          <h3 className="df-display text-xl truncate text-[var(--df-ink)]">{displayName}</h3>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="df-caps">Transport</span>
-          <SegToggle
-            value={effectiveTransport}
-            onChange={onLineTransport}
-            options={TRANSPORT_SEG_OPTIONS}
-            ariaLabel={`Transport ligne ${String(index + 1)}`}
-          />
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="df-caps">TGCA</span>
-          <SegToggle
-            value={effectiveRevente ? 'exo' : 'apply'}
-            onChange={(v) => {
-              onLineRevente(v === 'exo');
-            }}
-            options={TGCA_SEG_OPTIONS}
-            ariaLabel={`TGCA ligne ${String(index + 1)}`}
-          />
+          <h3 className="df-display text-xl leading-tight text-[var(--df-ink)]">{displayName}</h3>
         </div>
         <button
           type="button"
@@ -406,55 +349,43 @@ export function LineRow({
         </label>
       </div>
 
-      {/* Row 2: qty + price breakdown + totals */}
-      <div className="px-5 pb-4 flex items-end gap-3 flex-wrap">
-        <div className="flex items-center gap-3 px-4 h-14 rounded-[var(--df-radius)] border border-[var(--df-border)] bg-[var(--df-surface-2)]">
-          <div className="flex flex-col items-start">
-            <span className="df-caps">Quantités</span>
-            <span className="df-mono text-lg font-bold tabular-nums text-[var(--df-ink)]">
-              {qty}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex-1" />
-
-        <div className="flex flex-col gap-2 px-4 py-3 rounded-[var(--df-radius)] bg-[var(--df-surface-2)] border border-[var(--df-border)] min-w-[260px]">
-          {/* Prix unitaire (1 t-shirt) */}
-          <div className="flex items-baseline justify-between gap-4">
-            <span className="df-caps shrink-0">Prix / pièce</span>
-            <div className="flex items-baseline gap-5">
-              <span className="df-mono text-base tabular-nums text-[var(--df-ink)]">
-                <span className="df-caps mr-1">HT</span>
-                {hasPricing ? <RollingNumber value={money.unitHT} format={eur} /> : '—'}
-              </span>
-              <span className="df-mono text-base tabular-nums text-[var(--df-accent)]">
-                <span className="df-caps mr-1 text-[var(--df-accent)]">TTC</span>
-                {hasPricing ? <RollingNumber value={money.unitTTC} format={eur} /> : '—'}
-              </span>
-            </div>
-          </div>
-
-          {/* Prix total de la ligne */}
-          <div className="flex items-baseline justify-between gap-4 border-t border-[var(--df-border)] pt-2">
-            <span className="df-caps shrink-0">Total</span>
-            <div className="flex items-baseline gap-5">
-              <span className="df-display text-2xl tabular-nums text-[var(--df-ink)]">
-                <span className="df-caps mr-1">HT</span>
-                {hasPricing ? <RollingNumber value={money.ht} format={eur} /> : '—'}
-              </span>
-              <span className="df-display text-2xl tabular-nums text-[var(--df-accent)]">
-                <span className="df-caps mr-1 text-[var(--df-accent)]">TTC</span>
-                {hasPricing ? <RollingNumber value={money.ttc} format={eur} /> : '—'}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Qty grid — always visible */}
-      <div className="px-5 pb-5 pt-1 border-t border-[var(--df-border)]">
+      {/* Grille tailles + prix dérivé (le prix n'apparaît qu'une fois saisie) */}
+      <div className="px-5 pb-5 pt-1 border-t border-[var(--df-border)] flex flex-col gap-4">
         <QtyGrid sizes={line.sizes} onChange={onSizes} />
+
+        {qty > 0 && (
+          <div className="flex flex-col gap-2 px-4 py-3 rounded-[var(--df-radius)] bg-[var(--df-surface-2)] border border-[var(--df-border)]">
+            {/* Prix unitaire (1 t-shirt) */}
+            <div className="flex items-baseline justify-between gap-4">
+              <span className="df-caps shrink-0">Prix / pièce</span>
+              <div className="flex items-baseline gap-5">
+                <span className="df-mono text-base tabular-nums text-[var(--df-ink)]">
+                  <span className="df-caps mr-1">HT</span>
+                  <RollingNumber value={money.unitHT} format={eur} />
+                </span>
+                <span className="df-mono text-base tabular-nums text-[var(--df-accent)]">
+                  <span className="df-caps mr-1 text-[var(--df-accent)]">TTC</span>
+                  <RollingNumber value={money.unitTTC} format={eur} />
+                </span>
+              </div>
+            </div>
+
+            {/* Prix total de la ligne */}
+            <div className="flex items-baseline justify-between gap-4 border-t border-[var(--df-border)] pt-2">
+              <span className="df-caps shrink-0">Total ligne</span>
+              <div className="flex items-baseline gap-5">
+                <span className="df-display text-2xl tabular-nums text-[var(--df-ink)]">
+                  <span className="df-caps mr-1">HT</span>
+                  <RollingNumber value={money.ht} format={eur} />
+                </span>
+                <span className="df-display text-2xl tabular-nums text-[var(--df-accent)]">
+                  <span className="df-caps mr-1 text-[var(--df-accent)]">TTC</span>
+                  <RollingNumber value={money.ttc} format={eur} />
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );
