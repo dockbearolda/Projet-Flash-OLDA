@@ -99,6 +99,7 @@ interface EnrichedLine {
   /** Marqueur interne du patron : « C » + le CODE (% de marge). Ex. « C15 ». */
   codeTag: string;
   name: string;
+  /** Référence fournisseur (ex. « NS308 »), affichée en petit sous la réf interne. */
   sku: string;
   placementLabel: string;
   textileName: string;
@@ -168,7 +169,6 @@ function enrich(line: QuoteLine): EnrichedLine {
 }
 
 function renderRow(e: EnrichedLine): string {
-  const subParts = [e.sku, e.placementLabel, e.textileName].filter(Boolean).map(esc).join(' · ');
   const detailRows: [string, string][] = [
     ['Coloris textile', e.textileName],
     ['Impression DTF', e.placementLabel],
@@ -185,10 +185,9 @@ function renderRow(e: EnrichedLine): string {
   const note = e.note ? `<div class="art-note">${esc(e.note)}</div>` : '';
 
   return `<tr>
-            <td class="ref"><span class="ref-id">* ${esc(e.ref)}</span> <span class="code-tag">${esc(e.codeTag)}</span></td>
+            <td class="ref"><span class="ref-stack"><span class="ref-id">${esc(e.ref)}</span>${e.sku ? `<span class="ref-sku">${esc(e.sku)}</span>` : ''}</span></td>
             <td>
-              <div class="art-name">${esc(e.name)}</div>
-              ${subParts ? `<div class="art-sub">${subParts}</div>` : ''}
+              <div class="art-name">${esc(e.name)} <span class="code-tag">${esc(e.codeTag)}</span></div>
               <dl class="art-details">
               ${details}
               </dl>
@@ -351,11 +350,20 @@ export function buildDevisHtml(data: DevisData): string {
       tbody tr { page-break-inside: avoid; break-inside: avoid; }
       tbody td { padding: 13px 0; border-bottom: 1px solid var(--hairline); vertical-align: top; }
       td.ref { font-family: var(--font-mono); font-size: 11px; color: var(--duck-400); padding-right: 12px; }
-      td.ref .ref-id { white-space: nowrap; }
-      td.ref .code-tag { font-weight: 700; color: var(--duck-deep); white-space: nowrap; }
+      td.ref .ref-stack { display: inline-block; text-align: center; }
+      td.ref .ref-id { display: block; white-space: nowrap; }
+      td.ref .ref-sku { display: block; margin-top: 2px; font-size: 9.5px; color: var(--duck-300); white-space: nowrap; }
+      .art-name .code-tag {
+        margin-left: 6px;
+        font-family: var(--font-mono);
+        font-weight: 700;
+        font-size: 11px;
+        color: var(--duck-300);
+        letter-spacing: 0;
+        white-space: nowrap;
+      }
       .art-details dd.sizes { line-height: 1.6; }
       .art-name { font-size: 13px; font-weight: 700; color: var(--duck-deep); letter-spacing: -0.005em; }
-      .art-sub { margin-top: 4px; font-size: 12px; font-weight: 600; line-height: 1.35; color: var(--duck); }
       .art-details {
         margin-top: 7px;
         display: grid;
