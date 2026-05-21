@@ -1,5 +1,6 @@
 import { User, Phone, Mail, Building2 } from 'lucide-react';
 import type { Customer } from '@df/shared';
+import { capitalizeWords } from '@/lib/format';
 import { DIAL_OPTIONS } from '../share';
 
 interface Props {
@@ -26,9 +27,10 @@ export function CustomerInline({ customer, onChange, dialCode, onDialCode, missi
         ariaLabel="Société du client"
         value={customer.company ?? ''}
         onChange={(v) => {
-          onChange({ company: v });
+          onChange({ company: capitalizeWords(v) });
         }}
         invalid={missing?.company}
+        autoCapitalize="words"
       />
       <Field
         Icon={User}
@@ -36,9 +38,10 @@ export function CustomerInline({ customer, onChange, dialCode, onDialCode, missi
         ariaLabel="Nom et prénom du contact"
         value={customer.name}
         onChange={(v) => {
-          onChange({ name: v });
+          onChange({ name: capitalizeWords(v) });
         }}
         invalid={missing?.name}
+        autoCapitalize="words"
       />
       <div
         className={
@@ -107,6 +110,7 @@ function Field({
   onChange,
   invalid,
   type = 'text',
+  autoCapitalize,
 }: {
   Icon: typeof User;
   placeholder: string;
@@ -115,6 +119,7 @@ function Field({
   onChange: (v: string) => void;
   invalid?: boolean | undefined;
   type?: string | undefined;
+  autoCapitalize?: string | undefined;
 }) {
   return (
     <div
@@ -142,6 +147,7 @@ function Field({
         }}
         aria-label={ariaLabel}
         aria-invalid={invalid ? true : undefined}
+        autoCapitalize={autoCapitalize}
       />
     </div>
   );

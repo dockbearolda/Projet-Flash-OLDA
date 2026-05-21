@@ -26,3 +26,16 @@ export function fmtShortDate(d: Date | string): string {
   const date = typeof d === 'string' ? new Date(d) : d;
   return format(date, 'd MMM yyyy', { locale: fr });
 }
+
+/**
+ * Met une majuscule à la première lettre de chaque mot (séparé par un espace
+ * ou un tiret), en préservant le reste de la saisie — ainsi « jean dupont »
+ * devient « Jean Dupont » sans forcer en minuscule un sigle déjà tapé en
+ * capitales (« SARL », « OLDA »).
+ */
+export function capitalizeWords(value: string): string {
+  return value.replace(
+    /(^|[\s-])(\p{L})/gu,
+    (_m: string, sep: string, first: string) => sep + first.toLocaleUpperCase('fr'),
+  );
+}

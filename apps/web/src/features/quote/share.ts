@@ -69,6 +69,7 @@ export function buildQuoteMessage({
 /** Indicatifs proposés à côté du téléphone — Saint-Martin (FR) par défaut. */
 export const DIAL_OPTIONS = [
   { code: '590', label: 'FR +590', hint: 'Saint-Martin / Antilles françaises' },
+  { code: '33', label: 'FR +33', hint: 'France métropolitaine' },
   { code: '1721', label: 'NL +1721', hint: 'Sint Maarten (côté hollandais)' },
   { code: '1', label: 'US +1', hint: 'États-Unis' },
 ] as const;
@@ -79,9 +80,11 @@ export const DEFAULT_DIAL = '590';
  * wa.me needs digits only in international format — no '+', no spaces.
  * Resolution order:
  *  - an explicit international form ('+…' or '00…') is respected as-is ;
- *  - a leading '0' is the French trunk prefix → toujours +590 (St-Martin/Antilles) ;
+ *  - a leading '0' is the trunk prefix → on le remplace par l'indicatif choisi
+ *    (`defaultDial`), ainsi un 06… français bascule en +33 quand FR +33 est
+ *    sélectionné, et reste en +590 pour Saint-Martin (le défaut) ;
  *  - sinon on préfixe avec `defaultDial`, l'indicatif choisi à côté du champ
- *    téléphone (St-Martin +590 par défaut, Sint Maarten +1721, USA +1).
+ *    téléphone (St-Martin +590 par défaut, France +33, Sint Maarten +1721, USA +1).
  * Un numéro déjà préfixé par l'indicatif choisi n'est pas doublé.
  */
 export function normalizePhone(phone: string, defaultDial: string = DEFAULT_DIAL): string {
@@ -90,7 +93,7 @@ export function normalizePhone(phone: string, defaultDial: string = DEFAULT_DIAL
   if (!digits) return '';
   if (raw.startsWith('+')) return digits;
   if (digits.startsWith('00')) return digits.slice(2);
-  if (digits.startsWith('0')) return `590${digits.slice(1)}`;
+  if (digits.startsWith('0')) return `${defaultDial}${digits.slice(1)}`;
   if (digits.startsWith(defaultDial)) return digits;
   return `${defaultDial}${digits}`;
 }
