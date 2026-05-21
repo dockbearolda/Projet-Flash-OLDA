@@ -426,9 +426,6 @@ export function buildDevisHtml(data: DevisData): string {
       <header class="head">
         <div class="brand">
           ${OLDA_LOGO_SVG}
-          <div class="brand-text">
-            <div class="tagline">${esc(OLDA_ISSUER.tagline)}</div>
-          </div>
         </div>
         <dl class="meta">
           <dt>Devis</dt>
@@ -446,7 +443,6 @@ export function buildDevisHtml(data: DevisData): string {
         <div class="party">
           <div class="party-title caps">Émis par</div>
           <p class="org">${esc(OLDA_ISSUER.name)}</p>
-          <p>${esc(OLDA_ISSUER.tagline)}</p>
           <p>${esc(OLDA_ISSUER.address)}</p>
           ${issuerContact}
         </div>
