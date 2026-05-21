@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Link2, Link2Off, Trash2, Truck } from 'lucide-react';
 import { SIZE_KEYS } from '@df/shared';
 import type {
@@ -540,6 +540,26 @@ function TextileColorPicker({
 }) {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // Ferme au clic en dehors du sélecteur (ou via Échap). Remplace l'ancien voile
+  // plein écran qui, selon le contexte d'empilement, pouvait passer au-dessus de
+  // la liste et intercepter les clics destinés aux pastilles de couleur.
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent): void => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('pointerdown', onDown, true);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onDown, true);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
 
   const byId = useMemo(() => {
     const m = new Map<string, CatalogTextileColor>();
@@ -584,7 +604,7 @@ function TextileColorPicker({
   }
 
   return (
-    <div className="relative">
+    <div ref={rootRef} className="relative">
       <button
         type="button"
         onClick={() => {
@@ -613,71 +633,60 @@ function TextileColorPicker({
       />
 
       {open && (
-        <>
-          <button
-            type="button"
-            aria-hidden
-            tabIndex={-1}
-            onClick={() => {
-              setOpen(false);
-            }}
-            className="fixed inset-0 z-40 cursor-default"
-          />
-          <div
-            role="listbox"
-            aria-label="Coloris disponibles"
-            className="absolute left-0 top-full mt-1.5 z-50 w-[min(20rem,80vw)] p-2 rounded-[var(--df-radius)] border border-[var(--df-border)] bg-[var(--df-surface)] shadow-[var(--df-shadow-3)]"
-          >
-            <span className="df-caps block px-1 pb-1.5">Best-sellers</span>
-            <div className="grid grid-cols-2 gap-1.5">
-              {best.map((c) => (
-                <SwatchOption
-                  key={c.id}
-                  color={c}
-                  selected={c.id === value}
-                  onPick={() => {
-                    pick(c.id);
-                  }}
-                />
-              ))}
-            </div>
-
-            {others.length > 0 && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setExpanded((e) => !e);
-                  }}
-                  aria-expanded={expanded}
-                  className="mt-2 w-full inline-flex items-center justify-center gap-1.5 h-8 rounded-[var(--df-radius-sm)] text-xs font-medium text-[var(--df-ink-2)] hover:bg-[var(--df-surface-2)]"
-                >
-                  <ChevronDown
-                    size={14}
-                    strokeWidth={1.8}
-                    className={cn('transition-transform', expanded && 'rotate-180')}
-                    aria-hidden
-                  />
-                  {expanded ? 'Moins de couleurs' : `Plus de couleurs (${String(others.length)})`}
-                </button>
-                {expanded && (
-                  <div className="grid grid-cols-2 gap-1.5 pt-1.5">
-                    {others.map((c) => (
-                      <SwatchOption
-                        key={c.id}
-                        color={c}
-                        selected={c.id === value}
-                        onPick={() => {
-                          pick(c.id);
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
+        <div
+          role="listbox"
+          aria-label="Coloris disponibles"
+          className="absolute left-0 top-full mt-1.5 z-50 w-[min(20rem,80vw)] p-2 rounded-[var(--df-radius)] border border-[var(--df-border)] bg-[var(--df-surface)] shadow-[var(--df-shadow-3)]"
+        >
+          <span className="df-caps block px-1 pb-1.5">Best-sellers</span>
+          <div className="grid grid-cols-2 gap-1.5">
+            {best.map((c) => (
+              <SwatchOption
+                key={c.id}
+                color={c}
+                selected={c.id === value}
+                onPick={() => {
+                  pick(c.id);
+                }}
+              />
+            ))}
           </div>
-        </>
+
+          {others.length > 0 && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setExpanded((e) => !e);
+                }}
+                aria-expanded={expanded}
+                className="mt-2 w-full inline-flex items-center justify-center gap-1.5 h-8 rounded-[var(--df-radius-sm)] text-xs font-medium text-[var(--df-ink-2)] hover:bg-[var(--df-surface-2)]"
+              >
+                <ChevronDown
+                  size={14}
+                  strokeWidth={1.8}
+                  className={cn('transition-transform', expanded && 'rotate-180')}
+                  aria-hidden
+                />
+                {expanded ? 'Moins de couleurs' : `Plus de couleurs (${String(others.length)})`}
+              </button>
+              {expanded && (
+                <div className="grid grid-cols-2 gap-1.5 pt-1.5">
+                  {others.map((c) => (
+                    <SwatchOption
+                      key={c.id}
+                      color={c}
+                      selected={c.id === value}
+                      onPick={() => {
+                        pick(c.id);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
       )}
     </div>
   );
