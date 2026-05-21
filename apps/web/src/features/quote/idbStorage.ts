@@ -10,7 +10,13 @@ export function createIdbStorage<T>(): PersistStorage<T> {
     getItem: async (name: string): Promise<StorageValue<T> | null> => {
       const raw = await get<string>(name);
       if (!raw) return null;
-      return JSON.parse(raw) as StorageValue<T>;
+      try {
+        return JSON.parse(raw) as StorageValue<T>;
+      } catch {
+        // Cache corrompu (écriture interrompue, quota dépassé…) : on repart sur
+        // l'état par défaut plutôt que de bloquer le chargement de l'app.
+        return null;
+      }
     },
     setItem: async (name: string, value: StorageValue<T>): Promise<void> => {
       await set(name, JSON.stringify(value));

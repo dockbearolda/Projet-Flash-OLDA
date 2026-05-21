@@ -60,8 +60,25 @@ if (isProd) {
   const webDist = candidates.find((p) => existsSync(p));
   if (webDist) {
     console.warn(`[api] serving SPA from ${webDist}`);
+    // Serve the built static files (hashed assets, sw.js, manifest, icons…).
     app.use('*', serveStatic({ root: webDist }));
-    app.get('*', serveStatic({ path: path.join(webDist, 'index.html') }));
+    // SPA fallback for client-side routes (e.g. /tablet, /admin/quotes) — but
+    // ONLY for navigation requests. A missing hashed asset (typically an old
+    // chunk requested by a client that hasn't yet picked up a fresh deploy)
+    // must return 404, never index.html: serving HTML for a ".js" request makes
+    // the browser parse HTML as a module → "Failed to fetch dynamically
+    // imported module", which silently breaks lazy features like PDF export.
+    app.get(
+      '*',
+      (c, next) => {
+        const p = c.req.path;
+        if (p.startsWith('/assets/') || p.startsWith('/api/') || /\.[a-zA-Z0-9]+$/.test(p)) {
+          return c.notFound();
+        }
+        return next();
+      },
+      serveStatic({ path: path.join(webDist, 'index.html') }),
+    );
   } else {
     console.warn(`[api] SPA dist not found in [${candidates.join(', ')}] — running API-only`);
   }

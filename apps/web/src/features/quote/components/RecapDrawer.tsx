@@ -149,8 +149,10 @@ export function RecapDrawer({
             Appliqué à toutes les lignes · ajustable ligne par ligne.
           </p>
         </section>
+      </div>
 
-        {/* Totaux */}
+      {/* Totaux — hors zone scrollable : toujours visibles au-dessus des actions */}
+      <div className="px-6 py-4 border-t border-[var(--df-border)]">
         <section className="space-y-1.5">
           <Row
             label="Sous-total HT"
@@ -161,8 +163,10 @@ export function RecapDrawer({
             value={
               totals.transportHT > 0 ? (
                 <RollingNumber value={totals.transportHT} format={eur} />
-              ) : (
+              ) : totals.qtyTotal > 0 ? (
                 'Gratuit'
+              ) : (
+                '—'
               )
             }
             muted={totals.transportHT === 0}
@@ -172,8 +176,10 @@ export function RecapDrawer({
             value={
               totals.tgcaHT > 0 ? (
                 <RollingNumber value={totals.tgcaHT} format={eur} />
-              ) : (
+              ) : totals.qtyTotal > 0 ? (
                 'Exonéré — revente'
+              ) : (
+                '—'
               )
             }
             muted={totals.tgcaHT === 0}

@@ -154,9 +154,11 @@ export default function TabletPage() {
       const qty = lines.reduce((acc, l) => acc + lineQty(l.sizes), 0);
       if (qty === 0 && customer.name.trim() === '' && (customer.company ?? '').trim() === '')
         return;
+      // Conserve le statut courant (un devis "Envoyé" édité ne doit pas
+      // silencieusement redevenir "Brouillon").
       useHistoryStore.getState().upsert({
         id,
-        status: 'draft',
+        status: useQuoteStore.getState().status,
         customer,
         transport,
         revente,
@@ -220,6 +222,8 @@ export default function TabletPage() {
   // (debounce) qui écraserait le statut.
   function markSent(createdAt: string): void {
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
+    // Marque aussi le store : les auto-sauvegardes suivantes garderont "Envoyé".
+    useQuoteStore.setState({ status: 'sent' });
     useHistoryStore.getState().upsert({
       id,
       status: 'sent',
@@ -347,6 +351,29 @@ export default function TabletPage() {
   // Forke le devis courant sous un nouvel ID : l'original reste en historique
   // (auto-sauvegardé), l'édition continue sur la copie.
   function handleDuplicate() {
+    // Vide d'abord la sauvegarde différée sous l'id courant (en conservant son
+    // statut) pour ne perdre aucune édition récente, puis forke un brouillon.
+    if (saveTimer.current) window.clearTimeout(saveTimer.current);
+    const current = useQuoteStore.getState();
+    const hasContent =
+      lines.some((l) => lineQty(l.sizes) > 0) ||
+      customer.name.trim() !== '' ||
+      (customer.company ?? '').trim() !== '';
+    if (hasContent) {
+      useHistoryStore.getState().upsert({
+        id,
+        status: current.status,
+        customer,
+        transport,
+        revente,
+        lines,
+        totalHT: totals.totalHT,
+        qtyTotal: totals.qtyTotal,
+        createdAt: current.createdAt,
+        updatedAt: new Date().toISOString(),
+        deletedAt: null,
+      });
+    }
     const newId = nextQuoteId();
     const now = new Date().toISOString();
     useQuoteStore.setState({ id: newId, status: 'draft', createdAt: now, updatedAt: now });

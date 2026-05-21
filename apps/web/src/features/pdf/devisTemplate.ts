@@ -60,7 +60,6 @@ interface EnrichedLine {
   textileName: string;
   flockLabel: string;
   sizesText: string;
-  codePct: number;
   note: string;
   qty: number;
   unitText: string;
@@ -116,7 +115,6 @@ function enrich(line: QuoteLine): EnrichedLine {
     textileName: textile?.name ?? '—',
     flockLabel,
     sizesText,
-    codePct: line.code,
     note: line.note?.trim() ?? '',
     qty,
     unitText,
@@ -132,7 +130,6 @@ function renderRow(e: EnrichedLine): string {
     ['Couleur de flocage', e.flockLabel],
   ];
   if (e.sizesText) detailRows.push(['Tailles', e.sizesText]);
-  detailRows.push(['Code couleur', `${fmtInt.format(e.codePct)} %`]);
 
   const details = detailRows
     .map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`)
