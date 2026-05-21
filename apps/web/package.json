@@ -14,7 +14,6 @@
   },
   "dependencies": {
     "@df/shared": "workspace:*",
-    "@react-pdf/renderer": "^4.1.5",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "idb-keyval": "^6.2.1",

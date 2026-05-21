@@ -226,8 +226,8 @@ let idbAttached = false;
 export function attachIdbStorage(): void {
   if (idbAttached) return;
   useQuoteStore.persist.setOptions({ storage: createIdbStorage<QuoteState>() });
-  // Trigger a rehydrate so any saved state is loaded.
-  void useQuoteStore.persist.rehydrate();
+  // Pas de rehydrate : à chaque ouverture du site on démarre sans devis
+  // (DEV-PENDING). Les devis enregistrés restent accessibles via l'historique.
   idbAttached = true;
 }
 

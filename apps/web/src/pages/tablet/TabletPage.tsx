@@ -5,6 +5,7 @@ import {
   ChevronDown,
   Copy,
   Download,
+  FilePlus,
   FileText as FileTextIcon,
   History,
   Image as ImageIcon,
@@ -140,14 +141,9 @@ export default function TabletPage() {
   const setCustomer = useQuoteStore((s) => s.setCustomer);
   const setTransport = useQuoteStore((s) => s.setTransport);
   const setRevente = useQuoteStore((s) => s.setRevente);
+  const newQuote = useQuoteStore((s) => s.newQuote);
 
   const totals = useQuoteTotals();
-
-  useEffect(() => {
-    if (id === 'DEV-PENDING') {
-      useQuoteStore.setState({ id: nextQuoteId() });
-    }
-  }, [id]);
 
   const saveTimer = useRef<number | null>(null);
   useEffect(() => {
@@ -219,24 +215,9 @@ export default function TabletPage() {
     return true;
   }
 
-  // Génère + télécharge le PDF, puis passe le devis en "Envoyé". Annule un
-  // enregistrement brouillon en attente (debounce) qui écraserait le statut.
-  async function downloadPdfAndMarkSent(): Promise<void> {
-    const { QuotePdf } = await import('@/features/pdf/QuotePdf');
-    const { downloadPdf } = await import('@/features/pdf/generate');
-    const createdAt = useQuoteStore.getState().createdAt;
-    await downloadPdf(
-      `${id}.pdf`,
-      <QuotePdf
-        id={id}
-        customer={customer}
-        lines={lines.filter((l) => l.linked)}
-        transport={transport}
-        revente={revente}
-        totals={totals}
-        createdAt={createdAt}
-      />,
-    );
+  // Passe le devis en "Envoyé". Annule un enregistrement brouillon en attente
+  // (debounce) qui écraserait le statut.
+  function markSent(createdAt: string): void {
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
     useHistoryStore.getState().upsert({
       id,
@@ -253,13 +234,38 @@ export default function TabletPage() {
     });
   }
 
+  // Construit le devis (design éditorial) et ouvre la fenêtre d'impression du
+  // navigateur → « Enregistrer au format PDF » (rendu vectoriel, 100 % client).
+  // Passe ensuite le devis en "Envoyé".
+  async function generateDevisPdf(): Promise<void> {
+    const createdAt = useQuoteStore.getState().createdAt;
+    const { buildDevisHtml } = await import('@/features/pdf/devisTemplate');
+    const { printDevisHtml } = await import('@/features/pdf/printDevis');
+    const html = buildDevisHtml({
+      id,
+      customer,
+      lines: lines.filter((l) => l.linked),
+      transport,
+      revente,
+      totals,
+      createdAt,
+    });
+    // L'iframe d'impression vit sur document.body, indépendamment de l'état
+    // React : on déclenche l'impression sans l'attendre, puis on marque le
+    // devis comme envoyé. Le devis reste affiché pour le relancer ou l'ajuster.
+    void printDevisHtml(html);
+    markSent(createdAt);
+  }
+
   function handleGenerate() {
     if (!validateClient()) return;
     void (async () => {
       try {
-        toast.loading('Génération du PDF…', { id: 'pdf' });
-        await downloadPdfAndMarkSent();
-        toast.success('PDF généré', { id: 'pdf', description: `${id}.pdf téléchargé` });
+        await generateDevisPdf();
+        toast.success('Devis prêt', {
+          id: 'pdf',
+          description: 'Choisis « Enregistrer au format PDF » dans la fenêtre d’impression.',
+        });
       } catch (err) {
         console.error('PDF generation failed', err);
         toast.error('Échec génération PDF', { id: 'pdf' });
@@ -284,11 +290,11 @@ export default function TabletPage() {
     window.open(whatsappUrl(customer.phone ?? '', body, dialCode), '_blank', 'noopener,noreferrer');
     void (async () => {
       try {
-        toast.loading('Préparation du PDF à joindre…', { id: 'pdf' });
-        await downloadPdfAndMarkSent();
+        await generateDevisPdf();
         toast.success('WhatsApp ouvert', {
           id: 'pdf',
-          description: `${id}.pdf téléchargé — à joindre au message.`,
+          description:
+            'Enregistre le devis en PDF (fenêtre d’impression) pour le joindre au message.',
         });
       } catch (err) {
         console.error('WhatsApp prepare failed', err);
@@ -312,11 +318,10 @@ export default function TabletPage() {
     window.location.href = mailtoUrl(customer.email ?? '', subject, body);
     void (async () => {
       try {
-        toast.loading('Préparation du PDF à joindre…', { id: 'pdf' });
-        await downloadPdfAndMarkSent();
+        await generateDevisPdf();
         toast.success('Email préparé', {
           id: 'pdf',
-          description: `${id}.pdf téléchargé — à joindre au mail.`,
+          description: 'Enregistre le devis en PDF (fenêtre d’impression) pour le joindre au mail.',
         });
       } catch (err) {
         console.error('Email prepare failed', err);
@@ -348,6 +353,19 @@ export default function TabletPage() {
   }
 
   const activeLine = lines.find((l) => l.id === useQuoteStore.getState().activeLineId) ?? lines[0];
+
+  if (id === 'DEV-PENDING') {
+    return (
+      <EmptyEditor
+        onStart={() => {
+          newQuote();
+        }}
+        onHistory={() => {
+          navigate('/admin/quotes');
+        }}
+      />
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-[var(--df-bg)]">
@@ -415,6 +433,15 @@ export default function TabletPage() {
                   role="menu"
                   className="absolute right-0 top-full mt-1.5 z-50 w-60 p-1 rounded-[var(--df-radius)] border border-[var(--df-border)] bg-[var(--df-surface)] shadow-[var(--df-shadow-3)]"
                 >
+                  <MenuItem
+                    icon={FilePlus}
+                    onClick={() => {
+                      newQuote();
+                      setMenuOpen(false);
+                    }}
+                  >
+                    Nouveau devis
+                  </MenuItem>
                   <MenuItem
                     icon={Copy}
                     onClick={() => {
@@ -597,5 +624,41 @@ function MenuItem({
       <span className="flex-1">{children}</span>
       {disabled && <span className="df-caps text-[var(--df-ink-4)]">Bientôt</span>}
     </button>
+  );
+}
+
+// Page d'ouverture sans devis : uniquement la barre du haut. On démarre un
+// devis (et donc une référence) seulement au clic sur « Nouveau devis ».
+function EmptyEditor({ onStart, onHistory }: { onStart: () => void; onHistory: () => void }) {
+  return (
+    <div className="flex min-h-screen flex-col bg-[var(--df-bg)]">
+      <header className="df-glass h-[var(--df-titlebar-height)] shrink-0 px-4 border-b border-[var(--df-glass-border)] flex items-center gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <Logo className="w-7 h-7 shrink-0 text-[var(--df-accent)]" />
+          <h1 className="df-display text-lg text-[var(--df-ink)] truncate">Devis Flash</h1>
+          <span className="df-caps shrink-0 hidden xl:inline">OLDA · SXM</span>
+        </div>
+
+        <div className="flex-1" />
+
+        <button
+          type="button"
+          onClick={onHistory}
+          className="inline-flex items-center gap-1.5 px-3 h-9 rounded-[var(--df-radius)] bg-[var(--df-surface-2)] border border-[var(--df-border)] text-sm font-medium text-[var(--df-ink-2)] hover:bg-[var(--df-bg-2)] hover:text-[var(--df-ink)] transition-colors duration-[var(--df-dur-fast)] ease-[var(--df-ease-out)]"
+        >
+          <History size={15} strokeWidth={1.8} aria-hidden />
+          <span className="hidden xl:inline">Historique</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={onStart}
+          className="inline-flex items-center gap-1.5 px-3 h-9 rounded-[var(--df-radius)] bg-[var(--df-accent)] text-[var(--df-accent-ink)] text-sm font-medium hover:bg-[var(--df-accent-2)] transition-colors duration-[var(--df-dur-fast)] ease-[var(--df-ease-out)]"
+        >
+          <Plus size={16} strokeWidth={1.8} aria-hidden />
+          Nouveau devis
+        </button>
+      </header>
+    </div>
   );
 }

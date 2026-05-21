@@ -70,28 +70,28 @@ export default function QuotesPage() {
 
   async function resend(entry: HistoryEntry) {
     try {
-      toast.loading('Génération du PDF…', { id: 'pdf' });
-      const { QuotePdf } = await import('@/features/pdf/QuotePdf');
-      const { downloadPdf } = await import('@/features/pdf/generate');
+      const { buildDevisHtml } = await import('@/features/pdf/devisTemplate');
+      const { printDevisHtml } = await import('@/features/pdf/printDevis');
       const totals = quoteTotals({
         lines: entry.lines,
         transport: entry.transport,
         revente: entry.revente,
       });
-      await downloadPdf(
-        `${entry.id}.pdf`,
-        <QuotePdf
-          id={entry.id}
-          customer={entry.customer}
-          lines={entry.lines.filter((l) => l.linked)}
-          transport={entry.transport}
-          revente={entry.revente}
-          totals={totals}
-          createdAt={entry.createdAt}
-        />,
-      );
+      const html = buildDevisHtml({
+        id: entry.id,
+        customer: entry.customer,
+        lines: entry.lines.filter((l) => l.linked),
+        transport: entry.transport,
+        revente: entry.revente,
+        totals,
+        createdAt: entry.createdAt,
+      });
+      void printDevisHtml(html);
       markSent(entry.id);
-      toast.success('PDF renvoyé', { id: 'pdf', description: `${entry.id}.pdf téléchargé` });
+      toast.success('Devis prêt', {
+        id: 'pdf',
+        description: 'Choisis « Enregistrer au format PDF » dans la fenêtre d’impression.',
+      });
     } catch (err) {
       console.error('PDF resend failed', err);
       toast.error('Échec génération PDF', { id: 'pdf' });
