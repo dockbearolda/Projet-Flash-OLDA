@@ -67,7 +67,7 @@ interface EnrichedLine {
   totalText: string;
 }
 
-function enrich(line: QuoteLine, quoteQty: number): EnrichedLine {
+function enrich(line: QuoteLine): EnrichedLine {
   const product = PRODUCT_BY_REF[line.productRef];
   const placement = (PLACEMENT_BY_ID as Record<string, Placement | undefined>)[line.placementId];
   const textile = (TEXTILE_COLOR_BY_ID as Record<string, TextileColor | undefined>)[
@@ -92,12 +92,12 @@ function enrich(line: QuoteLine, quoteQty: number): EnrichedLine {
 
   let unitText = '—';
   let totalText = '—';
-  if (quoteQty > 0) {
+  if (qty > 0) {
     try {
       const pu = unitPriceHT({
         productRef: line.productRef,
         placementId: line.placementId,
-        qty: quoteQty,
+        qty,
         code: line.code,
         priceAchatOverride: line.custom?.priceAchat,
       });
@@ -173,7 +173,7 @@ export function buildDevisHtml(data: DevisData): string {
   const clientContact = contactBits.length ? `<p>${contactBits.map(esc).join(' · ')}</p>` : '';
 
   // Lignes
-  const rows = lines.map((l) => renderRow(enrich(l, totals.qtyTotal))).join('\n          ');
+  const rows = lines.map((l) => renderRow(enrich(l))).join('\n          ');
 
   // Totaux — le transport peut être réglé ligne par ligne : on n'affiche un
   // mode précis que si toutes les lignes facturables le partagent.

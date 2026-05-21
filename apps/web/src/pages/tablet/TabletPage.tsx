@@ -483,7 +483,6 @@ export default function TabletPage() {
                   key={line.id}
                   index={i}
                   line={line}
-                  quoteQty={totals.qtyTotal}
                   transport={transport}
                   revente={revente}
                   canRemove={lines.length > 1}

@@ -261,36 +261,32 @@ describe('lineSubtotalHT', () => {
   it('80 pcs × H-001 coeur-dos × code=0 = 80 × 15.30 = 1224', () => {
     // h001 @ qty 80: vierge = ceil(4.05 × 1.37 × 10)/10 = 5.60
     // coeur+dos @ qty 80 = 3.20 + 6.50 = 9.70. PU base = 15.30. × 80 = 1224
-    const total = lineSubtotalHT(
-      {
-        productRef: 'H-001',
-        placementId: 'coeur-dos',
-        sizes: sizes({ m: 40, l: 40 }),
-        code: 0,
-      },
-      80,
-    );
+    const total = lineSubtotalHT({
+      productRef: 'H-001',
+      placementId: 'coeur-dos',
+      sizes: sizes({ m: 40, l: 40 }),
+      code: 0,
+    });
     expect(round2(total)).toBe(1224);
   });
 
   it('80 pcs × H-001 coeur-dos × default code (10%) = 80 × 16.90 = 1352', () => {
     // PU base 15.30 + ceil(15.30×0.10×10)/10 = 15.30 + 1.60 = 16.90. × 80 = 1352
-    const total = lineSubtotalHT(
-      {
-        productRef: 'H-001',
-        placementId: 'coeur-dos',
-        sizes: sizes({ m: 40, l: 40 }),
-      },
-      80,
-    );
+    const total = lineSubtotalHT({
+      productRef: 'H-001',
+      placementId: 'coeur-dos',
+      sizes: sizes({ m: 40, l: 40 }),
+    });
     expect(round2(total)).toBe(1352);
   });
 
   it('0 pieces yields 0', () => {
-    const total = lineSubtotalHT(
-      { productRef: 'H-001', placementId: 'dos', sizes: emptySizes, code: 0 },
-      100,
-    );
+    const total = lineSubtotalHT({
+      productRef: 'H-001',
+      placementId: 'dos',
+      sizes: emptySizes,
+      code: 0,
+    });
     expect(total).toBe(0);
   });
 });
@@ -397,6 +393,27 @@ describe('quoteTotals', () => {
     expect(r.coef).toBe(1.32);
   });
 
+  it('prices each line on its own qty — adding a line never moves another', () => {
+    const lineA = {
+      productRef: 'H-001',
+      placementId: 'coeur-dos',
+      sizes: sizes({ m: 40 }),
+      code: 0,
+    };
+    const lineB = {
+      productRef: 'H-001',
+      placementId: 'coeur-dos',
+      sizes: sizes({ m: 40 }),
+      code: 0,
+    };
+    const aAlone = quoteTotals({ lines: [lineA], transport: 'maritime', revente: true });
+    const aPlusB = quoteTotals({ lines: [lineA, lineB], transport: 'maritime', revente: true });
+    // Line A is priced on its own 40 pcs (tier 40), not the 80-pc quote total.
+    expect(aAlone.subtotalHT).toBe(round2(lineSubtotalHT(lineA)));
+    // Adding line B leaves line A's contribution untouched (pure addition).
+    expect(aPlusB.subtotalHT).toBe(round2(lineSubtotalHT(lineA) + lineSubtotalHT(lineB)));
+  });
+
   it('empty quote (0 qty) returns zeros and first coef', () => {
     const r = quoteTotals({
       lines: [{ productRef: 'H-001', placementId: 'coeur', sizes: emptySizes }],
@@ -450,11 +467,11 @@ describe('quoteTotals', () => {
 
 describe('quoteTotals — per-line transport + revente overrides', () => {
   it('mixed revente: only end-use line pays TGCA', () => {
-    // 10 pieces total, both lines coeur+dos H-001 code=0.
-    // PU @ qty 10, code 0 = 23.70. Each line × 5 pcs = 118.50 → subtotal 237.
-    // transport: chronopost 1.50 × 10 = 15.
+    // Each line is priced on its OWN qty (5 pcs → tier 5), not the quote total.
+    // PU @ qty 5, code 0 = 8.50 + 6.40 + 12.10 = 27.00. Each line × 5 = 135 → subtotal 270.
+    // transport: chronopost 1.50 × 10 = 15 (7.50 per line).
     // line A revente → TGCA 0.
-    // line B revente=false → (118.50 + 7.50) × 0.04 = 126 × 0.04 = 5.04.
+    // line B revente=false → (135 + 7.50) × 0.04 = 142.50 × 0.04 = 5.70.
     const r = quoteTotals({
       lines: [
         {
@@ -476,10 +493,10 @@ describe('quoteTotals — per-line transport + revente overrides', () => {
       revente: false,
     });
     expect(r.qtyTotal).toBe(10);
-    expect(r.subtotalHT).toBe(237);
+    expect(r.subtotalHT).toBe(270);
     expect(r.transportHT).toBe(15);
-    expect(r.tgcaHT).toBe(5.04);
-    expect(r.totalHT).toBe(257.04);
+    expect(r.tgcaHT).toBe(5.7);
+    expect(r.totalHT).toBe(290.7);
   });
 
   it('mixed transport: only chronopost line pays shipping', () => {

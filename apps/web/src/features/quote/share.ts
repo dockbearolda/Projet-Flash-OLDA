@@ -34,9 +34,9 @@ export function buildQuoteMessage({
     const placement = (PLACEMENT_BY_ID as Record<string, Placement | undefined>)[l.placementId];
     const qty = lineQty(l.sizes);
     let priceStr = '';
-    if (totals.qtyTotal > 0) {
+    if (qty > 0) {
       try {
-        priceStr = ` : ${eur(lineTotals(l, totals.qtyTotal, transport, revente).ttc)}`;
+        priceStr = ` : ${eur(lineTotals(l, transport, revente).ttc)}`;
       } catch {
         /* prix indisponible — on garde la ligne sans montant */
       }

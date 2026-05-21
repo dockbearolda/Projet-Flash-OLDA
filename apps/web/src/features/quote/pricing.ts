@@ -69,8 +69,8 @@ export function lineQty(sizes: Sizes): number {
  *   base    = vierge(priceAchat, coef[qty]) + Σ zoneSalePrice(zone, qty)
  *   unitHT  = base + ceil(base × code/100 × 10) / 10
  *
- * `qty` is the *quote-wide* total quantity used to look up the coef and
- * the zone tier. `code` is the multi-couleurs surcharge (in %, default 10).
+ * `qty` is the line's own quantity, used to look up the coef and the zone
+ * tier. `code` is the multi-couleurs surcharge (in %, default 10).
  */
 /**
  * Resolve the priceAchat for a line: explicit override (custom/free lines)
@@ -164,17 +164,20 @@ export interface LineForPricing {
 
 /**
  * Subtotal HT for one line, multiplied by that line's size-grid quantity.
- * Uses the *quote-wide* qty for tier lookup (coef & zone sale prices).
+ * The price tier (coef & zone sale prices) is looked up on the line's OWN
+ * quantity, so each line is priced independently: editing one line never
+ * shifts the price of another.
  */
-export function lineSubtotalHT(line: LineForPricing, quoteQty: number): number {
+export function lineSubtotalHT(line: LineForPricing): number {
+  const qty = lineQty(line.sizes);
   const unit = unitPriceHT({
     productRef: line.productRef,
     placementId: line.placementId,
-    qty: quoteQty,
+    qty,
     code: line.code,
     priceAchatOverride: line.custom?.priceAchat,
   });
-  return unit * lineQty(line.sizes);
+  return unit * qty;
 }
 
 export interface LineTotals {
@@ -200,12 +203,11 @@ export interface LineTotals {
  */
 export function lineTotals(
   line: LineForPricing,
-  quoteQty: number,
   quoteTransport: Transport,
   quoteRevente: boolean,
 ): LineTotals {
   const qty = lineQty(line.sizes);
-  const sub = lineSubtotalHT(line, quoteQty);
+  const sub = lineSubtotalHT(line);
   const eff = transportSurcharge(line.transport ?? quoteTransport);
   const ht = sub + eff * qty;
   const isRevente = line.revente ?? quoteRevente;
@@ -253,8 +255,9 @@ function transportSurcharge(t: Transport): number {
  * shipping methods between lines.
  *
  *   qtyTotal    Σ qty across all *billable* (linked) lines
- *   coef        coefFor(qtyTotal) — kept for display/back-compat
- *   subtotalHT  Σ (unit(line, qtyTotal) × qty(line))
+ *   coef        coefFor(qtyTotal) — kept for back-compat; each line is in fact
+ *               priced on its own quantity, so this is not a single applied coef
+ *   subtotalHT  Σ (unit(line, qty(line)) × qty(line))
  *   transportHT Σ (transportSurcharge(line) × qty(line))
  *   tgcaHT      Σ (line.revente ? 0 : (lineSubtotal + lineTransport) × 0.04)
  *   totalHT     subtotalHT + transportHT + tgcaHT
@@ -276,7 +279,7 @@ export function quoteTotals(quote: QuoteForPricing): QuoteTotals {
   let transport = 0;
   let tgca = 0;
   for (const line of billable) {
-    const lineSub = lineSubtotalHT(line, qtyTotal);
+    const lineSub = lineSubtotalHT(line);
     const eff = transportSurcharge(line.transport ?? quote.transport);
     const lineTr = eff * lineQty(line.sizes);
     const isRevente = line.revente ?? quote.revente;

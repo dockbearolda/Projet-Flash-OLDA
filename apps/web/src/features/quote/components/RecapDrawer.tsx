@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { RollingNumber } from '@/components/ui/RollingNumber';
 import { SyncIndicator } from '@/components/SyncIndicator';
-import { eur, fmtCoef, fmtInt } from '@/lib/format';
+import { eur, fmtInt } from '@/lib/format';
 import type { QuoteTotals } from '../pricing';
 import { TransportPicker } from './TransportPicker';
 import { ReventeToggle } from './ReventeToggle';
@@ -181,9 +181,7 @@ export function RecapDrawer({
           <div className="pt-3 mt-3 border-t border-[var(--df-border)]">
             <div className="flex items-baseline justify-between">
               <div className="df-caps">Total TTC</div>
-              <Chip variant="accent">
-                {fmtInt.format(totals.qtyTotal)} pièces · ×{fmtCoef.format(totals.coef)}
-              </Chip>
+              <Chip variant="accent">{fmtInt.format(totals.qtyTotal)} pièces</Chip>
             </div>
             <output
               role="status"

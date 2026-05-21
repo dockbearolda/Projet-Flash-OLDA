@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, Link2, Link2Off, Trash2 } from 'lucide-react';
+import { ChevronDown, Link2, Link2Off, Trash2, Truck } from 'lucide-react';
 import { SIZE_KEYS } from '@df/shared';
 import type {
   CatalogProduct,
@@ -15,14 +15,12 @@ import { useCatalog } from '@/features/catalog/useCatalog';
 import { eur } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { RollingNumber } from '@/components/ui/RollingNumber';
-import { SegToggle } from '@/components/ui/SegToggle';
 import { lineQty, unitPriceBreakdown, lineSubtotalHT } from '../pricing';
 import { QtyGrid } from './QtyGrid';
 
 interface Props {
   index: number;
   line: QuoteLine;
-  quoteQty: number;
   /** Quote-level transport default — used when the line has no override. */
   transport: Transport;
   /** Quote-level revente default — used when the line has no override. */
@@ -43,16 +41,9 @@ const FAMILY_LABEL: Record<ProductFamily, string> = {
 
 const FAMILY_ORDER: ProductFamily[] = ['unisexe', 'femme', 'enfant'];
 
-// TGCA par ligne : « Exonérée » ⇔ revente = true (cf. ReventeToggle au niveau devis).
-const TGCA_OPTIONS = [
-  { value: 'apply' as const, label: 'Appliquée' },
-  { value: 'exo' as const, label: 'Exonérée' },
-];
-
 export function LineRow({
   index,
   line,
-  quoteQty,
   transport,
   revente,
   canRemove,
@@ -94,14 +85,11 @@ export function LineRow({
     return transports.find((t) => t.id === effectiveTransport)?.surcharge ?? 0;
   }, [effectiveTransport, transports]);
 
-  // Quantité servant à choisir le palier de prix (coef + zones).
-  // - ligne liée : on utilise la quantité totale du devis (remise au volume).
-  // - ligne non liée : elle est facturée seule → on prend SA propre quantité.
-  // Tant qu'aucune quantité n'est saisie, le prix n'a pas de sens (coefFor(0)
-  // renvoie la marge la plus forte) : on n'affiche donc rien plutôt qu'un
-  // PU HT gonflé qui ne correspond à rien.
-  const pricingQty = isLinked ? quoteQty : qty;
-  const hasPricing = pricingQty > 0;
+  // Chaque ligne est tarifée sur SA propre quantité : le palier (coef + zones)
+  // ne dépend que de cette ligne, donc éditer une autre ligne ne déplace jamais
+  // son prix. Tant qu'aucune quantité n'est saisie, le prix n'a pas de sens
+  // (coefFor(0) renvoie la marge la plus forte) : on n'affiche donc rien.
+  const hasPricing = qty > 0;
 
   const breakdown = useMemo(() => {
     if (!hasPricing) return null;
@@ -109,7 +97,7 @@ export function LineRow({
       return unitPriceBreakdown({
         productRef: line.productRef,
         placementId: line.placementId,
-        qty: pricingQty,
+        qty,
         code: line.code,
         transportPerPiece,
         priceAchatOverride: line.custom?.priceAchat,
@@ -123,7 +111,7 @@ export function LineRow({
     hasPricing,
     line.productRef,
     line.placementId,
-    pricingQty,
+    qty,
     line.code,
     transportPerPiece,
     line.custom?.priceAchat,
@@ -133,12 +121,12 @@ export function LineRow({
   const subtotal = useMemo(() => {
     if (!hasPricing) return 0;
     try {
-      return lineSubtotalHT(line, pricingQty);
+      return lineSubtotalHT(line);
     } catch {
       return 0;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasPricing, line, pricingQty, version]);
+  }, [hasPricing, line, version]);
 
   // Prix unitaire (1 t-shirt, transport/pièce inclus → bouge avec Chrono) et
   // prix total de la ligne, chacun en HT et TTC (TGCA 4 % sauf exonération).
@@ -193,57 +181,116 @@ export function LineRow({
           : 'border-[var(--df-border)] opacity-90',
       )}
     >
-      {/* Header — référence en titre */}
-      <div className="px-5 pt-4 pb-3 flex items-center gap-4 border-b border-[var(--df-border)]">
-        <div className="flex items-baseline gap-3 flex-1 min-w-0">
-          <span className="df-mono text-sm text-[var(--df-ink-3)] shrink-0">#{index + 1}</span>
-          <span className="df-mono text-base text-[var(--df-ink-3)] shrink-0">{displayRef}</span>
-          <input
-            type="number"
-            min={0}
-            max={100}
-            step={1}
-            value={line.code}
-            onChange={(e) => {
-              const v = Number(e.target.value);
-              onChange({ code: Number.isFinite(v) ? Math.max(0, Math.min(100, v)) : 10 });
-            }}
-            aria-label="Code multi-couleurs"
-            className="df-mono text-base text-[var(--df-ink-3)] shrink-0 bg-transparent border border-[var(--df-border)] rounded px-2 py-0.5 w-14 text-center tabular-nums focus:outline-none focus:border-[var(--df-accent)] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-          />
-          <h3 className="df-display text-xl leading-tight text-[var(--df-ink)]">{displayName}</h3>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            onLinked(!isLinked);
-          }}
-          aria-pressed={isLinked}
-          aria-label={isLinked ? 'Délier du devis' : 'Lier au devis'}
-          className={cn(
-            'inline-flex items-center gap-1.5 px-3 h-10 rounded-[var(--df-radius)] text-xs font-medium transition-colors',
-            isLinked
-              ? 'bg-[var(--df-accent-soft)] text-[var(--df-accent)] border border-[var(--df-accent)]'
-              : 'bg-[var(--df-surface-2)] text-[var(--df-ink-3)] border border-[var(--df-border)] hover:text-[var(--df-ink)]',
-          )}
-        >
-          {isLinked ? (
-            <Link2 size={14} strokeWidth={2} aria-hidden />
-          ) : (
-            <Link2Off size={14} strokeWidth={2} aria-hidden />
-          )}
-          {isLinked ? 'Liée' : 'Délié'}
-        </button>
-        {canRemove && (
+      {/* Header — référence en titre + méta discrète (transport, TGCA) */}
+      <div className="px-5 pt-4 pb-3 flex flex-col gap-2 border-b border-[var(--df-border)]">
+        <div className="flex items-center gap-4">
+          <div className="flex items-baseline gap-3 flex-1 min-w-0">
+            <span className="df-mono text-sm text-[var(--df-ink-3)] shrink-0">#{index + 1}</span>
+            <span className="df-mono text-base text-[var(--df-ink-3)] shrink-0">{displayRef}</span>
+            <input
+              type="number"
+              min={0}
+              max={100}
+              step={1}
+              value={line.code}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                onChange({ code: Number.isFinite(v) ? Math.max(0, Math.min(100, v)) : 10 });
+              }}
+              aria-label="Code multi-couleurs"
+              className="df-mono text-base text-[var(--df-ink-3)] shrink-0 bg-transparent border border-[var(--df-border)] rounded px-2 py-0.5 w-14 text-center tabular-nums focus:outline-none focus:border-[var(--df-accent)] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            />
+            <h3 className="df-display text-xl leading-tight text-[var(--df-ink)]">{displayName}</h3>
+          </div>
           <button
             type="button"
-            onClick={onRemove}
-            aria-label={`Supprimer la ligne ${String(index + 1)}`}
-            className="inline-flex items-center justify-center w-10 h-10 rounded-[var(--df-radius)] text-[var(--df-ink-3)] hover:bg-[var(--df-surface-2)] hover:text-[var(--df-danger)]"
+            onClick={() => {
+              onLinked(!isLinked);
+            }}
+            aria-pressed={isLinked}
+            aria-label={isLinked ? 'Délier du devis' : 'Lier au devis'}
+            className={cn(
+              'inline-flex items-center gap-1.5 px-3 h-10 rounded-[var(--df-radius)] text-xs font-medium transition-colors',
+              isLinked
+                ? 'bg-[var(--df-accent-soft)] text-[var(--df-accent)] border border-[var(--df-accent)]'
+                : 'bg-[var(--df-surface-2)] text-[var(--df-ink-3)] border border-[var(--df-border)] hover:text-[var(--df-ink)]',
+            )}
           >
-            <Trash2 size={16} strokeWidth={1.8} aria-hidden />
+            {isLinked ? (
+              <Link2 size={14} strokeWidth={2} aria-hidden />
+            ) : (
+              <Link2Off size={14} strokeWidth={2} aria-hidden />
+            )}
+            {isLinked ? 'Liée' : 'Délié'}
           </button>
-        )}
+          {canRemove && (
+            <button
+              type="button"
+              onClick={onRemove}
+              aria-label={`Supprimer la ligne ${String(index + 1)}`}
+              className="inline-flex items-center justify-center w-10 h-10 rounded-[var(--df-radius)] text-[var(--df-ink-3)] hover:bg-[var(--df-surface-2)] hover:text-[var(--df-danger)]"
+            >
+              <Trash2 size={16} strokeWidth={1.8} aria-hidden />
+            </button>
+          )}
+        </div>
+
+        {/* Méta discrète de la ligne — surcharge le réglage global du devis */}
+        <div className="flex items-center gap-3 text-xs">
+          <label className="inline-flex items-center gap-1.5 text-[var(--df-ink-3)]">
+            <Truck size={13} strokeWidth={1.8} aria-hidden className="text-[var(--df-ink-4)]" />
+            <span className="sr-only">Transport</span>
+            <span className="relative inline-flex items-center">
+              <select
+                value={effectiveTransport}
+                onChange={(e) => {
+                  onChange({ transport: e.target.value as Transport });
+                }}
+                aria-label={`Transport ligne ${String(index + 1)}`}
+                className="appearance-none bg-transparent pr-4 font-medium text-[var(--df-ink-2)] hover:text-[var(--df-ink)] cursor-pointer focus:outline-none focus:text-[var(--df-accent)]"
+              >
+                {transports.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.label}
+                    {t.surcharge > 0 ? ` +${eur(t.surcharge)}/pc` : ''}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                size={12}
+                strokeWidth={1.8}
+                aria-hidden
+                className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--df-ink-4)]"
+              />
+            </span>
+          </label>
+
+          <span className="text-[var(--df-ink-4)]" aria-hidden>
+            ·
+          </span>
+
+          <button
+            type="button"
+            onClick={() => {
+              onChange({ revente: !effectiveRevente });
+            }}
+            aria-pressed={effectiveRevente}
+            aria-label={`TGCA ligne ${String(index + 1)} — ${effectiveRevente ? 'exonérée' : 'appliquée'}`}
+            className="inline-flex items-center gap-1.5 font-medium text-[var(--df-ink-3)] hover:text-[var(--df-ink)] transition-colors"
+          >
+            <span className="df-caps">TGCA {Math.round(tgcaRate * 100)}%</span>
+            <span
+              className={cn(
+                'px-1.5 py-0.5 rounded-[var(--df-radius-sm)] text-[11px] leading-none',
+                effectiveRevente
+                  ? 'bg-[var(--df-accent-soft)] text-[var(--df-accent)]'
+                  : 'bg-[var(--df-surface-2)] text-[var(--df-ink-2)]',
+              )}
+            >
+              {effectiveRevente ? 'Exonérée' : 'Appliquée'}
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* Row 1: dropdowns inline */}
@@ -384,38 +431,6 @@ export function LineRow({
 
       {/* Grille tailles + prix dérivé (le prix n'apparaît qu'une fois saisie) */}
       <div className="px-5 pb-5 pt-4 border-t border-[var(--df-border)] flex flex-col gap-4">
-        {/* Transport + TGCA propres à la ligne (surchargent le niveau devis) */}
-        <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
-          <Field label="Transport (ligne)" className="flex-1 min-w-[220px]">
-            <SelectInput
-              value={effectiveTransport}
-              onChange={(v) => {
-                onChange({ transport: v as Transport });
-              }}
-              aria-label={`Transport ligne ${String(index + 1)}`}
-            >
-              {transports.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.label}
-                  {t.surcharge > 0 ? ` · +${eur(t.surcharge)}/pièce` : ' · gratuit'}
-                </option>
-              ))}
-            </SelectInput>
-          </Field>
-
-          <div className="flex flex-col gap-1.5">
-            <span className="df-caps">TGCA {Math.round(tgcaRate * 100)} %</span>
-            <SegToggle
-              value={effectiveRevente ? 'exo' : 'apply'}
-              onChange={(v) => {
-                onChange({ revente: v === 'exo' });
-              }}
-              options={TGCA_OPTIONS}
-              ariaLabel={`TGCA ligne ${String(index + 1)}`}
-            />
-          </div>
-        </div>
-
         <QtyGrid sizes={line.sizes} onChange={onSizes} availableSizes={availableSizes} />
 
         {qty > 0 && (
