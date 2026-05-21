@@ -20,16 +20,43 @@ import type { QuoteTotals } from '../quote/pricing';
 import { lineQty, unitPriceHT } from '../quote/pricing';
 
 /**
- * Coordonnées de l'émetteur affichées dans le bloc « Émis par ».
- * À COMPLÉTER avec les vraies coordonnées OLDA (adresse, email, téléphone) :
- * `contact` est masqué tant qu'il est vide.
+ * Identité de l'émetteur (Atelier OLDA SARL) : en-tête, bloc « Émis par » et
+ * mentions légales en pied de page. Coordonnées + mentions fiscales réelles
+ * (fournies par le patron, cohérentes avec le site B2C `site-b2c`).
+ * `brand` = mot-symbole de l'en-tête (affiché à côté du logo).
  */
-const OLDA_ISSUER: { name: string; tagline: string; address: string; contact: string } = {
-  name: 'OLDA',
-  tagline: 'Atelier d’impression DTF',
-  address: 'Saint-Martin',
-  contact: '', // ex. 'contact@olda.sx · +590 690 12 34 56'
+const OLDA_ISSUER: {
+  brand: string;
+  name: string;
+  tagline: string;
+  address: string;
+  phoneFixe: string;
+  phoneMobile: string;
+  email: string;
+  legal: string;
+} = {
+  brand: 'OLDA',
+  name: 'Atelier OLDA SARL',
+  tagline: 'Atelier d’impression textiles',
+  address: '1 Rue Opale, Grand-Case, 97150 Saint-Martin',
+  phoneFixe: '05 90 77 13 04',
+  phoneMobile: '06 90 47 97 88',
+  email: 'atelierolda@gmail.com',
+  legal:
+    'au capital de 500,00 € · SIRET 978 296 952 00028 · RCS Saint-Martin 978 296 952 · APE 1813Z · TVA FR86978296952',
 };
+
+/**
+ * Logo OLDA (mark vectoriel), affiché dans l'en-tête à gauche du nom.
+ * Statique / de confiance (pas de saisie utilisateur) : aucun échappement.
+ * `fill` hérite de la couleur CSS de `.brand-logo`.
+ */
+const OLDA_LOGO_SVG = `<svg class="brand-logo" viewBox="50 62 185 185" role="img" aria-label="OLDA">
+            <path d="M187.85,114.63h33.12c.82,0,1.48.66,1.48,1.48v34.05c0,.82-.66,1.48-1.48,1.48h-73.22c-.82,0-1.48-.66-1.48-1.48v-76.52c0-.82.66-1.48,1.48-1.48h37.15c.82,0,1.48.66,1.48,1.48v39.51c0,.82.66,1.48,1.48,1.48Z"></path>
+            <path d="M141.24,238.96l41.28-77.18c.58-1.05,2.09-1.05,2.67,0l41.39,77.18c.56,1.02-.18,2.26-1.34,2.26h-82.67c-1.16,0-1.89-1.24-1.34-2.26Z"></path>
+            <g><path d="M101.44,161.74h-2.56l.48,79.48h1.16c20.68,0,38.61-15.44,40.49-36.03,2.14-23.57-16.43-43.44-39.57-43.44Z"></path><path d="M95.36,161.74h-32.71c-.82,0-1.48.66-1.48,1.48v76.52c0,.82.66,1.48,1.48,1.48h32.26l.45-79.48Z"></path></g>
+            <path d="M140.12,108.5c-1.61-20.24-18-36.63-38.24-38.24-25.72-2.04-47.09,19.32-45.05,45.04,1.6,20.24,18,36.64,38.24,38.25.12,0,.23,0,.34.02l.23-39.79v-.05l-11.32,11.07s-1.19-11.25,6.13-12.84h-13s4.12-7.32,14.54-4.85l-7.67-7.67s11.86-1.72,12.82,6.62c1.07-8.9,12.54-6.48,12.54-6.48l-7.92,8.04c8.81-3.63,14.91,4.33,14.91,4.33h-13.05c4.85,1.4,6.01,6.08,6.2,9.41.14,2.05-.12,3.59-.12,3.59l-3.54-3.59-7.55-7.62.24,39.91c24-.2,43.23-20.71,41.29-45.17Z"></path>
+          </svg>`;
 
 export interface DevisData {
   id: string;
@@ -69,12 +96,14 @@ function esc(value: string): string {
 
 interface EnrichedLine {
   ref: string;
+  /** Marqueur interne du patron : « C » + le CODE (% de marge). Ex. « C15 ». */
+  codeTag: string;
   name: string;
   sku: string;
   placementLabel: string;
   textileName: string;
   flockLabel: string;
-  sizesText: string;
+  sizes: string[];
   note: string;
   qty: number;
   unitText: string;
@@ -100,9 +129,9 @@ function enrich(line: QuoteLine): EnrichedLine {
   const name = line.custom?.name ?? product?.name ?? '—';
   const qty = lineQty(line.sizes);
 
-  const sizesText = SIZE_KEYS.filter((k) => line.sizes[k] > 0)
-    .map((k) => `${SIZE_LABELS[k]} · ${fmtInt.format(line.sizes[k])}`)
-    .join(' '); // em-space between size groups
+  const sizes = SIZE_KEYS.filter((k) => line.sizes[k] > 0).map(
+    (k) => `${SIZE_LABELS[k]} · ${fmtInt.format(line.sizes[k])}`,
+  );
 
   let unitText = '—';
   let totalText = '—';
@@ -129,7 +158,8 @@ function enrich(line: QuoteLine): EnrichedLine {
     placementLabel: placement?.label ?? '—',
     textileName: textile?.name ?? '—',
     flockLabel,
-    sizesText,
+    sizes,
+    codeTag: `C${line.code}`,
     note: line.note?.trim() ?? '',
     qty,
     unitText,
@@ -144,16 +174,18 @@ function renderRow(e: EnrichedLine): string {
     ['Impression DTF', e.placementLabel],
     ['Couleur de flocage', e.flockLabel],
   ];
-  if (e.sizesText) detailRows.push(['Tailles', e.sizesText]);
 
-  const details = detailRows
-    .map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`)
-    .join('\n              ');
+  const detailItems = detailRows.map(([k, v]) => `<dt>* ${esc(k)}</dt><dd>${esc(v)}</dd>`);
+  // Une taille par ligne (S · 5, M · 10, …), au lieu d'une seule ligne dense.
+  if (e.sizes.length) {
+    detailItems.push(`<dt>* Tailles</dt><dd class="sizes">${e.sizes.map(esc).join('<br>')}</dd>`);
+  }
+  const details = detailItems.join('\n              ');
 
   const note = e.note ? `<div class="art-note">${esc(e.note)}</div>` : '';
 
   return `<tr>
-            <td class="ref">${esc(e.ref)}</td>
+            <td class="ref"><span class="ref-id">* ${esc(e.ref)}</span> <span class="code-tag">${esc(e.codeTag)}</span></td>
             <td>
               <div class="art-name">${esc(e.name)}</div>
               ${subParts ? `<div class="art-sub">${subParts}</div>` : ''}
@@ -173,7 +205,13 @@ export function buildDevisHtml(data: DevisData): string {
   const { id, customer, lines, transport, totals, createdAt } = data;
 
   // Émetteur
-  const issuerContact = OLDA_ISSUER.contact ? `<p>${esc(OLDA_ISSUER.contact)}</p>` : '';
+  // Coordonnées de l'émetteur : téléphones puis email.
+  const issuerContact = `<p>${esc(`${OLDA_ISSUER.phoneFixe} · ${OLDA_ISSUER.phoneMobile}`)}</p>
+          <p>${esc(OLDA_ISSUER.email)}</p>`;
+  // Mentions légales complètes, affichées en pied de page.
+  const issuerLegal = esc(
+    `${OLDA_ISSUER.name} · ${OLDA_ISSUER.legal} · Siège social : ${OLDA_ISSUER.address}`,
+  );
 
   // Destinataire
   const company = customer.company?.trim() ?? '';
@@ -251,6 +289,8 @@ export function buildDevisHtml(data: DevisData): string {
         color: var(--duck-deep);
       }
       .head { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 24px; }
+      .brand { display: flex; align-items: center; gap: 16px; }
+      .brand-logo { flex: none; width: 56px; height: 56px; fill: var(--duck-deep); }
       .wordmark {
         font-size: 44px;
         font-weight: 800;
@@ -258,7 +298,7 @@ export function buildDevisHtml(data: DevisData): string {
         line-height: 0.9;
         color: var(--duck-deep);
       }
-      .tagline { margin-top: 8px; font-size: 11.5px; color: var(--duck-300); letter-spacing: 0.01em; }
+      .tagline { font-size: 11.5px; color: var(--duck-300); letter-spacing: 0.01em; }
       .meta {
         display: grid;
         grid-template-columns: auto auto;
@@ -311,12 +351,15 @@ export function buildDevisHtml(data: DevisData): string {
       tbody tr { page-break-inside: avoid; break-inside: avoid; }
       tbody td { padding: 13px 0; border-bottom: 1px solid var(--hairline); vertical-align: top; }
       td.ref { font-family: var(--font-mono); font-size: 11px; color: var(--duck-400); padding-right: 12px; }
+      td.ref .ref-id { white-space: nowrap; }
+      td.ref .code-tag { font-weight: 700; color: var(--duck-deep); white-space: nowrap; }
+      .art-details dd.sizes { line-height: 1.6; }
       .art-name { font-size: 13px; font-weight: 700; color: var(--duck-deep); letter-spacing: -0.005em; }
-      .art-sub { margin-top: 3px; font-size: 11px; line-height: 1.3; color: var(--duck-300); }
+      .art-sub { margin-top: 4px; font-size: 12px; font-weight: 600; line-height: 1.35; color: var(--duck); }
       .art-details {
         margin-top: 7px;
         display: grid;
-        grid-template-columns: 130px 1fr;
+        grid-template-columns: 140px 1fr;
         row-gap: 3px;
         column-gap: 10px;
         align-items: baseline;
@@ -360,15 +403,16 @@ export function buildDevisHtml(data: DevisData): string {
         left: 72px;
         right: 72px;
         bottom: 40px;
-        display: flex;
-        justify-content: space-between;
-        gap: 24px;
         padding-top: 12px;
         border-top: 1px solid var(--hairline);
-        font-size: 10px;
+        text-align: center;
+        font-size: 9px;
         letter-spacing: 0.02em;
+        line-height: 1.45;
         color: var(--duck-200);
       }
+      .foot-id { color: var(--duck-300); }
+      .foot-note { margin-top: 4px; }
       @page { size: A4 portrait; margin: 0; }
       @media print {
         html, body { background: #ffffff; }
@@ -380,9 +424,11 @@ export function buildDevisHtml(data: DevisData): string {
   <body>
     <main class="page">
       <header class="head">
-        <div>
-          <div class="wordmark">${esc(OLDA_ISSUER.name)}</div>
-          <div class="tagline">${esc(OLDA_ISSUER.tagline)} · ${esc(OLDA_ISSUER.address)}</div>
+        <div class="brand">
+          ${OLDA_LOGO_SVG}
+          <div class="brand-text">
+            <div class="tagline">${esc(OLDA_ISSUER.tagline)}</div>
+          </div>
         </div>
         <dl class="meta">
           <dt>Devis</dt>
@@ -417,7 +463,7 @@ export function buildDevisHtml(data: DevisData): string {
 
       <table>
         <colgroup>
-          <col style="width: 64px" />
+          <col style="width: 88px" />
           <col />
           <col style="width: 56px" />
           <col style="width: 80px" />
@@ -458,8 +504,8 @@ export function buildDevisHtml(data: DevisData): string {
       </section>
 
       <footer class="foot">
-        <span>OLDA · Atelier d’impression DTF · Saint-Martin</span>
-        <span>Devis valable 30 jours · TGCA 4 % applicable hors revente</span>
+        <p class="foot-id">${issuerLegal}</p>
+        <p class="foot-note">Devis valable 30 jours · TGCA 4 % applicable hors revente</p>
       </footer>
     </main>
   </body>
