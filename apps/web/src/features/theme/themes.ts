@@ -1,6 +1,16 @@
 import { useCallback, useState } from 'react';
 
-export type ThemeId = 'sable' | 'ocean' | 'argile' | 'foret' | 'prune' | 'nuit';
+export type ThemeId =
+  | 'sable'
+  | 'lin'
+  | 'argile'
+  | 'blush'
+  | 'brume'
+  | 'ocean'
+  | 'givre'
+  | 'foret'
+  | 'prune'
+  | 'nuit';
 
 export interface ThemeMeta {
   id: ThemeId;
@@ -36,17 +46,17 @@ export const THEMES: ThemeMeta[] = [
     },
   },
   {
-    id: 'ocean',
-    name: 'Océan',
-    tagline: 'Gris frais, bleu vif',
+    id: 'lin',
+    name: 'Lin',
+    tagline: 'Ivoire chaud, denim',
     dark: false,
     preview: {
-      bg: '#e7eaee',
-      surface: '#f7f9fb',
-      border: 'rgba(20, 30, 42, 0.12)',
-      accent: '#0a6cff',
-      ink: '#15191e',
-      ink3: '#626a73',
+      bg: '#ece7dc',
+      surface: '#f8f4ec',
+      border: 'rgba(44, 36, 22, 0.12)',
+      accent: '#3f6b9a',
+      ink: '#1e1a13',
+      ink3: '#726a59',
     },
   },
   {
@@ -61,6 +71,62 @@ export const THEMES: ThemeMeta[] = [
       accent: '#b4502e',
       ink: '#211a14',
       ink3: '#756656',
+    },
+  },
+  {
+    id: 'blush',
+    name: 'Blush',
+    tagline: 'Rosé pâle, vieux rose',
+    dark: false,
+    preview: {
+      bg: '#eee4e3',
+      surface: '#faf3f2',
+      border: 'rgba(46, 26, 24, 0.12)',
+      accent: '#b15566',
+      ink: '#1d1615',
+      ink3: '#786361',
+    },
+  },
+  {
+    id: 'brume',
+    name: 'Brume',
+    tagline: 'Gris doux, bleu acier',
+    dark: false,
+    preview: {
+      bg: '#e9ebee',
+      surface: '#f8f9fb',
+      border: 'rgba(24, 28, 34, 0.12)',
+      accent: '#4a6f96',
+      ink: '#181a1d',
+      ink3: '#686d74',
+    },
+  },
+  {
+    id: 'ocean',
+    name: 'Océan',
+    tagline: 'Gris frais, bleu vif',
+    dark: false,
+    preview: {
+      bg: '#e7eaee',
+      surface: '#f7f9fb',
+      border: 'rgba(20, 30, 42, 0.12)',
+      accent: '#0a6cff',
+      ink: '#15191e',
+      ink3: '#626a73',
+    },
+  },
+  {
+    id: 'givre',
+    name: 'Givre',
+    tagline: 'Glacé, turquoise',
+    dark: false,
+    preview: {
+      bg: '#e2eaea',
+      surface: '#f3f8f8',
+      border: 'rgba(18, 34, 34, 0.12)',
+      accent: '#0e8a83',
+      ink: '#141a1a',
+      ink3: '#5d6a6a',
     },
   },
   {

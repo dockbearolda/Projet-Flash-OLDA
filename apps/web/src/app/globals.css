@@ -215,6 +215,106 @@ html[data-df-theme='prune'] {
   --df-glass-border: rgba(30, 24, 42, 0.1);
 }
 
+/* Lin — ivoire chaud, denim */
+html[data-df-theme='lin'] {
+  --df-bg: #ece7dc;
+  --df-bg-2: #ded7c7;
+  --df-surface: #f8f4ec;
+  --df-surface-2: #f0ebe0;
+  --df-surface-soft: rgba(248, 244, 236, 0.7);
+
+  --df-ink: #1e1a13;
+  --df-ink-2: #443d31;
+  --df-ink-3: #726a59;
+  --df-ink-4: #a59c8a;
+
+  --df-border: rgba(44, 36, 22, 0.1);
+  --df-border-strong: rgba(44, 36, 22, 0.18);
+
+  --df-accent: #3f6b9a;
+  --df-accent-2: #517fb0;
+  --df-accent-ink: #f8fafc;
+  --df-accent-soft: rgba(63, 107, 154, 0.12);
+
+  --df-glass: rgba(248, 244, 236, 0.88);
+  --df-glass-border: rgba(44, 36, 22, 0.1);
+}
+
+/* Blush — rosé pâle, vieux rose */
+html[data-df-theme='blush'] {
+  --df-bg: #eee4e3;
+  --df-bg-2: #e2d2d1;
+  --df-surface: #faf3f2;
+  --df-surface-2: #f2e8e7;
+  --df-surface-soft: rgba(250, 243, 242, 0.7);
+
+  --df-ink: #1d1615;
+  --df-ink-2: #463735;
+  --df-ink-3: #786361;
+  --df-ink-4: #ab9492;
+
+  --df-border: rgba(46, 26, 24, 0.1);
+  --df-border-strong: rgba(46, 26, 24, 0.18);
+
+  --df-accent: #b15566;
+  --df-accent-2: #c46c7c;
+  --df-accent-ink: #fdf5f6;
+  --df-accent-soft: rgba(177, 85, 102, 0.12);
+
+  --df-glass: rgba(250, 243, 242, 0.88);
+  --df-glass-border: rgba(46, 26, 24, 0.1);
+}
+
+/* Brume — gris doux, bleu acier */
+html[data-df-theme='brume'] {
+  --df-bg: #e9ebee;
+  --df-bg-2: #dbdee3;
+  --df-surface: #f8f9fb;
+  --df-surface-2: #eef0f3;
+  --df-surface-soft: rgba(248, 249, 251, 0.7);
+
+  --df-ink: #181a1d;
+  --df-ink-2: #3a3e44;
+  --df-ink-3: #686d74;
+  --df-ink-4: #9da2aa;
+
+  --df-border: rgba(24, 28, 34, 0.1);
+  --df-border-strong: rgba(24, 28, 34, 0.18);
+
+  --df-accent: #4a6f96;
+  --df-accent-2: #5d84ad;
+  --df-accent-ink: #f7f9fb;
+  --df-accent-soft: rgba(74, 111, 150, 0.12);
+
+  --df-glass: rgba(248, 249, 251, 0.88);
+  --df-glass-border: rgba(24, 28, 34, 0.1);
+}
+
+/* Givre — glacé, turquoise */
+html[data-df-theme='givre'] {
+  --df-bg: #e2eaea;
+  --df-bg-2: #d1dcdc;
+  --df-surface: #f3f8f8;
+  --df-surface-2: #e8f0f0;
+  --df-surface-soft: rgba(243, 248, 248, 0.7);
+
+  --df-ink: #141a1a;
+  --df-ink-2: #313d3d;
+  --df-ink-3: #5d6a6a;
+  --df-ink-4: #95a0a0;
+
+  --df-border: rgba(18, 34, 34, 0.1);
+  --df-border-strong: rgba(18, 34, 34, 0.18);
+
+  --df-accent: #0e8a83;
+  --df-accent-2: #16a39b;
+  --df-accent-ink: #f2faf9;
+  --df-accent-soft: rgba(14, 138, 131, 0.12);
+
+  --df-glass: rgba(243, 248, 248, 0.88);
+  --df-glass-border: rgba(18, 34, 34, 0.1);
+}
+
 /* Nuit — graphite sombre, bleu lumineux */
 html[data-df-theme='nuit'] {
   --df-bg: #16181c;
