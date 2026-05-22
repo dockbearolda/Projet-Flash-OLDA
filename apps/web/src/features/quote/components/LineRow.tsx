@@ -12,7 +12,7 @@ import type {
   Transport,
 } from '@df/shared';
 import { useCatalog } from '@/features/catalog/useCatalog';
-import { eur } from '@/lib/format';
+import { eur, fmtCoef } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { RollingNumber } from '@/components/ui/RollingNumber';
 import { lineQty, unitPriceBreakdown, lineSubtotalHT } from '../pricing';
@@ -40,6 +40,16 @@ const FAMILY_LABEL: Record<ProductFamily, string> = {
 };
 
 const FAMILY_ORDER: ProductFamily[] = ['unisexe', 'femme', 'enfant'];
+
+/** Parse un nombre saisi à la française (« 2,3 ») ; NaN si invalide. */
+function parseFrNum(s: string): number {
+  return Number.parseFloat(s.trim().replace(',', '.'));
+}
+
+/** Formate un nombre en français à 2 décimales, sans symbole (« 35,00 »). */
+function fmtNum2(n: number): string {
+  return n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 
 export function LineRow({
   index,
@@ -138,6 +148,34 @@ export function LineRow({
     const ttc = ht * tgcaFactor;
     return { unitHT, unitTTC, ht, ttc };
   }, [breakdown, subtotal, transportPerPiece, qty, effectiveRevente, tgcaRate]);
+
+  // ── Simulateur de revente (complémentaire, par ligne, indicatif). À partir du
+  // prix de vente conseillé au client (TTC), donne le coef et la marge que le
+  // client réalise. État local : n'entre ni dans le devis ni dans le PDF.
+  const reventeBase = money.unitTTC; // prix TTC payé par le client, par pièce
+  const [prixConseilStr, setPrixConseilStr] = useState('');
+  const [reventeCoefStr, setReventeCoefStr] = useState('');
+  const prixConseil = parseFrNum(prixConseilStr);
+  const hasPrixConseil = Number.isFinite(prixConseil) && prixConseil > 0;
+  const margePiece = hasPrixConseil ? prixConseil - reventeBase : null;
+  const margeLigne = margePiece !== null ? margePiece * qty : null;
+  // Resynchronise le coef affiché quand le prix de la ligne (base) change.
+  useEffect(() => {
+    if (hasPrixConseil && reventeBase > 0) {
+      setReventeCoefStr(fmtCoef.format(prixConseil / reventeBase));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reventeBase]);
+  function handlePrixConseil(raw: string) {
+    setPrixConseilStr(raw);
+    const p = parseFrNum(raw);
+    if (Number.isFinite(p) && reventeBase > 0) setReventeCoefStr(fmtCoef.format(p / reventeBase));
+  }
+  function handleReventeCoef(raw: string) {
+    setReventeCoefStr(raw);
+    const c = parseFrNum(raw);
+    if (Number.isFinite(c)) setPrixConseilStr(fmtNum2(c * reventeBase));
+  }
 
   const groupedProducts = useMemo(() => {
     const byFamily = new Map<ProductFamily, CatalogProduct[]>();
@@ -466,6 +504,66 @@ export function LineRow({
             </div>
           </div>
         )}
+
+        {/* Simulateur de revente client — 4 bulles liées (indicatif, hors devis) */}
+        {qty > 0 && (
+          <div className="grid grid-cols-4 gap-2">
+            <Bubble label="Prix conseillé">
+              <div className="flex items-baseline gap-1">
+                <input
+                  inputMode="decimal"
+                  value={prixConseilStr}
+                  onChange={(e) => {
+                    handlePrixConseil(e.target.value);
+                  }}
+                  placeholder="0,00"
+                  aria-label={`Prix conseillé ligne ${String(index + 1)}`}
+                  className="w-full min-w-0 bg-transparent df-mono text-base tabular-nums text-[var(--df-ink)] focus:outline-none"
+                />
+                <span className="text-sm text-[var(--df-ink-3)]">€</span>
+              </div>
+            </Bubble>
+            <Bubble label="Coef">
+              <div className="flex items-baseline gap-1">
+                <span className="text-sm text-[var(--df-ink-3)]">×</span>
+                <input
+                  inputMode="decimal"
+                  value={reventeCoefStr}
+                  onChange={(e) => {
+                    handleReventeCoef(e.target.value);
+                  }}
+                  placeholder="—"
+                  aria-label={`Coefficient revente ligne ${String(index + 1)}`}
+                  className="w-full min-w-0 bg-transparent df-mono text-base tabular-nums text-[var(--df-ink)] focus:outline-none"
+                />
+              </div>
+            </Bubble>
+            <Bubble label="Marge / pièce">
+              <span
+                className={cn(
+                  'df-mono text-base tabular-nums',
+                  margePiece !== null && margePiece < 0
+                    ? 'text-[var(--df-danger)]'
+                    : 'text-[var(--df-ink)]',
+                )}
+              >
+                {margePiece !== null ? eur(margePiece) : '—'}
+              </span>
+            </Bubble>
+            <Bubble label="Marge totale" accent>
+              <span
+                className={cn(
+                  'df-mono text-base font-semibold tabular-nums',
+                  margeLigne !== null && margeLigne < 0
+                    ? 'text-[var(--df-danger)]'
+                    : 'text-[var(--df-accent)]',
+                )}
+              >
+                {margeLigne !== null ? eur(margeLigne) : '—'}
+              </span>
+            </Bubble>
+          </div>
+        )}
       </div>
     </section>
   );
@@ -485,6 +583,31 @@ function Field({
       <span className="df-caps">{label}</span>
       {children}
     </label>
+  );
+}
+
+/** Petite bulle du simulateur de revente : un libellé court + une valeur/saisie. */
+function Bubble({
+  label,
+  accent,
+  children,
+}: {
+  label: string;
+  accent?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className={cn(
+        'rounded-[var(--df-radius)] border px-2.5 py-2',
+        accent
+          ? 'border-[var(--df-accent)] bg-[var(--df-accent-soft)]'
+          : 'border-[var(--df-border)] bg-[var(--df-surface)]',
+      )}
+    >
+      <div className="df-caps text-[10px] leading-tight">{label}</div>
+      <div className="mt-1">{children}</div>
+    </div>
   );
 }
 
