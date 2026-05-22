@@ -27,6 +27,9 @@ Thumbs.db
 .idea/
 *.swp
 
+# Claude Code (config locale + worktrees)
+.claude/
+
 # Test artefacts
 coverage/
 .nyc_output/
