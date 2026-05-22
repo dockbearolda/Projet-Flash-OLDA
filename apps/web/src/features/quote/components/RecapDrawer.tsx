@@ -3,7 +3,6 @@ import type { ReactNode } from 'react';
 import { Check, FileText, Mail, MessageCircle, Pencil, UserPlus } from 'lucide-react';
 import type { Customer, Transport } from '@df/shared';
 import { Button } from '@/components/ui/Button';
-import { Chip } from '@/components/ui/Chip';
 import { RollingNumber } from '@/components/ui/RollingNumber';
 import { SyncIndicator } from '@/components/SyncIndicator';
 import { eur, fmtInt } from '@/lib/format';
@@ -68,24 +67,20 @@ export function RecapDrawer({
       style={{ width }}
       className="df-glass shrink-0 h-screen border-l border-[var(--df-glass-border)] flex flex-col"
     >
-      <div className="px-6 py-4 border-b border-[var(--df-border)] flex items-center justify-between gap-2">
+      <div className="shrink-0 px-5 py-3.5 border-b border-[var(--df-border)] flex items-center justify-between gap-2">
         <div className="df-caps tabular-nums">{quoteId}</div>
         <SyncIndicator />
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
-        {/* Client */}
-        <section className="space-y-2">
-          <div className="df-caps">Client</div>
-          {editing ? (
-            <div className="space-y-2">
-              <CustomerInline
-                customer={customer}
-                onChange={onCustomerChange}
-                dialCode={dialCode}
-                onDialCode={onDialCode}
-                missing={missing}
-              />
+      {/* Contexte — client + réglages par défaut du devis (zone défilable) */}
+      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+        <div className="df-caps">Contexte</div>
+
+        {/* Client — carte encadrée ; le bouton « Modifier » ouvre le formulaire. */}
+        {editing ? (
+          <div className="rounded-[var(--df-radius)] border border-[var(--df-border)] bg-[var(--df-surface)] p-3 space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="df-caps">Client</div>
               <button
                 type="button"
                 onClick={() => {
@@ -97,155 +92,159 @@ export function RecapDrawer({
                 Terminé
               </button>
             </div>
-          ) : hasIdentity ? (
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <div className="df-display text-2xl text-[var(--df-ink)] truncate">
-                  {customerTitle}
-                </div>
-                {customerSubtitle ? (
-                  <div className="text-sm text-[var(--df-ink-3)] truncate">{customerSubtitle}</div>
-                ) : null}
-              </div>
+            <CustomerInline
+              customer={customer}
+              onChange={onCustomerChange}
+              dialCode={dialCode}
+              onDialCode={onDialCode}
+              missing={missing}
+            />
+          </div>
+        ) : hasIdentity ? (
+          <div className="rounded-[var(--df-radius)] border border-[var(--df-border)] bg-[var(--df-surface)] p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="df-caps">Client</div>
               <button
                 type="button"
                 onClick={() => {
                   setEditing(true);
                 }}
                 aria-label="Modifier le client"
-                className="shrink-0 inline-flex items-center gap-1.5 px-2.5 h-8 rounded-[var(--df-radius)] text-xs font-medium text-[var(--df-ink-3)] hover:bg-[var(--df-surface-2)] hover:text-[var(--df-ink)] transition-colors duration-[var(--df-dur-fast)] ease-[var(--df-ease-out)]"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--df-ink-3)] hover:text-[var(--df-ink)] transition-colors duration-[var(--df-dur-fast)] ease-[var(--df-ease-out)]"
               >
-                <Pencil size={14} strokeWidth={1.8} aria-hidden />
+                <Pencil size={13} strokeWidth={1.8} aria-hidden />
                 Modifier
               </button>
             </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                setEditing(true);
-              }}
-              className="w-full h-11 inline-flex items-center justify-center gap-2 rounded-[var(--df-radius)] border-2 border-dashed border-[var(--df-accent)] bg-[var(--df-accent-soft)] text-sm font-medium text-[var(--df-accent)] hover:brightness-95 transition-[filter] duration-[var(--df-dur-fast)] ease-[var(--df-ease-out)]"
-            >
-              <UserPlus size={16} strokeWidth={1.8} aria-hidden />
-              Lier un client
-            </button>
-          )}
-        </section>
+            <div className="df-display text-xl text-[var(--df-ink)] truncate mt-1.5">
+              {customerTitle}
+            </div>
+            {customerSubtitle ? (
+              <div className="text-sm text-[var(--df-ink-3)] truncate">{customerSubtitle}</div>
+            ) : null}
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setEditing(true);
+            }}
+            className="w-full h-12 inline-flex items-center justify-center gap-2 rounded-[var(--df-radius)] border-2 border-dashed border-[var(--df-accent)] bg-[var(--df-accent-soft)] text-sm font-medium text-[var(--df-accent)] hover:brightness-95 transition-[filter] duration-[var(--df-dur-fast)] ease-[var(--df-ease-out)]"
+          >
+            <UserPlus size={16} strokeWidth={1.8} aria-hidden />
+            Lier un client
+          </button>
+        )}
 
-        {/* Transport — défaut du devis, appliqué à toutes les lignes */}
-        <section className="space-y-2">
-          <div className="df-caps">Transport</div>
+        {/* Transport — défaut du devis, ajustable ligne par ligne */}
+        <div className="space-y-1.5">
+          <div className="flex items-baseline justify-between gap-2">
+            <div className="df-caps">Transport</div>
+            <span className="text-[11px] text-[var(--df-ink-4)]">ajustable par ligne.</span>
+          </div>
           <TransportPicker value={transport} onChange={onTransport} />
-          <p className="text-[11px] text-[var(--df-ink-3)]">
-            Appliqué à toutes les lignes · ajustable ligne par ligne.
-          </p>
-        </section>
+        </div>
 
-        {/* TGCA / Revente — défaut du devis, appliqué à toutes les lignes */}
-        <section className="space-y-1.5">
-          <ReventeToggle value={revente} onChange={onRevente} />
-          <p className="text-[11px] text-[var(--df-ink-3)]">
-            Appliqué à toutes les lignes · ajustable ligne par ligne.
-          </p>
-        </section>
-      </div>
+        {/* Revente — défaut du devis (pilote l'exonération TGCA), ajustable par ligne */}
+        <ReventeToggle value={revente} onChange={onRevente} />
 
-      {/* Totaux — hors zone scrollable : toujours visibles au-dessus des actions */}
-      <div className="px-6 py-4 border-t border-[var(--df-border)]">
-        <section className="space-y-1.5">
-          <Row
-            label="Sous-total HT"
-            value={<RollingNumber value={totals.subtotalHT} format={eur} />}
-          />
-          <Row
-            label="Transport"
-            value={
-              totals.transportHT > 0 ? (
-                <RollingNumber value={totals.transportHT} format={eur} />
-              ) : totals.qtyTotal > 0 ? (
-                'Gratuit'
-              ) : (
-                '—'
-              )
-            }
-            muted={totals.transportHT === 0}
-          />
-          <Row
-            label="TGCA 4 %"
-            value={
-              totals.tgcaHT > 0 ? (
-                <RollingNumber value={totals.tgcaHT} format={eur} />
-              ) : totals.qtyTotal > 0 ? (
-                'Exonéré — revente'
-              ) : (
-                '—'
-              )
-            }
-            muted={totals.tgcaHT === 0}
-          />
-          <div className="pt-3 mt-3 border-t border-[var(--df-border)]">
-            <div className="flex items-baseline justify-between">
-              <div className="df-caps">Total TTC</div>
-              <Chip variant="accent">{fmtInt.format(totals.qtyTotal)} pièces</Chip>
+        {/* Récap chiffré + actions — suivent le contexte dans le même flux continu */}
+        <div className="pt-4 border-t border-[var(--df-border)] space-y-3">
+          <div className="space-y-1.5">
+            <Row
+              label="Sous-total HT"
+              value={<RollingNumber value={totals.subtotalHT} format={eur} />}
+            />
+            <Row
+              label="Transport"
+              value={
+                totals.transportHT > 0 ? (
+                  <RollingNumber value={totals.transportHT} format={eur} />
+                ) : totals.qtyTotal > 0 ? (
+                  'Gratuit'
+                ) : (
+                  '—'
+                )
+              }
+              muted={totals.transportHT === 0}
+            />
+            <Row
+              label="TGCA 4 %"
+              value={
+                totals.tgcaHT > 0 ? (
+                  <RollingNumber value={totals.tgcaHT} format={eur} />
+                ) : totals.qtyTotal > 0 ? (
+                  'Exonéré — revente'
+                ) : (
+                  '—'
+                )
+              }
+              muted={totals.tgcaHT === 0}
+            />
+          </div>
+
+          {/* Total TTC — bulle accent : l'ancre chiffrée dominante du panneau. */}
+          <div className="rounded-[var(--df-radius-lg)] bg-[var(--df-accent-soft)] px-4 py-3">
+            <div className="flex items-start justify-between gap-2">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--df-accent)]">
+                Total TTC
+              </div>
+              <div className="text-xs font-medium tabular-nums text-[var(--df-accent)]">
+                {fmtInt.format(totals.qtyTotal)} pièces
+              </div>
             </div>
             <output
               role="status"
               aria-live="polite"
-              className="df-display text-5xl mt-1 block tabular-nums text-[var(--df-accent)]"
+              className="df-display text-[2.5rem] leading-none mt-1.5 block tabular-nums text-[var(--df-accent)]"
             >
               <RollingNumber value={totals.totalHT} format={eur} />
             </output>
-            <div className="mt-1 flex items-baseline justify-between">
-              <div className="df-caps">Total HT</div>
-              <div className="df-display text-2xl tabular-nums text-[var(--df-ink-2)]">
+            <div className="mt-2.5 flex items-baseline justify-between gap-2 text-xs text-[var(--df-ink-3)]">
+              <div className="df-mono tabular-nums">
+                HT&nbsp;
                 <RollingNumber value={totalHTOnly} format={eur} />
               </div>
-            </div>
-            {totals.qtyTotal > 0 && (
-              <div className="mt-2 flex items-baseline justify-between text-xs text-[var(--df-ink-3)]">
-                <div>Prix moyen / pièce</div>
+              {totals.qtyTotal > 0 && (
                 <div className="df-mono tabular-nums">
-                  HT&nbsp;
-                  <RollingNumber value={totalHTOnly / totals.qtyTotal} format={eur} />
-                  {' · '}TTC&nbsp;
+                  moy / pièce&nbsp;
                   <RollingNumber value={totals.totalHT / totals.qtyTotal} format={eur} />
                 </div>
-              </div>
+              )}
+            </div>
+          </div>
+
+          {/* Actions terminales */}
+          <div className="flex flex-col gap-2">
+            <Button variant="primary" size="lg" onClick={onGeneratePDF}>
+              <FileText size={18} strokeWidth={1.8} />
+              Générer le PDF
+            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                onClick={onSendWhatsApp}
+                disabled={!hasIdentity}
+                title={hasIdentity ? undefined : 'Liez un client pour activer l’envoi'}
+              >
+                <MessageCircle size={16} strokeWidth={1.8} />
+                WhatsApp
+              </Button>
+              <Button
+                onClick={onSendEmail}
+                disabled={!hasIdentity}
+                title={hasIdentity ? undefined : 'Liez un client pour activer l’envoi'}
+              >
+                <Mail size={16} strokeWidth={1.8} />
+                Email
+              </Button>
+            </div>
+            {!hasIdentity && (
+              <p className="text-[11px] text-[var(--df-ink-4)] text-center">
+                Liez un client pour envoyer le devis.
+              </p>
             )}
           </div>
-        </section>
-      </div>
-
-      {/* Actions */}
-      <div className="px-6 py-4 border-t border-[var(--df-border)] flex flex-col gap-2">
-        <Button variant="primary" size="lg" onClick={onGeneratePDF}>
-          <FileText size={18} strokeWidth={1.8} />
-          Générer le PDF
-        </Button>
-        <div className="grid grid-cols-2 gap-2">
-          <Button
-            onClick={onSendWhatsApp}
-            disabled={!hasIdentity}
-            title={hasIdentity ? undefined : 'Liez un client pour activer l’envoi'}
-          >
-            <MessageCircle size={16} strokeWidth={1.8} />
-            WhatsApp
-          </Button>
-          <Button
-            onClick={onSendEmail}
-            disabled={!hasIdentity}
-            title={hasIdentity ? undefined : 'Liez un client pour activer l’envoi'}
-          >
-            <Mail size={16} strokeWidth={1.8} />
-            Email
-          </Button>
         </div>
-        {!hasIdentity && (
-          <p className="text-[11px] text-[var(--df-ink-4)] text-center">
-            Liez un client pour envoyer le devis.
-          </p>
-        )}
       </div>
     </aside>
   );
