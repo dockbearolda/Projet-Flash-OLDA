@@ -9,6 +9,25 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>Devis Flash · OLDA</title>
+    <script>
+      // Applique le thème mémorisé avant le premier rendu (évite tout flash).
+      // Les fonds doivent rester alignés sur --df-bg de chaque thème (globals.css).
+      try {
+        var bg = {
+          sable: '#e8e5dd',
+          ocean: '#e7eaee',
+          argile: '#ece4da',
+          foret: '#e3e8e2',
+          prune: '#e8e6ec',
+          nuit: '#16181c',
+        };
+        var t = localStorage.getItem('df:theme');
+        if (!bg[t]) t = 'sable';
+        if (t !== 'sable') document.documentElement.dataset.dfTheme = t;
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', bg[t]);
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -3,6 +3,7 @@ import { useCatalog } from '@/features/catalog/useCatalog';
 import { saveSettings } from '@/features/catalog/api';
 import { PageHeader, TextField, NumberField, SaveBar, Card } from './components/adminUi';
 import { useSection } from './components/useSection';
+import { ThemePicker } from '@/features/theme/ThemePicker';
 
 export default function SettingsPage() {
   const cat = useCatalog();
@@ -24,10 +25,15 @@ function SettingsEditor({ initial }: { initial: CatalogSettings }) {
 
   return (
     <div>
-      <PageHeader
-        title="Réglages"
-        subtitle="Taxe (TGCA) et options de transport. Ces valeurs s’appliquent au calcul des devis."
-      />
+      <PageHeader title="Réglages" subtitle="Apparence, taxe (TGCA) et options de transport." />
+
+      <section className="mb-8">
+        <h2 className="df-caps mb-3">Apparence</h2>
+        <ThemePicker />
+        <p className="text-xs text-[var(--df-ink-3)] mt-2">
+          Le thème est propre à cet appareil et s’applique aussitôt — chacun choisit le sien.
+        </p>
+      </section>
 
       <section className="mb-8 max-w-md">
         <h2 className="df-caps mb-3">Taxe TGCA</h2>

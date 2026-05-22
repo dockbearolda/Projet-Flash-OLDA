@@ -2,22 +2,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500&display=swap');
 
 @theme {
-  /* Surfaces — beige chaud, peu éblouissant */
-  --color-df-bg: #e7e1d4;
-  --color-df-bg-2: #d8d0bf;
-  --color-df-surface: #f3eee2;
-  --color-df-surface-2: #eae3d3;
-  --color-df-surface-soft: rgba(243, 238, 226, 0.7);
+  /* Surfaces — neutre chaud, désaturé, peu éblouissant */
+  --color-df-bg: #e8e5dd;
+  --color-df-bg-2: #dad6cc;
+  --color-df-surface: #f6f3ed;
+  --color-df-surface-2: #edeae1;
+  --color-df-surface-soft: rgba(246, 243, 237, 0.7);
 
   /* Encres */
-  --color-df-ink: #1c1810;
-  --color-df-ink-2: #443d2f;
-  --color-df-ink-3: #756c59;
-  --color-df-ink-4: #a89e89;
+  --color-df-ink: #1b1813;
+  --color-df-ink-2: #423d34;
+  --color-df-ink-3: #6e6a5d;
+  --color-df-ink-4: #a09a8d;
 
   /* Bordures */
-  --color-df-border: rgba(40, 33, 18, 0.1);
-  --color-df-border-strong: rgba(40, 33, 18, 0.18);
+  --color-df-border: rgba(38, 34, 26, 0.1);
+  --color-df-border-strong: rgba(38, 34, 26, 0.18);
 
   /* Accent */
   --color-df-accent: #2f5a7a;
@@ -48,25 +48,25 @@
   --shadow-df-pressed: inset 0 1px 2px rgba(14, 17, 22, 0.1);
 
   /* Glass */
-  --color-df-glass: rgba(243, 238, 226, 0.88);
-  --color-df-glass-border: rgba(40, 33, 18, 0.1);
+  --color-df-glass: rgba(246, 243, 237, 0.88);
+  --color-df-glass-border: rgba(38, 34, 26, 0.1);
 }
 
 :root {
   /* Mirror tokens as CSS variables for non-Tailwind uses */
-  --df-bg: #e7e1d4;
-  --df-bg-2: #d8d0bf;
-  --df-surface: #f3eee2;
-  --df-surface-2: #eae3d3;
-  --df-surface-soft: rgba(243, 238, 226, 0.7);
+  --df-bg: #e8e5dd;
+  --df-bg-2: #dad6cc;
+  --df-surface: #f6f3ed;
+  --df-surface-2: #edeae1;
+  --df-surface-soft: rgba(246, 243, 237, 0.7);
 
-  --df-ink: #1c1810;
-  --df-ink-2: #443d2f;
-  --df-ink-3: #756c59;
-  --df-ink-4: #a89e89;
+  --df-ink: #1b1813;
+  --df-ink-2: #423d34;
+  --df-ink-3: #6e6a5d;
+  --df-ink-4: #a09a8d;
 
-  --df-border: rgba(40, 33, 18, 0.1);
-  --df-border-strong: rgba(40, 33, 18, 0.18);
+  --df-border: rgba(38, 34, 26, 0.1);
+  --df-border-strong: rgba(38, 34, 26, 0.18);
 
   --df-accent: #2f5a7a;
   --df-accent-2: #3d749b;
@@ -91,8 +91,8 @@
   --df-shadow-3: 0 2px 0 rgba(14, 17, 22, 0.04), 0 24px 60px rgba(14, 17, 22, 0.16);
   --df-shadow-pressed: inset 0 1px 2px rgba(14, 17, 22, 0.1);
 
-  --df-glass: rgba(243, 238, 226, 0.88);
-  --df-glass-border: rgba(40, 33, 18, 0.1);
+  --df-glass: rgba(246, 243, 237, 0.88);
+  --df-glass-border: rgba(38, 34, 26, 0.1);
 
   --df-display-letter: -0.04em;
   --df-display-leading: 0.92;
@@ -102,6 +102,153 @@
   --df-dur-fast: 140ms;
   --df-dur-press: 80ms;
   --df-ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  color-scheme: light;
+}
+
+/* ============================================================
+   Thèmes — chaque collègue choisit son apparence dans
+   Réglages ▸ Apparence. Le thème s'applique via
+   html[data-df-theme="…"] et reste mémorisé sur l'appareil
+   (localStorage « df:theme »). « Sable » = défaut (:root ci-dessus).
+   Toute l'app lit ses couleurs via var(--df-*), donc redéfinir
+   ces variables ici suffit à rethémer l'ensemble.
+   ============================================================ */
+
+/* Océan — gris clair frais, bleu vif */
+html[data-df-theme='ocean'] {
+  --df-bg: #e7eaee;
+  --df-bg-2: #d8dde3;
+  --df-surface: #f7f9fb;
+  --df-surface-2: #eef1f5;
+  --df-surface-soft: rgba(247, 249, 251, 0.7);
+
+  --df-ink: #15191e;
+  --df-ink-2: #353c44;
+  --df-ink-3: #626a73;
+  --df-ink-4: #98a0a9;
+
+  --df-border: rgba(20, 30, 42, 0.1);
+  --df-border-strong: rgba(20, 30, 42, 0.18);
+
+  --df-accent: #0a6cff;
+  --df-accent-2: #3b86ff;
+  --df-accent-ink: #ffffff;
+  --df-accent-soft: rgba(10, 108, 255, 0.1);
+
+  --df-glass: rgba(247, 249, 251, 0.88);
+  --df-glass-border: rgba(20, 30, 42, 0.1);
+}
+
+/* Argile — crème chaud, terracotta */
+html[data-df-theme='argile'] {
+  --df-bg: #ece4da;
+  --df-bg-2: #ded3c5;
+  --df-surface: #f8f3ec;
+  --df-surface-2: #f0e8dd;
+  --df-surface-soft: rgba(248, 243, 236, 0.7);
+
+  --df-ink: #211a14;
+  --df-ink-2: #463a2e;
+  --df-ink-3: #756656;
+  --df-ink-4: #a89784;
+
+  --df-border: rgba(46, 32, 20, 0.1);
+  --df-border-strong: rgba(46, 32, 20, 0.18);
+
+  --df-accent: #b4502e;
+  --df-accent-2: #c8623c;
+  --df-accent-ink: #fdf6f1;
+  --df-accent-soft: rgba(180, 80, 46, 0.1);
+
+  --df-glass: rgba(248, 243, 236, 0.88);
+  --df-glass-border: rgba(46, 32, 20, 0.1);
+}
+
+/* Forêt — vert sauge, émeraude */
+html[data-df-theme='foret'] {
+  --df-bg: #e3e8e2;
+  --df-bg-2: #d3dbd1;
+  --df-surface: #f4f7f3;
+  --df-surface-2: #eaefe9;
+  --df-surface-soft: rgba(244, 247, 243, 0.7);
+
+  --df-ink: #161a16;
+  --df-ink-2: #353d34;
+  --df-ink-3: #616a5f;
+  --df-ink-4: #97a094;
+
+  --df-border: rgba(22, 34, 22, 0.1);
+  --df-border-strong: rgba(22, 34, 22, 0.18);
+
+  --df-accent: #2f7d52;
+  --df-accent-2: #3a9663;
+  --df-accent-ink: #f5faf6;
+  --df-accent-soft: rgba(47, 125, 82, 0.1);
+
+  --df-glass: rgba(244, 247, 243, 0.88);
+  --df-glass-border: rgba(22, 34, 22, 0.1);
+}
+
+/* Prune — neutre froid, violet indigo */
+html[data-df-theme='prune'] {
+  --df-bg: #e8e6ec;
+  --df-bg-2: #dad7e0;
+  --df-surface: #f7f5fa;
+  --df-surface-2: #edebf2;
+  --df-surface-soft: rgba(247, 245, 250, 0.7);
+
+  --df-ink: #18161d;
+  --df-ink-2: #393544;
+  --df-ink-3: #676273;
+  --df-ink-4: #9d97a8;
+
+  --df-border: rgba(30, 24, 42, 0.1);
+  --df-border-strong: rgba(30, 24, 42, 0.18);
+
+  --df-accent: #6248d4;
+  --df-accent-2: #7a62e6;
+  --df-accent-ink: #f7f5fd;
+  --df-accent-soft: rgba(98, 72, 212, 0.1);
+
+  --df-glass: rgba(247, 245, 250, 0.88);
+  --df-glass-border: rgba(30, 24, 42, 0.1);
+}
+
+/* Nuit — graphite sombre, bleu lumineux */
+html[data-df-theme='nuit'] {
+  --df-bg: #16181c;
+  --df-bg-2: #0f1115;
+  --df-surface: #1e2127;
+  --df-surface-2: #262a31;
+  --df-surface-soft: rgba(30, 33, 39, 0.7);
+
+  --df-ink: #f3f4f6;
+  --df-ink-2: #c5c9d0;
+  --df-ink-3: #8b919b;
+  --df-ink-4: #5d636d;
+
+  --df-border: rgba(255, 255, 255, 0.1);
+  --df-border-strong: rgba(255, 255, 255, 0.2);
+
+  --df-accent: #4f93ff;
+  --df-accent-2: #6aa6ff;
+  --df-accent-ink: #0b1220;
+  --df-accent-soft: rgba(79, 147, 255, 0.16);
+
+  --df-success: #4caf80;
+  --df-danger: #e0664f;
+  --df-warning: #d99a2b;
+
+  --df-glass: rgba(30, 33, 39, 0.85);
+  --df-glass-border: rgba(255, 255, 255, 0.1);
+
+  --df-shadow-1: 0 1px 0 rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --df-shadow-2: 0 1px 0 rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.5);
+  --df-shadow-3: 0 2px 0 rgba(0, 0, 0, 0.3), 0 24px 60px rgba(0, 0, 0, 0.6);
+  --df-shadow-pressed: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+
+  color-scheme: dark;
 }
 
 html,
