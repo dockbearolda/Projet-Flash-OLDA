@@ -28,7 +28,6 @@ import { LineRow, PricingGrid, RecapDrawer } from '@/features/quote/components';
 import { SegToggle } from '@/components/ui/SegToggle';
 import { Logo } from '@/components/ui';
 import { cn } from '@/lib/cn';
-import { fmtShortDate } from '@/lib/format';
 import type { Customer } from '@df/shared';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -130,7 +129,6 @@ export default function TabletPage() {
   const lines = useQuoteStore((s) => s.lines);
   const transport = useQuoteStore((s) => s.transport);
   const revente = useQuoteStore((s) => s.revente);
-  const updatedAt = useQuoteStore((s) => s.updatedAt);
 
   const addLine = useQuoteStore((s) => s.addLine);
   const addCustomLine = useQuoteStore((s) => s.addCustomLine);
@@ -191,7 +189,13 @@ export default function TabletPage() {
     });
   }
 
-  function validateClient(): boolean {
+  // Détecte les infos client manquantes (identité = société OU nom, téléphone,
+  // email valide). Renvoie le détail des champs et leurs libellés, sans toast.
+  function clientCheck(): {
+    miss: { company: boolean; name: boolean; phone: boolean; email: boolean };
+    labels: string[];
+    hasMissing: boolean;
+  } {
     const company = (customer.company ?? '').trim();
     const name = customer.name.trim();
     const phone = (customer.phone ?? '').trim();
@@ -203,12 +207,19 @@ export default function TabletPage() {
       phone: phone === '',
       email: email === '' || !EMAIL_RE.test(email),
     };
-    if (identityMissing || miss.phone || miss.email) {
+    const labels: string[] = [];
+    if (identityMissing) labels.push('société ou nom');
+    if (miss.phone) labels.push('téléphone');
+    if (miss.email) labels.push(email !== '' ? 'email valide' : 'email');
+    return { miss, labels, hasMissing: identityMissing || miss.phone || miss.email };
+  }
+
+  // Bloquant (WhatsApp / e-mail) : signale les champs en rouge + toast d'erreur,
+  // renvoie false si des infos sont manquantes.
+  function validateClient(): boolean {
+    const { miss, labels, hasMissing } = clientCheck();
+    if (hasMissing) {
       setMissingClient(miss);
-      const labels: string[] = [];
-      if (identityMissing) labels.push('société ou nom');
-      if (miss.phone) labels.push('téléphone');
-      if (miss.email) labels.push(email !== '' ? 'email valide' : 'email');
       toast.error('Infos client obligatoires', {
         description: `À renseigner avant l'envoi : ${labels.join(', ')}.`,
       });
@@ -258,8 +269,8 @@ export default function TabletPage() {
     markSent(createdAt);
   }
 
-  function handleGenerate() {
-    if (!validateClient()) return;
+  // Lance réellement la génération + le toast de succès/échec.
+  function runGenerate(): void {
     void (async () => {
       try {
         await generateDevisPdf();
@@ -272,6 +283,29 @@ export default function TabletPage() {
         toast.error('Échec génération PDF', { id: 'pdf' });
       }
     })();
+  }
+
+  // PDF : non bloquant. Si des infos manquent, on AVERTIT puis on ne génère
+  // qu'après confirmation (bouton « Générer quand même » dans l'avertissement).
+  function handleGenerate(): void {
+    const { miss, labels, hasMissing } = clientCheck();
+    if (hasMissing) {
+      setMissingClient(miss);
+      toast.warning("Attention : vous n'avez pas rentré d'information", {
+        id: 'pdf',
+        description: `Manquant : ${labels.join(', ')}. Générer le PDF quand même ?`,
+        duration: 10000,
+        action: {
+          label: 'Générer quand même',
+          onClick: () => {
+            runGenerate();
+          },
+        },
+      });
+      return;
+    }
+    setMissingClient({});
+    runGenerate();
   }
 
   function handleSendWhatsApp() {
@@ -396,17 +430,8 @@ export default function TabletPage() {
         <header className="df-glass h-[var(--df-titlebar-height)] shrink-0 px-4 border-b border-[var(--df-glass-border)] flex items-center gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
             <Logo className="w-7 h-7 shrink-0 text-[var(--df-accent)]" />
-            <h1 className="df-display text-lg text-[var(--df-ink)] truncate">Nouveau devis</h1>
             <span className="df-caps shrink-0 hidden xl:inline">OLDA · SXM</span>
           </div>
-
-          <span className="shrink-0 inline-flex items-center gap-1.5 px-2.5 h-8 rounded-[var(--df-radius)] bg-[var(--df-surface-2)] border border-[var(--df-border)] whitespace-nowrap tabular-nums">
-            <span className="df-mono text-xs text-[var(--df-ink-2)]">{id}</span>
-            <span className="hidden xl:inline text-[var(--df-ink-4)]">·</span>
-            <span className="hidden xl:inline text-xs text-[var(--df-ink-3)]">
-              {fmtShortDate(updatedAt)}
-            </span>
-          </span>
 
           <div className="flex-1" />
 
