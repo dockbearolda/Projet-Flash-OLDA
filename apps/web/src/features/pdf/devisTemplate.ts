@@ -172,13 +172,17 @@ function renderRow(e: EnrichedLine): string {
   const detailRows: [string, string][] = [
     ['Coloris textile', e.textileName],
     ['Impression DTF', e.placementLabel],
-    ['Couleur de flocage', e.flockLabel],
+    ['Coloris print', e.flockLabel],
   ];
 
   const detailItems = detailRows.map(([k, v]) => `<dt>* ${esc(k)}</dt><dd>${esc(v)}</dd>`);
-  // Une taille par ligne (S · 5, M · 10, …), au lieu d'une seule ligne dense.
+  // Tailles : plus de libellé « Tailles » — une étoile devant chaque taille
+  // (* S · 5, * M · 10, …). Le <dt> vide garde les tailles dans la colonne de
+  // droite, exactement à leur place habituelle.
   if (e.sizes.length) {
-    detailItems.push(`<dt>* Tailles</dt><dd class="sizes">${e.sizes.map(esc).join('<br>')}</dd>`);
+    detailItems.push(
+      `<dt></dt><dd class="sizes">${e.sizes.map((s) => `* ${esc(s)}`).join('<br>')}</dd>`,
+    );
   }
   const details = detailItems.join('\n              ');
 
@@ -228,9 +232,18 @@ export function buildDevisHtml(data: DevisData): string {
   // mode précis que si toutes les lignes facturables le partagent.
   const lineTransports = [...new Set(lines.map((l) => l.transport ?? transport))];
   const onlyTransport = lineTransports.length === 1 ? lineTransports[0] : null;
-  const transportLabel = onlyTransport
-    ? `Transport · ${TRANSPORT_OPTIONS.find((t) => t.id === onlyTransport)?.label ?? '—'}`
-    : 'Transport';
+  // Chronopost = seul mode payant : on compte les pièces effectivement
+  // transportées (les lignes en Maritime/Stock ne comptent pas).
+  const transportQty = lines.reduce(
+    (acc, l) => acc + ((l.transport ?? transport) === 'chronopost' ? lineQty(l.sizes) : 0),
+    0,
+  );
+  const transportPieces =
+    transportQty > 0 ? ` · ${fmtInt.format(transportQty)} pièce${transportQty > 1 ? 's' : ''}` : '';
+  const transportLabel =
+    (onlyTransport
+      ? `Transport · ${TRANSPORT_OPTIONS.find((t) => t.id === onlyTransport)?.label ?? '—'}`
+      : 'Transport') + transportPieces;
   const transportValue = totals.transportHT > 0 ? eur(totals.transportHT) : 'Gratuit';
   const tgcaValue = totals.tgcaHT > 0 ? eur(totals.tgcaHT) : 'Exonéré — revente';
 
