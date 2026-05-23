@@ -35,13 +35,13 @@ export function TransportPicker({ value, onChange }: Props) {
               onChange(opt.id);
             }}
             className={cn(
-              'inline-flex items-center justify-center gap-1.5 h-9 px-1.5 text-xs font-medium rounded-[calc(var(--df-radius)-3px)] transition-colors duration-[var(--df-dur-fast)] ease-[var(--df-ease-out)]',
+              'inline-flex items-center justify-center gap-1.5 h-11 px-1.5 text-xs font-medium rounded-[calc(var(--df-radius)-3px)] transition-colors duration-[var(--df-dur-fast)] ease-[var(--df-ease-out)]',
               active
                 ? 'bg-[var(--df-surface)] text-[var(--df-ink)] shadow-[var(--df-shadow-2)]'
                 : 'bg-transparent text-[var(--df-ink-2)] hover:text-[var(--df-ink)]',
             )}
           >
-            <Icon size={14} strokeWidth={1.8} aria-hidden className="shrink-0" />
+            <Icon size={16} strokeWidth={1.8} aria-hidden className="shrink-0" />
             {opt.label}
           </button>
         );

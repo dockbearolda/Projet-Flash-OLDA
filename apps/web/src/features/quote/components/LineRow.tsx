@@ -155,6 +155,8 @@ export function LineRow({
   const reventeBase = money.unitTTC; // prix TTC payé par le client, par pièce
   const [prixConseilStr, setPrixConseilStr] = useState('');
   const [reventeCoefStr, setReventeCoefStr] = useState('');
+  // Volet revente replié par défaut : c'est un outil indicatif, hors devis.
+  const [reventeOpen, setReventeOpen] = useState(false);
   const prixConseil = parseFrNum(prixConseilStr);
   const hasPrixConseil = Number.isFinite(prixConseil) && prixConseil > 0;
   const margePiece = hasPrixConseil ? prixConseil - reventeBase : null;
@@ -273,40 +275,40 @@ export function LineRow({
           )}
         </div>
 
-        {/* Méta discrète de la ligne — surcharge le réglage global du devis */}
-        <div className="flex items-center gap-3 text-xs">
-          <label className="inline-flex items-center gap-1.5 text-[var(--df-ink-3)]">
-            <Truck size={13} strokeWidth={1.8} aria-hidden className="text-[var(--df-ink-4)]" />
-            <span className="sr-only">Transport</span>
-            <span className="relative inline-flex items-center">
-              <select
-                value={effectiveTransport}
-                onChange={(e) => {
-                  onChange({ transport: e.target.value as Transport });
-                }}
-                aria-label={`Transport ligne ${String(index + 1)}`}
-                className="appearance-none bg-transparent pr-4 font-medium text-[var(--df-ink-2)] hover:text-[var(--df-ink)] cursor-pointer focus:outline-none focus:text-[var(--df-accent)]"
-              >
-                {transports.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.label}
-                    {t.surcharge > 0 ? ` +${eur(t.surcharge)}/pc` : ''}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown
-                size={12}
-                strokeWidth={1.8}
-                aria-hidden
-                className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--df-ink-4)]"
-              />
-            </span>
-          </label>
-
-          <span className="text-[var(--df-ink-4)]" aria-hidden>
-            ·
+        {/* Méta de la ligne — surcharge le réglage global du devis. Puces tappables. */}
+        <div className="flex items-center gap-2 text-xs">
+          {/* Transport — puce avec select natif */}
+          <span className="relative inline-flex items-center gap-1.5 h-8 pl-2.5 pr-7 rounded-[var(--df-radius-sm)] bg-[var(--df-surface-2)] border border-[var(--df-border)] text-[var(--df-ink-2)]">
+            <Truck
+              size={14}
+              strokeWidth={1.8}
+              aria-hidden
+              className="text-[var(--df-ink-4)] shrink-0"
+            />
+            <select
+              value={effectiveTransport}
+              onChange={(e) => {
+                onChange({ transport: e.target.value as Transport });
+              }}
+              aria-label={`Transport ligne ${String(index + 1)}`}
+              className="appearance-none bg-transparent font-medium cursor-pointer focus:outline-none focus:text-[var(--df-accent)]"
+            >
+              {transports.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.label}
+                  {t.surcharge > 0 ? ` +${eur(t.surcharge)}/pc` : ''}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              size={13}
+              strokeWidth={1.8}
+              aria-hidden
+              className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--df-ink-4)]"
+            />
           </span>
 
+          {/* TGCA — puce bascule */}
           <button
             type="button"
             onClick={() => {
@@ -314,7 +316,7 @@ export function LineRow({
             }}
             aria-pressed={effectiveRevente}
             aria-label={`TGCA ligne ${String(index + 1)} — ${effectiveRevente ? 'exonérée' : 'appliquée'}`}
-            className="inline-flex items-center gap-1.5 font-medium text-[var(--df-ink-3)] hover:text-[var(--df-ink)] transition-colors"
+            className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-[var(--df-radius-sm)] bg-[var(--df-surface-2)] border border-[var(--df-border)] font-medium text-[var(--df-ink-2)] hover:text-[var(--df-ink)] transition-colors"
           >
             <span className="df-caps">TGCA {Math.round(tgcaRate * 100)}%</span>
             <span
@@ -322,7 +324,7 @@ export function LineRow({
                 'px-1.5 py-0.5 rounded-[var(--df-radius-sm)] text-[11px] leading-none',
                 effectiveRevente
                   ? 'bg-[var(--df-accent-soft)] text-[var(--df-accent)]'
-                  : 'bg-[var(--df-surface-2)] text-[var(--df-ink-2)]',
+                  : 'bg-[var(--df-surface)] text-[var(--df-ink-2)]',
               )}
             >
               {effectiveRevente ? 'Exonérée' : 'Appliquée'}
@@ -505,63 +507,96 @@ export function LineRow({
           </div>
         )}
 
-        {/* Simulateur de revente client — 4 bulles liées (indicatif, hors devis) */}
+        {/* Simulateur de revente client — volet repliable, fermé par défaut
+            (indicatif, hors devis). Replié, il résume la marge totale. */}
         {qty > 0 && (
-          <div className="grid grid-cols-4 gap-2">
-            <Bubble label="Prix conseillé">
-              <div className="flex items-baseline gap-1">
-                <input
-                  inputMode="decimal"
-                  value={prixConseilStr}
-                  onChange={(e) => {
-                    handlePrixConseil(e.target.value);
-                  }}
-                  placeholder="0,00"
-                  aria-label={`Prix conseillé ligne ${String(index + 1)}`}
-                  className="w-full min-w-0 bg-transparent df-mono text-base tabular-nums text-[var(--df-ink)] focus:outline-none"
-                />
-                <span className="text-sm text-[var(--df-ink-3)]">€</span>
-              </div>
-            </Bubble>
-            <Bubble label="Coef">
-              <div className="flex items-baseline gap-1">
-                <span className="text-sm text-[var(--df-ink-3)]">×</span>
-                <input
-                  inputMode="decimal"
-                  value={reventeCoefStr}
-                  onChange={(e) => {
-                    handleReventeCoef(e.target.value);
-                  }}
-                  placeholder="—"
-                  aria-label={`Coefficient revente ligne ${String(index + 1)}`}
-                  className="w-full min-w-0 bg-transparent df-mono text-base tabular-nums text-[var(--df-ink)] focus:outline-none"
-                />
-              </div>
-            </Bubble>
-            <Bubble label="Marge / pièce">
-              <span
-                className={cn(
-                  'df-mono text-base tabular-nums',
-                  margePiece !== null && margePiece < 0
-                    ? 'text-[var(--df-danger)]'
-                    : 'text-[var(--df-ink)]',
+          <div className="rounded-[var(--df-radius)] border border-[var(--df-border)] bg-[var(--df-surface)]">
+            <button
+              type="button"
+              onClick={() => {
+                setReventeOpen((o) => !o);
+              }}
+              aria-expanded={reventeOpen}
+              className="w-full flex items-center justify-between gap-2 h-11 px-3 text-left"
+            >
+              <span className="df-caps">Revente client</span>
+              <span className="inline-flex items-center gap-2 text-xs text-[var(--df-ink-3)]">
+                {!reventeOpen && margeLigne !== null && (
+                  <span
+                    className={cn(
+                      'df-mono tabular-nums',
+                      margeLigne < 0 ? 'text-[var(--df-danger)]' : 'text-[var(--df-ink-2)]',
+                    )}
+                  >
+                    Marge {eur(margeLigne)}
+                  </span>
                 )}
-              >
-                {margePiece !== null ? eur(margePiece) : '—'}
+                <ChevronDown
+                  size={16}
+                  strokeWidth={1.8}
+                  aria-hidden
+                  className={cn('transition-transform', reventeOpen && 'rotate-180')}
+                />
               </span>
-            </Bubble>
-            <Bubble label="Marge totale" accent>
-              <span
-                className={cn(
-                  'df-mono text-base font-semibold tabular-nums',
-                  margeLigne !== null && margeLigne < 0
-                    ? 'text-[var(--df-danger)]'
-                    : 'text-[var(--df-accent)]',
-                )}
-              >
-                {margeLigne !== null ? eur(margeLigne) : '—'}
-              </span>
-            </Bubble>
+            </button>
+            {reventeOpen && (
+              <div className="grid grid-cols-4 gap-2 px-3 pb-3">
+                <Bubble label="Prix conseillé">
+                  <div className="flex items-baseline gap-1">
+                    <input
+                      inputMode="decimal"
+                      value={prixConseilStr}
+                      onChange={(e) => {
+                        handlePrixConseil(e.target.value);
+                      }}
+                      placeholder="0,00"
+                      aria-label={`Prix conseillé ligne ${String(index + 1)}`}
+                      className="w-full min-w-0 bg-transparent df-mono text-base tabular-nums text-[var(--df-ink)] focus:outline-none"
+                    />
+                    <span className="text-sm text-[var(--df-ink-3)]">€</span>
+                  </div>
+                </Bubble>
+                <Bubble label="Coef">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-sm text-[var(--df-ink-3)]">×</span>
+                    <input
+                      inputMode="decimal"
+                      value={reventeCoefStr}
+                      onChange={(e) => {
+                        handleReventeCoef(e.target.value);
+                      }}
+                      placeholder="—"
+                      aria-label={`Coefficient revente ligne ${String(index + 1)}`}
+                      className="w-full min-w-0 bg-transparent df-mono text-base tabular-nums text-[var(--df-ink)] focus:outline-none"
+                    />
+                  </div>
+                </Bubble>
+                <Bubble label="Marge / pièce">
+                  <span
+                    className={cn(
+                      'df-mono text-base tabular-nums',
+                      margePiece !== null && margePiece < 0
+                        ? 'text-[var(--df-danger)]'
+                        : 'text-[var(--df-ink)]',
+                    )}
+                  >
+                    {margePiece !== null ? eur(margePiece) : '—'}
+                  </span>
+                </Bubble>
+                <Bubble label="Marge totale" accent>
+                  <span
+                    className={cn(
+                      'df-mono text-base font-semibold tabular-nums',
+                      margeLigne !== null && margeLigne < 0
+                        ? 'text-[var(--df-danger)]'
+                        : 'text-[var(--df-accent)]',
+                    )}
+                  >
+                    {margeLigne !== null ? eur(margeLigne) : '—'}
+                  </span>
+                </Bubble>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -56,6 +56,11 @@ describe('Button', () => {
     expect(screen.getByRole('button').className).toContain('h-10');
   });
 
+  it('applies md size classes (h-12)', () => {
+    render(<Button size="md">M</Button>);
+    expect(screen.getByRole('button').className).toContain('h-12');
+  });
+
   it('merges custom className', () => {
     render(<Button className="my-extra">X</Button>);
     expect(screen.getByRole('button').className).toContain('my-extra');

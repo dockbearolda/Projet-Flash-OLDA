@@ -66,7 +66,7 @@ function SizeCell({
           const cleaned = e.target.value.replace(/[^\d]/g, '');
           onChange(cleaned || '0');
         }}
-        className="h-11 px-2 text-center text-base font-semibold bg-[var(--df-surface)] border border-[var(--df-border)] rounded-[var(--df-radius-sm)] focus:border-[var(--df-accent)] focus:shadow-[0_0_0_3px_var(--df-accent-soft)] outline-none transition-colors tabular-nums"
+        className="h-[52px] px-2 text-center text-base font-semibold bg-[var(--df-surface)] border border-[var(--df-border)] rounded-[var(--df-radius-sm)] focus:border-[var(--df-accent)] focus:shadow-[0_0_0_3px_var(--df-accent-soft)] outline-none transition-colors tabular-nums"
         aria-label={`Quantité ${label}`}
       />
     </label>
@@ -80,7 +80,7 @@ function TotalCell({ value }: { value: number }) {
       <div
         role="status"
         aria-live="polite"
-        className="h-11 px-2 flex items-center justify-center text-lg font-bold rounded-[var(--df-radius-sm)] bg-[var(--df-accent)] text-[var(--df-accent-ink)] shadow-[var(--df-shadow-1)] tabular-nums"
+        className="h-[52px] px-2 flex items-center justify-center text-lg font-bold rounded-[var(--df-radius-sm)] bg-[var(--df-accent)] text-[var(--df-accent-ink)] shadow-[var(--df-shadow-1)] tabular-nums"
       >
         {fmtInt.format(value)}
       </div>

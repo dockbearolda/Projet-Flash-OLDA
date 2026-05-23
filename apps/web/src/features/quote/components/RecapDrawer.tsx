@@ -222,6 +222,7 @@ export function RecapDrawer({
             </Button>
             <div className="grid grid-cols-2 gap-2">
               <Button
+                size="md"
                 onClick={onSendWhatsApp}
                 disabled={!hasIdentity}
                 title={hasIdentity ? undefined : 'Liez un client pour activer l’envoi'}
@@ -230,6 +231,7 @@ export function RecapDrawer({
                 WhatsApp
               </Button>
               <Button
+                size="md"
                 onClick={onSendEmail}
                 disabled={!hasIdentity}
                 title={hasIdentity ? undefined : 'Liez un client pour activer l’envoi'}

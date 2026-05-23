@@ -3,7 +3,7 @@ import type { ButtonHTMLAttributes } from 'react';
 import { cn } from '@/lib/cn';
 
 export type ButtonVariant = 'primary' | 'default' | 'ghost';
-export type ButtonSize = 'default' | 'lg';
+export type ButtonSize = 'default' | 'md' | 'lg';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -20,6 +20,7 @@ const variantClasses: Record<ButtonVariant, string> = {
 
 const sizeClasses: Record<ButtonSize, string> = {
   default: 'h-10 px-4 text-sm rounded-[var(--df-radius)]',
+  md: 'h-12 px-4 text-sm rounded-[var(--df-radius)]',
   lg: 'h-14 px-6 text-base rounded-[var(--df-radius-lg)]',
 };
 
