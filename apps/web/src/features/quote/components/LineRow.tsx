@@ -15,7 +15,7 @@ import { useCatalog } from '@/features/catalog/useCatalog';
 import { eur, fmtCoef } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { RollingNumber } from '@/components/ui/RollingNumber';
-import { lineQty, unitPriceBreakdown, lineSubtotalHT } from '../pricing';
+import { lineQty, unitPriceBreakdown, lineSubtotalHT, transportSurchargeFor } from '../pricing';
 import { QtyGrid } from './QtyGrid';
 
 interface Props {
@@ -92,8 +92,10 @@ export function LineRow({
   }, [externalCustomPrice]);
 
   const transportPerPiece = useMemo(() => {
-    return transports.find((t) => t.id === effectiveTransport)?.surcharge ?? 0;
-  }, [effectiveTransport, transports]);
+    return transportSurchargeFor(effectiveTransport, line.productRef);
+    // `version` force le recalcul quand le catalogue change (lu via getCatalog).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveTransport, line.productRef, version]);
 
   // Chaque ligne est tarifée sur SA propre quantité : le palier (coef + zones)
   // ne dépend que de cette ligne, donc éditer une autre ligne ne déplace jamais
