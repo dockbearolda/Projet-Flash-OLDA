@@ -76,7 +76,12 @@ export async function readSnapshot(): Promise<CatalogSnapshot> {
       hex: c.hex,
       special: c.special,
     })),
-    placements: placements.map((p) => ({ id: p.slug, label: p.label, zones: p.zones })),
+    placements: placements.map((p) => ({
+      id: p.slug,
+      label: p.label,
+      zones: p.zones,
+      families: p.families,
+    })),
     transports: transports.map(
       (t): CatalogTransport => ({
         id: t.slug,
@@ -180,7 +185,12 @@ export async function ensureCatalogSeeded(): Promise<void> {
 
   if (placementCount === 0 && def.placements.length > 0) {
     await prisma.placement.createMany({
-      data: def.placements.map((p) => ({ slug: p.id, label: p.label, zones: p.zones })),
+      data: def.placements.map((p) => ({
+        slug: p.id,
+        label: p.label,
+        zones: p.zones,
+        families: p.families,
+      })),
     });
   }
 

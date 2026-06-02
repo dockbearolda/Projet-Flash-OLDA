@@ -153,7 +153,12 @@ export const catalogRoute = new Hono()
     await prisma.$transaction([
       prisma.placement.deleteMany({}),
       prisma.placement.createMany({
-        data: parsed.data.map((p) => ({ slug: p.id, label: p.label, zones: p.zones })),
+        data: parsed.data.map((p) => ({
+          slug: p.id,
+          label: p.label,
+          zones: p.zones,
+          families: p.families,
+        })),
       }),
     ]);
     return c.json(await readSnapshot());

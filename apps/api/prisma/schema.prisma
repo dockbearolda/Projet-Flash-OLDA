@@ -51,6 +51,8 @@ model Placement {
   slug      String   @unique
   label     String
   zones     String[] // ['coeur', 'dos', ...]
+  // Familles de produit où ce placement est proposé. Vide ⇒ toutes familles.
+  families  String[] @default([])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

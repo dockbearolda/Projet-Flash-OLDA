@@ -59,3 +59,19 @@ export interface Placement {
 export const PLACEMENT_BY_ID = Object.fromEntries(
   PLACEMENTS.map((p) => [p.id, p as Placement]),
 ) as Record<PlacementId, Placement>;
+
+/**
+ * Placements proposés pour une famille de produit donnée.
+ *
+ * Un placement dont la liste `families` est vide est « toutes familles » et
+ * apparaît partout. Sinon, il n'apparaît que pour les familles listées. Quand
+ * la famille est inconnue (ligne libre hors catalogue), tous les placements
+ * sont renvoyés. L'ordre d'origine est préservé.
+ */
+export function placementsForFamily<T extends { families: string[] }>(
+  placements: readonly T[],
+  familyId: string | undefined,
+): T[] {
+  if (!familyId) return [...placements];
+  return placements.filter((p) => p.families.length === 0 || p.families.includes(familyId));
+}

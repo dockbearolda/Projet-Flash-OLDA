@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Link2, Link2Off, Trash2, Truck } from 'lucide-react';
-import { SIZE_KEYS, groupProductsByFamily } from '@df/shared';
+import { SIZE_KEYS, groupProductsByFamily, placementsForFamily } from '@df/shared';
 import type {
   CatalogTextileColor,
   QuoteLine,
@@ -183,6 +183,28 @@ export function LineRow({
     () => groupProductsByFamily(products, families),
     [products, families],
   );
+
+  // Placements proposés pour la famille du produit de la ligne. Une ligne libre
+  // (hors catalogue) n'a pas de famille connue ⇒ tous les placements. Les
+  // placements « toutes familles » (familles vide) restent proposés partout.
+  const productFamily = product?.family;
+  const availablePlacements = useMemo(
+    () => placementsForFamily(placements, productFamily),
+    [placements, productFamily],
+  );
+
+  // Quand on change de produit pour une autre famille, le placement courant peut
+  // ne plus être proposé : on bascule alors sur le premier disponible, sinon le
+  // menu afficherait une valeur fantôme et le prix serait erroné.
+  useEffect(() => {
+    if (isCustom) return;
+    const fallback = availablePlacements[0];
+    if (!fallback) return;
+    if (!availablePlacements.some((p) => p.id === line.placementId)) {
+      onChange({ placementId: fallback.id });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availablePlacements, line.placementId, isCustom]);
 
   // Tailles proposées par la référence (undefined ⇒ toutes). Ordre canonique.
   const availableSizes = useMemo<SizeKey[] | undefined>(() => {
@@ -430,7 +452,7 @@ export function LineRow({
             }}
             aria-label="Placement DTF"
           >
-            {placements.map((p) => (
+            {availablePlacements.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.label}
               </option>

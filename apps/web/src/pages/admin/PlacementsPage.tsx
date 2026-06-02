@@ -1,4 +1,4 @@
-import type { CatalogPlacement, CatalogZone } from '@df/shared';
+import type { CatalogPlacement, CatalogZone, CatalogFamily } from '@df/shared';
 import { useCatalog } from '@/features/catalog/useCatalog';
 import { savePlacements } from '@/features/catalog/api';
 import {
@@ -13,15 +13,24 @@ import { cn } from '@/lib/cn';
 
 export default function PlacementsPage() {
   const cat = useCatalog();
-  return <PlacementsEditor key={cat.version} initial={cat.placements} zones={cat.zones} />;
+  return (
+    <PlacementsEditor
+      key={cat.version}
+      initial={cat.placements}
+      zones={cat.zones}
+      families={cat.families}
+    />
+  );
 }
 
 function PlacementsEditor({
   initial,
   zones,
+  families,
 }: {
   initial: CatalogPlacement[];
   zones: CatalogZone[];
+  families: CatalogFamily[];
 }) {
   const { draft, setDraft, dirty, saving, onSave, onCancel } = useSection(initial, savePlacements);
 
@@ -42,12 +51,26 @@ function PlacementsEditor({
       ),
     );
   }
+  function toggleFamily(i: number, familyId: string) {
+    setDraft((d) =>
+      d.map((p, idx) =>
+        idx === i
+          ? {
+              ...p,
+              families: p.families.includes(familyId)
+                ? p.families.filter((f) => f !== familyId)
+                : [...p.families, familyId],
+            }
+          : p,
+      ),
+    );
+  }
 
   return (
     <div>
       <PageHeader
         title="Placements"
-        subtitle="Emplacements d’impression proposés dans le devis. Cochez les zones DTF incluses dans chaque placement — leur somme donne le prix d’impression."
+        subtitle="Emplacements d’impression proposés dans le devis. Cochez les zones DTF incluses (leur somme donne le prix), puis les familles où le placement est proposé (aucune cochée ⇒ toutes les familles)."
       />
 
       <div className="space-y-3">
@@ -82,39 +105,85 @@ function PlacementsEditor({
                 label={`Supprimer le placement ${String(i + 1)}`}
               />
             </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {zones.length === 0 ? (
-                <span className="text-xs text-[var(--df-ink-3)]">
-                  Aucune zone définie. Ajoutez des zones dans « Prix d’impression ».
+            {/* Zones DTF incluses — leur somme donne le prix d’impression */}
+            <div className="mt-3">
+              <span className="df-caps">Zones d’impression incluses</span>
+              <div className="mt-1.5 flex flex-wrap gap-2">
+                {zones.length === 0 ? (
+                  <span className="text-xs text-[var(--df-ink-3)]">
+                    Aucune zone définie. Ajoutez des zones dans « Prix d’impression ».
+                  </span>
+                ) : (
+                  zones.map((z) => {
+                    const on = p.zones.includes(z.id);
+                    return (
+                      <button
+                        key={z.id}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => {
+                          toggleZone(i, z.id);
+                        }}
+                        className={cn(
+                          'px-3 h-8 rounded-full text-xs font-medium border transition-colors',
+                          on
+                            ? 'bg-[var(--df-accent-soft)] text-[var(--df-accent)] border-[var(--df-accent)]'
+                            : 'bg-[var(--df-surface-2)] text-[var(--df-ink-3)] border-[var(--df-border)] hover:text-[var(--df-ink)]',
+                        )}
+                      >
+                        {z.label}
+                      </button>
+                    );
+                  })
+                )}
+                {p.zones.length === 0 && zones.length > 0 && (
+                  <span className="text-xs text-[var(--df-ink-3)] self-center">
+                    (sans impression)
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Familles où ce placement est proposé dans le devis (vide ⇒ toutes) */}
+            <div className="mt-3">
+              <span className="df-caps">
+                Proposé pour ces familles{' '}
+                <span className="normal-case font-normal text-[var(--df-ink-4)]">
+                  — aucune = toutes
                 </span>
-              ) : (
-                zones.map((z) => {
-                  const on = p.zones.includes(z.id);
-                  return (
-                    <button
-                      key={z.id}
-                      type="button"
-                      aria-pressed={on}
-                      onClick={() => {
-                        toggleZone(i, z.id);
-                      }}
-                      className={cn(
-                        'px-3 h-8 rounded-full text-xs font-medium border transition-colors',
-                        on
-                          ? 'bg-[var(--df-accent-soft)] text-[var(--df-accent)] border-[var(--df-accent)]'
-                          : 'bg-[var(--df-surface-2)] text-[var(--df-ink-3)] border-[var(--df-border)] hover:text-[var(--df-ink)]',
-                      )}
-                    >
-                      {z.label}
-                    </button>
-                  );
-                })
-              )}
-              {p.zones.length === 0 && zones.length > 0 && (
-                <span className="text-xs text-[var(--df-ink-3)] self-center">
-                  (sans impression)
-                </span>
-              )}
+              </span>
+              <div className="mt-1.5 flex flex-wrap gap-2">
+                {families.length === 0 ? (
+                  <span className="text-xs text-[var(--df-ink-3)]">Aucune famille définie.</span>
+                ) : (
+                  families.map((f) => {
+                    const on = p.families.includes(f.id);
+                    return (
+                      <button
+                        key={f.id}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => {
+                          toggleFamily(i, f.id);
+                        }}
+                        className={cn(
+                          'px-3 h-8 rounded-full text-xs font-medium border transition-colors',
+                          on
+                            ? 'bg-[var(--df-accent-soft)] text-[var(--df-accent)] border-[var(--df-accent)]'
+                            : 'bg-[var(--df-surface-2)] text-[var(--df-ink-3)] border-[var(--df-border)] hover:text-[var(--df-ink)]',
+                        )}
+                      >
+                        {f.label}
+                      </button>
+                    );
+                  })
+                )}
+                {p.families.length === 0 && families.length > 0 && (
+                  <span className="text-xs text-[var(--df-ink-3)] self-center">
+                    (toutes les familles)
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         ))}
@@ -123,7 +192,7 @@ function PlacementsEditor({
       <div className="mt-4">
         <AddRowButton
           onClick={() => {
-            setDraft((d) => [...d, { id: '', label: '', zones: [] }]);
+            setDraft((d) => [...d, { id: '', label: '', zones: [], families: [] }]);
           }}
           label="Ajouter un placement"
         />

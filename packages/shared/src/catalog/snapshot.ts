@@ -66,6 +66,8 @@ export interface CatalogPlacement {
   id: string;
   label: string;
   zones: string[];
+  /** Familles de produit où ce placement est proposé. Vide ⇒ toutes familles. */
+  families: string[];
 }
 
 export interface CatalogTransport {
@@ -127,7 +129,14 @@ export function defaultCatalogSnapshot(): CatalogSnapshot {
       hex: c.hex,
       special: c.special ?? false,
     })),
-    placements: PLACEMENTS.map((p) => ({ id: p.id, label: p.label, zones: [...p.zones] })),
+    // Les placements par défaut sont « toutes familles » (families: []) : ils
+    // restent visibles partout tant que le patron ne les restreint pas.
+    placements: PLACEMENTS.map((p) => ({
+      id: p.id,
+      label: p.label,
+      zones: [...p.zones],
+      families: [],
+    })),
     transports: TRANSPORT_OPTIONS.map((t) => ({
       id: t.id,
       label: t.label,
