@@ -1,12 +1,14 @@
 console.warn('[api] boot: server.ts loading');
 
+// Stay up on async errors. Calling process.exit(1) on every unhandled
+// rejection (e.g. a transient DB blip in a fire-and-forget query) is what took
+// prod down: once the process died, the boot-time migration could hang on a
+// stale DB lock and the server never came back. Log loudly and keep serving.
 process.on('uncaughtException', (err) => {
-  console.error('[api] uncaughtException', err);
-  process.exit(1);
+  console.error('[api] uncaughtException (kept alive)', err);
 });
 process.on('unhandledRejection', (err) => {
-  console.error('[api] unhandledRejection', err);
-  process.exit(1);
+  console.error('[api] unhandledRejection (kept alive)', err);
 });
 
 import { serve } from '@hono/node-server';

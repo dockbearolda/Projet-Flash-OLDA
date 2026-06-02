@@ -54,7 +54,9 @@ RUN pnpm install --prod --frozen-lockfile --filter @df/api...
 RUN pnpm --filter @df/api db:generate
 
 EXPOSE 3001
-# Run migrations, but never let a DB hiccup stop the server from booting.
-# A live server (even with a degraded DB) lets the public domain respond
-# instead of failing with "Application failed to respond".
-CMD ["sh", "-c", "pnpm --filter @df/api db:deploy || echo '[boot] db:deploy failed — starting server anyway'; pnpm --filter @df/api start"]
+# Boot the server FIRST, run the schema sync in the BACKGROUND. A blocking
+# `db push` before start was the outage cause: when it hung on a stale DB lock,
+# the server never started and the public domain returned 502 ("Application
+# failed to respond"). Backgrounding it guarantees the server always listens and
+# passes the healthcheck; the push (idempotent) catches up alongside.
+CMD ["sh", "-c", "(pnpm --filter @df/api db:deploy || echo '[boot] db:deploy failed') & exec pnpm --filter @df/api start"]
