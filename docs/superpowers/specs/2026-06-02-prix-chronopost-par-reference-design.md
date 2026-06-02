@@ -1,7 +1,7 @@
 # Prix Chronopost réglable par référence
 
 - **Date** : 2026-06-02
-- **Statut** : design validé (en attente de revue spec)
+- **Statut** : implémenté (branche `feat/prix-chronopost-par-reference`)
 - **Approche** : override par référence sur le produit du catalogue (approche A). Chronopost reste le mode par défaut ; on ajoute, par référence, un prix Chronopost €/pièce optionnel qui remplace le tarif global quand il est renseigné.
 
 ## Contexte & objectif
