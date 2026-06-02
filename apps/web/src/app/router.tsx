@@ -1,7 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { PageFallback } from './PageFallback';
-import { Authed } from './Authed';
 
 type RouterInstance = ReturnType<typeof createBrowserRouter>;
 
@@ -15,20 +14,17 @@ const ZonesPage = lazy(() => import('@/pages/admin/ZonesPage'));
 const ColorsPage = lazy(() => import('@/pages/admin/ColorsPage'));
 const PlacementsPage = lazy(() => import('@/pages/admin/PlacementsPage'));
 const SettingsPage = lazy(() => import('@/pages/admin/SettingsPage'));
-const LoginPage = lazy(() => import('@/pages/login/LoginPage'));
 
-function lazyPage(El: ReturnType<typeof lazy>, guard = true) {
-  const inner = (
+function lazyPage(El: ReturnType<typeof lazy>) {
+  return (
     <Suspense fallback={<PageFallback />}>
       <El />
     </Suspense>
   );
-  return guard ? <Authed>{inner}</Authed> : inner;
 }
 
 export const router: RouterInstance = createBrowserRouter([
   { path: '/', element: <Navigate to="/tablet" replace /> },
-  { path: '/login', element: lazyPage(LoginPage, false) },
   { path: '/tablet', element: lazyPage(TabletPage) },
   {
     path: '/admin',
@@ -93,5 +89,5 @@ export const router: RouterInstance = createBrowserRouter([
       },
     ],
   },
-  { path: '/dev/components', element: lazyPage(DevComponentsPage, false) },
+  { path: '/dev/components', element: lazyPage(DevComponentsPage) },
 ]);

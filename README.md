@@ -21,7 +21,6 @@ Deux contextes d'usage :
 | Validation    | Zod                                                  |
 | API           | Hono sur Node 20                                     |
 | DB            | Prisma 6 + PostgreSQL                                |
-| Auth          | Mot de passe partagé, cookie httpOnly signé HMAC     |
 | PWA           | vite-plugin-pwa (manifest, service worker, sw cache) |
 | Tests         | Vitest + Testing Library (103 tests)                 |
 | E2E           | Playwright (configuré, scénarios non remplis en MVP) |
@@ -38,7 +37,7 @@ pnpm install
 
 # 2. Variables d'env
 cp apps/api/.env.example apps/api/.env
-# → édite DATABASE_URL et APP_PASSWORD
+# → édite DATABASE_URL
 
 # 3. DB
 pnpm --filter @df/api db:migrate          # crée les tables
@@ -53,7 +52,6 @@ Ouvrir :
 
 - http://localhost:5173/tablet — interface vendeuse
 - http://localhost:5173/admin/quotes — admin desktop
-- http://localhost:5173/login — login mot de passe partagé
 - http://localhost:5173/dev/components — galerie composants (dev)
 
 ---
@@ -75,8 +73,6 @@ pnpm test:e2e         # Playwright
 | Nom              | Description                                           |
 | ---------------- | ----------------------------------------------------- |
 | `DATABASE_URL`   | PostgreSQL connection string (Railway l'injecte)      |
-| `APP_PASSWORD`   | Mot de passe partagé (login `/login`)                 |
-| `SESSION_SECRET` | 32+ chars, signe le cookie httpOnly                   |
 | `PUBLIC_APP_URL` | URL publique (ex: https://devis-flash.up.railway.app) |
 | `NODE_ENV`       | `development` ou `production`                         |
 | `PORT`           | API port (Railway override automatiquement)           |
@@ -89,8 +85,7 @@ pnpm test:e2e         # Playwright
 # 1. Créer un projet Railway
 # 2. Ajouter PostgreSQL (Railway injecte DATABASE_URL)
 # 3. Lier le repo GitHub
-# 4. Configurer APP_PASSWORD et SESSION_SECRET dans les vars d'env
-# 5. Push : Railway build via Dockerfile multi-stage
+# 4. Push : Railway build via Dockerfile multi-stage
 ```
 
 Le `Dockerfile` :
@@ -114,20 +109,17 @@ devis-flash/
 │   │   │   ├── pages/
 │   │   │   │   ├── tablet/             # interface vendeuse
 │   │   │   │   ├── admin/              # admin (Layout, Quotes, Catalog, Coefs)
-│   │   │   │   ├── login/              # login mot de passe
 │   │   │   │   └── dev/                # galerie composants
 │   │   │   ├── features/
 │   │   │   │   ├── quote/              # store, pricing, components métier
-│   │   │   │   ├── pdf/                # QuotePdf + helpers
-│   │   │   │   └── auth/               # client API auth
+│   │   │   │   └── pdf/                # QuotePdf + helpers
 │   │   │   ├── components/             # UI primitives + SyncIndicator
 │   │   │   └── lib/                    # cn, color, format
 │   │   ├── public/
 │   │   └── vite.config.ts
 │   └── api/
 │       ├── src/
-│       │   ├── routes/                 # health, auth, catalog, quotes
-│       │   ├── auth.ts                 # middleware + sessions
+│       │   ├── routes/                 # health, catalog, quotes
 │       │   ├── db.ts                   # Prisma singleton
 │       │   └── server.ts
 │       └── prisma/
@@ -176,7 +168,7 @@ Voir `apps/web/src/features/quote/pricing.ts` pour l'implémentation (39 tests).
 3. **Geist self-hosted** — utilise Google Fonts en CDN, à passer en self-hosted si besoin d'offline complet sur les fonts.
 4. **Sync API** — l'historique est local IDB pour MVP. Le code des routes /api/quotes est prêt pour brancher une vraie sync queue.
 5. **Email / envoi** — bouton "Générer PDF" télécharge le fichier, pas d'envoi email automatique (à ajouter via Resend / SMTP si demandé).
-6. **Multi-utilisateur** — pas en MVP (mot de passe partagé). Si besoin d'avoir un nom d'auteur par devis, ajouter une notion de user dans `Session` et `Quote`.
+6. **Multi-utilisateur** — pas en MVP (aucune auth). Si besoin d'avoir un nom d'auteur par devis, ajouter une notion de user et l'attacher à `Quote`.
 
 ---
 
@@ -186,7 +178,7 @@ Voir `apps/web/src/features/quote/pricing.ts` pour l'implémentation (39 tests).
 # Démarrage rapide
 pnpm install
 cp apps/api/.env.example apps/api/.env
-# → renseigner DATABASE_URL et APP_PASSWORD
+# → renseigner DATABASE_URL
 pnpm --filter @df/api db:migrate
 pnpm --filter @df/api db:seed
 

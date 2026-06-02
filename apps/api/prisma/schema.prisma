@@ -112,12 +112,3 @@ model Quote {
   @@index([deletedAt])
   @@index([updatedAt])
 }
-
-model Session {
-  id        String   @id @default(cuid())
-  token     String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  @@index([expiresAt])
-}
