@@ -295,12 +295,16 @@ export function LineRow({
               aria-label={`Transport ligne ${String(index + 1)}`}
               className="appearance-none bg-transparent font-medium cursor-pointer focus:outline-none focus:text-[var(--df-accent)]"
             >
-              {transports.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.label}
-                  {t.surcharge > 0 ? ` +${eur(t.surcharge)}/pc` : ''}
-                </option>
-              ))}
+              {transports.map((t) => {
+                // Prix/pièce résolu pour CETTE référence (override Chronopost compris).
+                const perPiece = transportSurchargeFor(t.id as Transport, line.productRef);
+                return (
+                  <option key={t.id} value={t.id}>
+                    {t.label}
+                    {perPiece > 0 ? ` +${eur(perPiece)}/pc` : ''}
+                  </option>
+                );
+              })}
             </select>
             <ChevronDown
               size={13}

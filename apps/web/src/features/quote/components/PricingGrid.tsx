@@ -3,7 +3,7 @@ import { ChevronDown } from 'lucide-react';
 import type { CatalogProduct, ProductFamily } from '@df/shared';
 import { useCatalog, zoneSalePriceForQty } from '@/features/catalog/useCatalog';
 import { fmtEUR } from '@/lib/format';
-import { coefFor, round2, roundUp10Cents, viergePriceHT } from '../pricing';
+import { coefFor, round2, roundUp10Cents, transportSurchargeFor, viergePriceHT } from '../pricing';
 
 const FAMILY_LABEL: Record<ProductFamily, string> = {
   unisexe: 'Homme',
@@ -32,16 +32,8 @@ export function PricingGrid({
   defaultRef?: string;
   defaultPlacement?: string;
 }) {
-  const {
-    products,
-    productByRef,
-    placements,
-    placementById,
-    coefs,
-    zoneById,
-    transports,
-    version,
-  } = useCatalog();
+  const { products, productByRef, placements, placementById, coefs, zoneById, version } =
+    useCatalog();
   const [productRef, setProductRef] = useState(defaultRef);
   const [placementId, setPlacementId] = useState(defaultPlacement);
   const [codePct, setCodePct] = useState(10);
@@ -52,7 +44,8 @@ export function PricingGrid({
   const zoneIds = useMemo<string[]>(() => placement?.zones ?? [], [placement]);
 
   const qtyTiers = useMemo(() => coefs.map(([qty]) => qty), [coefs]);
-  const chronoPerPiece = transports.find((t) => t.id === 'chronopost')?.surcharge ?? 1.5;
+  // Prix Chronopost/pièce résolu pour la référence sélectionnée (override compris).
+  const chronoPerPiece = transportSurchargeFor('chronopost', productRef);
 
   const parsedQty = qtyInput === '' ? null : parseInt(qtyInput, 10);
   const activeTier =
