@@ -102,6 +102,67 @@ export function NumberField({
   );
 }
 
+/**
+ * Variante de {@link NumberField} qui distingue « vide » (null) d'un nombre.
+ * Champ vide ⇒ onChange(null) ; sinon onChange(nombre). Utilisé pour les
+ * réglages optionnels (ex. prix Chronopost par référence).
+ */
+export function NullableNumberField({
+  value,
+  onChange,
+  suffix,
+  ariaLabel,
+  placeholder,
+  className,
+}: {
+  value: number | null;
+  onChange: (v: number | null) => void;
+  suffix?: string;
+  ariaLabel?: string;
+  placeholder?: string;
+  className?: string;
+}) {
+  const [text, setText] = useState(() => (value == null ? '' : numToText(value)));
+
+  // Re-seed depuis la prop quand elle change de l'extérieur (reset / cancel).
+  useEffect(() => {
+    const localNull = text.trim() === '';
+    if (value == null) {
+      if (!localNull) setText('');
+    } else if (localNull || Math.abs(parseNum(text) - value) > 1e-9) {
+      setText(numToText(value));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  return (
+    <div className={cn('relative', className)}>
+      <input
+        type="text"
+        inputMode="decimal"
+        value={text}
+        placeholder={placeholder}
+        aria-label={ariaLabel}
+        onChange={(e) => {
+          let cleaned = e.target.value.replace(/[^\d.,]/g, '');
+          const sep = cleaned.search(/[.,]/);
+          if (sep !== -1) {
+            cleaned = cleaned.slice(0, sep + 1) + cleaned.slice(sep + 1).replace(/[.,]/g, '');
+          }
+          setText(cleaned);
+          onChange(cleaned.trim() === '' ? null : parseNum(cleaned));
+        }}
+        className={cn('df-input h-9 text-sm text-right tabular-nums df-mono', suffix ? 'pr-7' : '')}
+      />
+      {suffix && (
+        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[var(--df-ink-3)] pointer-events-none">
+          {suffix}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function DeleteRowButton({ onClick, label }: { onClick: () => void; label: string }) {
   return (
     <button

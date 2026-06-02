@@ -9,6 +9,7 @@ import {
   PageHeader,
   TextField,
   NumberField,
+  NullableNumberField,
   DeleteRowButton,
   AddRowButton,
   SaveBar,
@@ -26,15 +27,25 @@ const COLS = 'grid-cols-[36px_110px_150px_1fr_160px_120px_44px]';
 
 export default function CatalogPage() {
   const cat = useCatalog();
-  return <ProductsEditor key={cat.version} initial={cat.products} colors={cat.textileColors} />;
+  const chronopostDefault = cat.transportById.chronopost?.surcharge ?? null;
+  return (
+    <ProductsEditor
+      key={cat.version}
+      initial={cat.products}
+      colors={cat.textileColors}
+      chronopostDefault={chronopostDefault}
+    />
+  );
 }
 
 function ProductsEditor({
   initial,
   colors,
+  chronopostDefault,
 }: {
   initial: CatalogProduct[];
   colors: CatalogTextileColor[];
+  chronopostDefault: number | null;
 }) {
   const { draft, setDraft, dirty, saving, onSave, onCancel } = useSection(initial, saveProducts);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
@@ -58,6 +69,7 @@ function ProductsEditor({
         sizes: [...SIZE_KEYS],
         colorIds: colors.map((c) => c.id),
         bestColorIds: colors.filter((c) => c.best).map((c) => c.id),
+        chronopostPrice: null,
       },
     ]);
   }
@@ -124,6 +136,14 @@ function ProductsEditor({
       }),
     );
   }
+
+  const chronopostPlaceholder =
+    chronopostDefault != null
+      ? `${chronopostDefault.toLocaleString('fr-FR', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })} € (défaut)`
+      : 'Tarif standard';
 
   return (
     <div>
@@ -315,6 +335,25 @@ function ProductsEditor({
                           );
                         })}
                       </div>
+                    </section>
+
+                    <section>
+                      <span className="df-caps">Prix Chronopost (€/pièce)</span>
+                      <div className="mt-1.5 w-44">
+                        <NullableNumberField
+                          value={p.chronopostPrice ?? null}
+                          onChange={(v) => {
+                            update(i, { chronopostPrice: v });
+                          }}
+                          suffix="€"
+                          placeholder={chronopostPlaceholder}
+                          ariaLabel={`Prix Chronopost ${p.ref || `ligne ${String(i + 1)}`}`}
+                        />
+                      </div>
+                      <p className="text-xs text-[var(--df-ink-3)] mt-1.5">
+                        Laissez vide pour le tarif Chronopost standard. 0 € = livraison Chronopost
+                        offerte pour cette référence.
+                      </p>
                     </section>
                   </div>
                 )}
