@@ -15,7 +15,7 @@ import { useCatalog } from '@/features/catalog/useCatalog';
 import { eur, fmtCoef } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { RollingNumber } from '@/components/ui/RollingNumber';
-import { lineQty, unitPriceBreakdown, lineSubtotalHT } from '../pricing';
+import { lineQty, unitPriceBreakdown, lineSubtotalHT, transportSurchargeFor } from '../pricing';
 import { QtyGrid } from './QtyGrid';
 
 interface Props {
@@ -92,8 +92,10 @@ export function LineRow({
   }, [externalCustomPrice]);
 
   const transportPerPiece = useMemo(() => {
-    return transports.find((t) => t.id === effectiveTransport)?.surcharge ?? 0;
-  }, [effectiveTransport, transports]);
+    return transportSurchargeFor(effectiveTransport, line.productRef);
+    // `version` force le recalcul quand le catalogue change (lu via getCatalog).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveTransport, line.productRef, version]);
 
   // Chaque ligne est tarifée sur SA propre quantité : le palier (coef + zones)
   // ne dépend que de cette ligne, donc éditer une autre ligne ne déplace jamais
@@ -293,12 +295,16 @@ export function LineRow({
               aria-label={`Transport ligne ${String(index + 1)}`}
               className="appearance-none bg-transparent font-medium cursor-pointer focus:outline-none focus:text-[var(--df-accent)]"
             >
-              {transports.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.label}
-                  {t.surcharge > 0 ? ` +${eur(t.surcharge)}/pc` : ''}
-                </option>
-              ))}
+              {transports.map((t) => {
+                // Prix/pièce résolu pour CETTE référence (override Chronopost compris).
+                const perPiece = transportSurchargeFor(t.id as Transport, line.productRef);
+                return (
+                  <option key={t.id} value={t.id}>
+                    {t.label}
+                    {perPiece > 0 ? ` +${eur(perPiece)}/pc` : ''}
+                  </option>
+                );
+              })}
             </select>
             <ChevronDown
               size={13}

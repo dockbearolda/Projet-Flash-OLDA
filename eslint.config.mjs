@@ -14,6 +14,8 @@ export default tseslint.config(
       '**/coverage/**',
       '**/dev-dist/**',
       '**/.vitest/**',
+      // Worktrees internes de Claude Code (gitignored) — ne pas linter.
+      '**/.claude/**',
       'apps/api/prisma/migrations/**',
       'apps/web/public/**',
       'apps/web/playwright-report/**',

@@ -48,6 +48,7 @@ export async function readSnapshot(): Promise<CatalogSnapshot> {
         name: p.name,
         family: p.family as CatalogProduct['family'],
         priceAchat: Number(p.priceAchat),
+        chronopostPrice: p.chronopostPrice == null ? null : Number(p.chronopostPrice),
         sizes: p.sizes as CatalogProduct['sizes'],
         colorIds: p.colorIds,
         bestColorIds: p.bestColorIds,
@@ -120,6 +121,7 @@ export async function ensureCatalogSeeded(): Promise<void> {
         sizes: p.sizes,
         colorIds: p.colorIds,
         bestColorIds: p.bestColorIds,
+        chronopostPrice: p.chronopostPrice ?? null,
       })),
     });
   }

@@ -52,6 +52,7 @@ export const catalogRoute = new Hono()
           sizes: p.sizes,
           colorIds: p.colorIds,
           bestColorIds: p.bestColorIds,
+          chronopostPrice: p.chronopostPrice ?? null,
         })),
       }),
     ]);

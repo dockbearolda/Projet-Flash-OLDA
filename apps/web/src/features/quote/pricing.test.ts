@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import {
   coefFor,
   placementZonesPriceHT,
@@ -8,9 +8,12 @@ import {
   lineQty,
   unitPriceHT,
   lineSubtotalHT,
+  lineTotals,
   quoteTotals,
 } from './pricing';
 import type { Sizes } from '@df/shared';
+import { useCatalogStore } from '@/features/catalog/catalogStore';
+import { defaultCatalogSnapshot } from '@df/shared';
 
 const emptySizes: Sizes = { xs: 0, s: 0, m: 0, l: 0, xl: 0, xxl: 0, autres: 0 };
 const sizes = (qty: Partial<Sizes>): Sizes => ({ ...emptySizes, ...qty });
@@ -565,5 +568,108 @@ describe('quoteTotals — per-line transport + revente overrides', () => {
     expect(r.transportHT).toBe(7.5);
     expect(r.tgcaHT).toBe(5.7);
     expect(r.totalHT).toBe(148.2);
+  });
+});
+
+describe('quoteTotals — prix Chronopost par référence', () => {
+  // Injecte un catalogue par défaut où une réf porte un chronopostPrice donné.
+  function withChronopostPrice(ref: string, price: number | null): void {
+    const snap = defaultCatalogSnapshot();
+    const p = snap.products.find((x) => x.ref === ref);
+    if (!p) throw new Error(`setup test : réf ${ref} introuvable`);
+    p.chronopostPrice = price;
+    useCatalogStore.getState().setSnapshot(snap, { loaded: true });
+  }
+
+  afterEach(() => {
+    // Restaure le catalogue par défaut pour ne pas contaminer les autres suites.
+    useCatalogStore.getState().setSnapshot(defaultCatalogSnapshot(), { loaded: false });
+  });
+
+  const oneLine = (extra?: { transport?: 'maritime' | 'chronopost' | 'stock' }) => ({
+    lines: [
+      {
+        productRef: 'H-001',
+        placementId: 'coeur-dos',
+        sizes: sizes({ m: 5 }),
+        code: 0,
+        ...(extra?.transport ? { transport: extra.transport } : {}),
+      },
+    ],
+    revente: true as const,
+  });
+
+  it('utilise le prix Chronopost de la référence quand il est renseigné', () => {
+    withChronopostPrice('H-001', 3);
+    const r = quoteTotals({ ...oneLine(), transport: 'chronopost' });
+    expect(r.subtotalHT).toBe(135); // PU base 27,00 × 5
+    expect(r.transportHT).toBe(15); // 3,00 × 5 (et non 1,50 × 5)
+    expect(r.totalHT).toBe(150);
+  });
+
+  it('chronopostPrice 0 ⇒ livraison Chronopost offerte pour la réf', () => {
+    withChronopostPrice('H-001', 0);
+    const r = quoteTotals({ ...oneLine(), transport: 'chronopost' });
+    expect(r.transportHT).toBe(0);
+    expect(r.totalHT).toBe(135);
+  });
+
+  it('null ⇒ tarif Chronopost global (1,50 €/pièce)', () => {
+    withChronopostPrice('H-001', null);
+    const r = quoteTotals({ ...oneLine(), transport: 'chronopost' });
+    expect(r.transportHT).toBe(7.5); // 1,50 × 5
+  });
+
+  it('ignoré pour une ligne Maritime / Stock', () => {
+    withChronopostPrice('H-001', 3);
+    expect(quoteTotals({ ...oneLine(), transport: 'maritime' }).transportHT).toBe(0);
+    expect(quoteTotals({ ...oneLine(), transport: 'stock' }).transportHT).toBe(0);
+  });
+
+  it('mélange une réf avec override et une réf sans', () => {
+    withChronopostPrice('H-001', 3); // F-003 reste à null
+    const r = quoteTotals({
+      lines: [
+        { productRef: 'H-001', placementId: 'coeur-dos', sizes: sizes({ m: 5 }), code: 0 },
+        { productRef: 'F-003', placementId: 'coeur-dos', sizes: sizes({ m: 5 }), code: 0 },
+      ],
+      transport: 'chronopost',
+      revente: true,
+    });
+    expect(r.transportHT).toBe(22.5); // 3×5 + 1,50×5
+  });
+
+  it("s'applique aussi via un override de mode chronopost par ligne", () => {
+    withChronopostPrice('H-001', 3);
+    const r = quoteTotals({ ...oneLine({ transport: 'chronopost' }), transport: 'maritime' });
+    expect(r.transportHT).toBe(15);
+  });
+
+  it('lineTotals respecte le prix Chronopost de la référence', () => {
+    withChronopostPrice('H-001', 3);
+    const t = lineTotals(
+      { productRef: 'H-001', placementId: 'coeur-dos', sizes: sizes({ m: 5 }), code: 0 },
+      'chronopost',
+      true,
+    );
+    expect(t.htWithTransport).toBe(150); // 135 + 3×5
+  });
+
+  it('ligne libre (hors catalogue) ⇒ tarif Chronopost global', () => {
+    withChronopostPrice('H-001', 3); // override sur une AUTRE réf
+    const r = quoteTotals({
+      lines: [
+        {
+          productRef: 'CUSTOM',
+          placementId: 'coeur-dos',
+          sizes: sizes({ m: 5 }),
+          code: 0,
+          custom: { name: 'Produit libre', priceAchat: 4.05 },
+        },
+      ],
+      transport: 'chronopost',
+      revente: true,
+    });
+    expect(r.transportHT).toBe(7.5); // 1,50 × 5 — CUSTOM n'a pas d'override
   });
 });

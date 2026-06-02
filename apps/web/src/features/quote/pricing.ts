@@ -208,7 +208,7 @@ export function lineTotals(
 ): LineTotals {
   const qty = lineQty(line.sizes);
   const sub = lineSubtotalHT(line);
-  const eff = transportSurcharge(line.transport ?? quoteTransport);
+  const eff = transportSurchargeFor(line.transport ?? quoteTransport, line.productRef);
   const ht = sub + eff * qty;
   const isRevente = line.revente ?? quoteRevente;
   const tgca = isRevente ? 0 : ht * getCatalog().tgcaRate;
@@ -247,6 +247,25 @@ function transportSurcharge(t: Transport): number {
 }
 
 /**
+ * Surcoût transport par pièce d'une ligne, résolu par référence.
+ *
+ * Le surcoût global du mode s'applique, SAUF en chronopost : si la référence
+ * porte un `chronopostPrice` non-null dans le catalogue, c'est lui qui prime
+ * (y compris 0 € = Chronopost offert pour cette réf). Les lignes hors catalogue
+ * (ref absente — ex. lignes libres `CUSTOM`) retombent sur le tarif global.
+ */
+export function transportSurchargeFor(t: Transport, productRef: string): number {
+  const base = transportSurcharge(t); // lève si mode inconnu (garde défensive)
+  if (t === 'chronopost') {
+    const product = getCatalog().productByRef[productRef];
+    if (product?.chronopostPrice != null) {
+      return product.chronopostPrice;
+    }
+  }
+  return base;
+}
+
+/**
  * Compute all totals for a quote.
  *
  * Transport and revente are evaluated per-line: each line may override the
@@ -280,7 +299,7 @@ export function quoteTotals(quote: QuoteForPricing): QuoteTotals {
   let tgca = 0;
   for (const line of billable) {
     const lineSub = lineSubtotalHT(line);
-    const eff = transportSurcharge(line.transport ?? quote.transport);
+    const eff = transportSurchargeFor(line.transport ?? quote.transport, line.productRef);
     const lineTr = eff * lineQty(line.sizes);
     const isRevente = line.revente ?? quote.revente;
     const lineTgca = isRevente ? 0 : (lineSub + lineTr) * tgcaRate;
