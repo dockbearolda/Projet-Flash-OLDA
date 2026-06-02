@@ -159,7 +159,9 @@ export function groupProductsByFamily(
   products: CatalogProduct[],
   families: CatalogFamily[],
 ): FamilyGroup[] {
-  const OTHERS_ID = '_autres';
+  // Chaîne vide : jamais un id de famille valide (schéma min 1), donc le groupe
+  // de repli ne peut pas entrer en collision avec une vraie famille.
+  const OTHERS_ID = '';
   const groups = new Map<string, FamilyGroup>();
   for (const f of families) groups.set(f.id, { family: f, items: [] });
   for (const p of products) {
@@ -176,6 +178,7 @@ export function groupProductsByFamily(
   for (const g of groups.values()) {
     g.items.sort((a, b) => a.ref.localeCompare(b.ref, undefined, { numeric: true }));
   }
+  // groups.get(f.id) est toujours défini (semé ci-dessus) ; ternaire défensif pour le strict TS.
   const ordered: FamilyGroup[] = families.flatMap((f) => {
     const g = groups.get(f.id);
     return g ? [g] : [];
