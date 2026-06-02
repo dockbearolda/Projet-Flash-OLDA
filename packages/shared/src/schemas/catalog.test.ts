@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CatalogProductSchema } from './catalog.js';
+import { CatalogProductSchema, CatalogFamilySchema, ProductFamilySchema } from './catalog.js';
 import { defaultCatalogSnapshot } from '../catalog/snapshot.js';
 
 const baseProduct = {
@@ -46,5 +46,26 @@ describe('defaultCatalogSnapshot — chronopostPrice', () => {
     const snap = defaultCatalogSnapshot();
     expect(snap.products.length).toBeGreaterThan(0);
     for (const p of snap.products) expect(p.chronopostPrice).toBeNull();
+  });
+});
+
+describe('ProductFamilySchema (chaîne)', () => {
+  it('accepte un slug quelconque non vide', () => {
+    expect(ProductFamilySchema.parse('casquette')).toBe('casquette');
+  });
+  it('refuse une chaîne vide', () => {
+    expect(() => ProductFamilySchema.parse('')).toThrow();
+  });
+});
+
+describe('CatalogFamilySchema', () => {
+  it('parse { id, label }', () => {
+    expect(CatalogFamilySchema.parse({ id: 'accessoire', label: 'Accessoire' })).toEqual({
+      id: 'accessoire',
+      label: 'Accessoire',
+    });
+  });
+  it('refuse un label vide', () => {
+    expect(() => CatalogFamilySchema.parse({ id: 'x', label: '' })).toThrow();
   });
 });
