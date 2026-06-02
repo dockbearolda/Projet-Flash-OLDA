@@ -32,7 +32,8 @@ export function useSection<T>(
     void (async () => {
       try {
         await save(draft);
-        toast.success('Modifications enregistrées');
+        // Flash bref puis disparaît tout seul (1,5 s) — simple confirmation.
+        toast.success('Modifications enregistrées', { duration: 1500 });
         // The store version bump remounts this editor with fresh data.
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'Erreur inconnue';
