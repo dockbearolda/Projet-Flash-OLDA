@@ -16,6 +16,9 @@ export const CatalogProductSchema = z.object({
   sizes: z.array(SizeKeySchema).default([]),
   colorIds: z.array(z.string().trim().min(1)).default([]),
   bestColorIds: z.array(z.string().trim().min(1)).default([]),
+  // Prix Chronopost €/pièce propre à la référence. null/absent ⇒ tarif global.
+  // 0 ⇒ Chronopost offert pour cette référence. Ne s'applique qu'au mode chronopost.
+  chronopostPrice: z.number().min(0).nullable().default(null),
 });
 
 export const CatalogCoefSchema = z.tuple([z.number().int().min(0), z.number().min(0)]);

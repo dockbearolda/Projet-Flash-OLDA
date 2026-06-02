@@ -25,6 +25,8 @@ export interface CatalogProduct {
   colorIds: string[];
   /** Sous-ensemble de `colorIds` mis en avant (best-sellers), dans l'ordre d'affichage. */
   bestColorIds: string[];
+  /** Prix Chronopost €/pièce propre à la réf. null/absent ⇒ tarif global ; 0 ⇒ offert. */
+  chronopostPrice?: number | null;
 }
 
 /** Défauts d'une réf sans configuration explicite (toutes tailles / tous coloris). */
@@ -99,6 +101,7 @@ export function defaultCatalogSnapshot(): CatalogSnapshot {
       sizes: [...DEFAULT_PRODUCT_SIZES],
       colorIds: [...DEFAULT_PRODUCT_COLOR_IDS],
       bestColorIds: [...DEFAULT_PRODUCT_BEST_COLOR_IDS],
+      chronopostPrice: null,
     })),
     zones: ZONE_IDS.map((id) => ({
       id: ZONES[id].id,
