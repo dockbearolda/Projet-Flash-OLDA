@@ -9,6 +9,7 @@ import type {
   CatalogFlockColor,
   CatalogPlacement,
   CatalogTransport,
+  CatalogFamily,
 } from '@df/shared';
 import { useCatalogStore } from './catalogStore';
 
@@ -29,6 +30,7 @@ export interface CatalogView {
   transports: CatalogTransport[];
   transportById: Record<string, CatalogTransport | undefined>;
   tgcaRate: number;
+  families: CatalogFamily[];
 }
 
 function byKey<T>(items: T[], key: (item: T) => string): Record<string, T | undefined> {
@@ -55,6 +57,7 @@ function buildView(snapshot: CatalogSnapshot, version: number): CatalogView {
     transports: snapshot.transports,
     transportById: byKey(snapshot.transports, (t) => t.id),
     tgcaRate: snapshot.tgcaRate,
+    families: snapshot.families,
   };
 }
 

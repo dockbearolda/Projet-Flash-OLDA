@@ -1,4 +1,5 @@
-export type ProductFamily = 'unisexe' | 'femme' | 'enfant';
+/** Slug d'une famille de produits. Les familles sont éditables (catalogue). */
+export type ProductFamily = string;
 
 export interface Product {
   ref: string;

@@ -1,17 +1,9 @@
 import { useMemo, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import type { CatalogProduct, ProductFamily } from '@df/shared';
+import { groupProductsByFamily } from '@df/shared';
 import { useCatalog, zoneSalePriceForQty } from '@/features/catalog/useCatalog';
 import { fmtEUR } from '@/lib/format';
 import { coefFor, round2, roundUp10Cents, transportSurchargeFor, viergePriceHT } from '../pricing';
-
-const FAMILY_LABEL: Record<ProductFamily, string> = {
-  unisexe: 'Homme',
-  femme: 'Femme',
-  enfant: 'Enfant',
-};
-
-const FAMILY_ORDER: ProductFamily[] = ['unisexe', 'femme', 'enfant'];
 
 /** Largest tier ≤ qty (e.g. qty 27 → 20, qty 130 → 100, qty 200 → 150). */
 function tierForQty(tiers: number[], qty: number): number | null {
@@ -32,7 +24,7 @@ export function PricingGrid({
   defaultRef?: string;
   defaultPlacement?: string;
 }) {
-  const { products, productByRef, placements, placementById, coefs, zoneById, version } =
+  const { products, productByRef, placements, placementById, coefs, zoneById, version, families } =
     useCatalog();
   const [productRef, setProductRef] = useState(defaultRef);
   const [placementId, setPlacementId] = useState(defaultPlacement);
@@ -51,14 +43,10 @@ export function PricingGrid({
   const activeTier =
     parsedQty !== null && Number.isFinite(parsedQty) ? tierForQty(qtyTiers, parsedQty) : null;
 
-  const groupedProducts = useMemo(() => {
-    const byFamily = new Map<ProductFamily, CatalogProduct[]>();
-    for (const f of FAMILY_ORDER) byFamily.set(f, []);
-    for (const p of products) byFamily.get(p.family)?.push(p);
-    for (const list of byFamily.values())
-      list.sort((a, b) => a.ref.localeCompare(b.ref, undefined, { numeric: true }));
-    return byFamily;
-  }, [products]);
+  const groupedProducts = useMemo(
+    () => groupProductsByFamily(products, families),
+    [products, families],
+  );
 
   const rows = useMemo(() => {
     if (!product) return [];
@@ -98,19 +86,17 @@ export function PricingGrid({
               }}
               aria-label="Référence produit"
             >
-              {FAMILY_ORDER.map((family) => {
-                const items = groupedProducts.get(family) ?? [];
-                if (items.length === 0) return null;
-                return (
-                  <optgroup key={family} label={FAMILY_LABEL[family]}>
+              {groupedProducts.map(({ family, items }) =>
+                items.length === 0 ? null : (
+                  <optgroup key={family.id} label={family.label}>
                     {items.map((p) => (
                       <option key={p.ref} value={p.ref}>
                         {p.ref} — {p.name}
                       </option>
                     ))}
                   </optgroup>
-                );
-              })}
+                ),
+              )}
             </select>
             <ChevronDown
               className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--df-ink-3)] pointer-events-none"

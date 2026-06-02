@@ -8,6 +8,7 @@ import {
   CatalogFlockColorSchema,
   CatalogPlacementSchema,
   CatalogSettingsSchema,
+  CatalogFamilySchema,
 } from '@df/shared';
 import { prisma } from '../db.js';
 import { readSnapshot, ensureCatalogSeeded } from '../catalogService.js';
@@ -19,12 +20,11 @@ function duplicates(keys: (string | number)[]): boolean {
 export const catalogRoute = new Hono()
   .get('/', async (c) => {
     let snapshot = await readSnapshot();
-    // Seed defaults only on a genuinely empty database.
-    if (
-      snapshot.products.length === 0 &&
-      snapshot.coefs.length === 0 &&
-      snapshot.zones.length === 0
-    ) {
+    const dbEmpty =
+      snapshot.products.length === 0 && snapshot.coefs.length === 0 && snapshot.zones.length === 0;
+    // Seed complet sur base neuve ; sinon backfill des familles si la table est vide
+    // (cas d'une base existante mise à jour). ensureCatalogSeeded est idempotent.
+    if (dbEmpty || snapshot.families.length === 0) {
       await ensureCatalogSeeded();
       snapshot = await readSnapshot();
     }
@@ -154,6 +154,44 @@ export const catalogRoute = new Hono()
       prisma.placement.deleteMany({}),
       prisma.placement.createMany({
         data: parsed.data.map((p) => ({ slug: p.id, label: p.label, zones: p.zones })),
+      }),
+    ]);
+    return c.json(await readSnapshot());
+  })
+
+  .put('/families', async (c) => {
+    const body = (await c.req.json()) as unknown;
+    const parsed = z
+      .array(CatalogFamilySchema)
+      .min(1, 'Au moins une famille est requise')
+      .safeParse(body);
+    if (!parsed.success) {
+      return c.json({ error: 'Familles invalides', issues: parsed.error.issues }, 400);
+    }
+    if (duplicates(parsed.data.map((f) => f.id))) {
+      return c.json({ error: 'Identifiants de famille en double' }, 400);
+    }
+    // Garde-fou : refuser de retirer une famille encore portée par des produits.
+    const existing = await prisma.family.findMany({ select: { slug: true, label: true } });
+    const keptSlugs = new Set(parsed.data.map((f) => f.id));
+    const removed = existing.filter((f) => !keptSlugs.has(f.slug));
+    const details: string[] = [];
+    for (const fam of removed) {
+      const n = await prisma.product.count({ where: { family: fam.slug } });
+      if (n > 0) details.push(`« ${fam.label} » (${String(n)} produit${n > 1 ? 's' : ''})`);
+    }
+    if (details.length > 0) {
+      return c.json(
+        {
+          error: `Familles encore utilisées : ${details.join(', ')} — réaffectez ces produits d'abord.`,
+        },
+        400,
+      );
+    }
+    await prisma.$transaction([
+      prisma.family.deleteMany({}),
+      prisma.family.createMany({
+        data: parsed.data.map((f, i) => ({ slug: f.id, label: f.label, sort: i })),
       }),
     ]);
     return c.json(await readSnapshot());

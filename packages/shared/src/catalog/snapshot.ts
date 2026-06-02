@@ -75,6 +75,11 @@ export interface CatalogTransport {
   delay: string;
 }
 
+export interface CatalogFamily {
+  id: string;
+  label: string;
+}
+
 export interface CatalogSnapshot {
   products: CatalogProduct[];
   zones: CatalogZone[];
@@ -83,6 +88,7 @@ export interface CatalogSnapshot {
   flockColors: CatalogFlockColor[];
   placements: CatalogPlacement[];
   transports: CatalogTransport[];
+  families: CatalogFamily[];
   tgcaRate: number;
 }
 
@@ -128,8 +134,58 @@ export function defaultCatalogSnapshot(): CatalogSnapshot {
       surcharge: t.surcharge,
       delay: t.delay,
     })),
+    families: [
+      { id: 'unisexe', label: 'Homme' },
+      { id: 'femme', label: 'Femme' },
+      { id: 'enfant', label: 'Enfant' },
+    ],
     tgcaRate: TGCA_RATE,
   };
+}
+
+export interface FamilyGroup {
+  family: CatalogFamily;
+  items: CatalogProduct[];
+}
+
+/**
+ * Regroupe les produits par famille, dans l'ordre des `families` fournies,
+ * chaque groupe trié par `ref` (numérique). Les produits dont le slug `family`
+ * n'existe dans aucune famille sont placés en dernier sous une famille de repli
+ * « Autres » (ils ne disparaissent jamais des sélecteurs). Les familles sans
+ * produit sont conservées (groupe vide) — l'appelant décide de les afficher.
+ */
+export function groupProductsByFamily(
+  products: CatalogProduct[],
+  families: CatalogFamily[],
+): FamilyGroup[] {
+  // Chaîne vide : jamais un id de famille valide (schéma min 1), donc le groupe
+  // de repli ne peut pas entrer en collision avec une vraie famille.
+  const OTHERS_ID = '';
+  const groups = new Map<string, FamilyGroup>();
+  for (const f of families) groups.set(f.id, { family: f, items: [] });
+  for (const p of products) {
+    let g = groups.get(p.family);
+    if (!g) {
+      g = groups.get(OTHERS_ID);
+      if (!g) {
+        g = { family: { id: OTHERS_ID, label: 'Autres' }, items: [] };
+        groups.set(OTHERS_ID, g);
+      }
+    }
+    g.items.push(p);
+  }
+  for (const g of groups.values()) {
+    g.items.sort((a, b) => a.ref.localeCompare(b.ref, undefined, { numeric: true }));
+  }
+  // groups.get(f.id) est toujours défini (semé ci-dessus) ; ternaire défensif pour le strict TS.
+  const ordered: FamilyGroup[] = families.flatMap((f) => {
+    const g = groups.get(f.id);
+    return g ? [g] : [];
+  });
+  const others = groups.get(OTHERS_ID);
+  if (others) ordered.push(others);
+  return ordered;
 }
 
 /**

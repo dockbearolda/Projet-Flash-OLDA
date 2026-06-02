@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ChevronRight, Star } from 'lucide-react';
 import { SIZE_KEYS, SIZE_LABELS } from '@df/shared';
-import type { CatalogProduct, CatalogTextileColor, ProductFamily, SizeKey } from '@df/shared';
+import type { CatalogProduct, CatalogTextileColor, CatalogFamily, SizeKey } from '@df/shared';
 import { useCatalog } from '@/features/catalog/useCatalog';
 import { saveProducts } from '@/features/catalog/api';
 import { cn } from '@/lib/cn';
@@ -17,12 +17,6 @@ import {
 } from './components/adminUi';
 import { useSection } from './components/useSection';
 
-const FAMILIES: { value: ProductFamily; label: string }[] = [
-  { value: 'unisexe', label: 'Homme / Unisexe' },
-  { value: 'femme', label: 'Femme' },
-  { value: 'enfant', label: 'Enfant' },
-];
-
 const COLS = 'grid-cols-[36px_110px_150px_1fr_160px_120px_44px]';
 
 export default function CatalogPage() {
@@ -33,6 +27,7 @@ export default function CatalogPage() {
       key={cat.version}
       initial={cat.products}
       colors={cat.textileColors}
+      families={cat.families}
       chronopostDefault={chronopostDefault}
     />
   );
@@ -41,10 +36,12 @@ export default function CatalogPage() {
 function ProductsEditor({
   initial,
   colors,
+  families,
   chronopostDefault,
 }: {
   initial: CatalogProduct[];
   colors: CatalogTextileColor[];
+  families: CatalogFamily[];
   chronopostDefault: number | null;
 }) {
   const { draft, setDraft, dirty, saving, onSave, onCancel } = useSection(initial, saveProducts);
@@ -64,7 +61,7 @@ function ProductsEditor({
         ref: '',
         supplierRef: '',
         name: '',
-        family: 'unisexe',
+        family: families[0]?.id ?? '',
         priceAchat: 0,
         sizes: [...SIZE_KEYS],
         colorIds: colors.map((c) => c.id),
@@ -219,13 +216,13 @@ function ProductsEditor({
                   <select
                     value={p.family}
                     onChange={(e) => {
-                      update(i, { family: e.target.value as ProductFamily });
+                      update(i, { family: e.target.value });
                     }}
                     aria-label={`Famille produit ${String(i + 1)}`}
                     className="df-input h-9 text-sm cursor-pointer"
                   >
-                    {FAMILIES.map((f) => (
-                      <option key={f.value} value={f.value}>
+                    {families.map((f) => (
+                      <option key={f.id} value={f.id}>
                         {f.label}
                       </option>
                     ))}

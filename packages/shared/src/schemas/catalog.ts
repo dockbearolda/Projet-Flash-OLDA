@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { SIZE_KEYS } from '../catalog/products.js';
 
-export const ProductFamilySchema = z.enum(['unisexe', 'femme', 'enfant']);
+// Famille = slug d'une famille éditable du catalogue (plus un enum figé).
+export const ProductFamilySchema = z.string().trim().min(1, 'Famille requise').max(40);
 
 export const SizeKeySchema = z.enum(SIZE_KEYS);
 
@@ -64,6 +65,11 @@ export const CatalogTransportSchema = z.object({
   delay: z.string().trim().max(60),
 });
 
+export const CatalogFamilySchema = z.object({
+  id: z.string().trim().min(1, 'Identifiant requis').max(40),
+  label: z.string().trim().min(1, 'Nom requis').max(60),
+});
+
 export const CatalogSettingsSchema = z.object({
   tgcaRate: z.number().min(0).max(1),
   transports: z.array(CatalogTransportSchema),
@@ -78,5 +84,6 @@ export const CatalogSnapshotSchema = z.object({
   flockColors: z.array(CatalogFlockColorSchema),
   placements: z.array(CatalogPlacementSchema),
   transports: z.array(CatalogTransportSchema),
+  families: z.array(CatalogFamilySchema),
   tgcaRate: z.number().min(0).max(1),
 });

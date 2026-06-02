@@ -13,7 +13,7 @@ model Product {
   ref          String   @unique
   supplierRef  String
   name         String
-  family       String   // unisexe | femme | enfant
+  family       String   // slug de famille (voir modèle Family)
   priceAchat   Decimal  @db.Decimal(10, 2)
   // Prix Chronopost €/pièce propre à la réf (null ⇒ tarif global ; 0 ⇒ offert).
   chronopostPrice Decimal? @db.Decimal(10, 2)
@@ -74,6 +74,15 @@ model Transport {
   label     String
   surcharge Decimal  @db.Decimal(10, 2)
   delay     String
+  sort      Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Family {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  label     String
   sort      Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
