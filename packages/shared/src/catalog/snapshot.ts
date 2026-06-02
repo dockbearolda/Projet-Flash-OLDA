@@ -66,6 +66,8 @@ export interface CatalogPlacement {
   id: string;
   label: string;
   zones: string[];
+  /** Familles de produit où ce placement est proposé. Vide ⇒ toutes familles. */
+  families: string[];
 }
 
 export interface CatalogTransport {
@@ -127,7 +129,14 @@ export function defaultCatalogSnapshot(): CatalogSnapshot {
       hex: c.hex,
       special: c.special ?? false,
     })),
-    placements: PLACEMENTS.map((p) => ({ id: p.id, label: p.label, zones: [...p.zones] })),
+    // Les placements par défaut sont « toutes familles » (families: []) : ils
+    // restent visibles partout tant que le patron ne les restreint pas.
+    placements: PLACEMENTS.map((p) => ({
+      id: p.id,
+      label: p.label,
+      zones: [...p.zones],
+      families: [],
+    })),
     transports: TRANSPORT_OPTIONS.map((t) => ({
       id: t.id,
       label: t.label,
@@ -204,4 +213,30 @@ export function zoneSalePriceForQtyFrom(
     else return last;
   }
   return last;
+}
+
+/** Union triée (croissante) des seuils de quantité présents dans les zones. */
+export function unifiedSeuils(zones: readonly { salePrices: CatalogSalePrices }[]): number[] {
+  const set = new Set<number>();
+  for (const z of zones) for (const [threshold] of z.salePrices) set.add(threshold);
+  return [...set].sort((a, b) => a - b);
+}
+
+/**
+ * Aligne toutes les zones sur une échelle de seuils commune (l'union de leurs
+ * seuils). Le prix d'une zone à un seuil donné est celui de son palier inférieur
+ * (règle {@link zoneSalePriceForQtyFrom}) : on ne fait que combler les lignes
+ * manquantes, donc AUCUN prix effectif ne change. Sert à présenter « Prix
+ * d'impression » sous forme d'une grille à seuils partagés sans toucher aux tarifs.
+ */
+export function normalizeZonesToSharedSeuils<T extends { salePrices: CatalogSalePrices }>(
+  zones: readonly T[],
+): T[] {
+  const seuils = unifiedSeuils(zones);
+  return zones.map((z) => ({
+    ...z,
+    salePrices: seuils.map(
+      (s) => [s, zoneSalePriceForQtyFrom(z.salePrices, s)] as [number, number],
+    ),
+  }));
 }

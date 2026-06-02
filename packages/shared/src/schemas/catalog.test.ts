@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { CatalogProductSchema, CatalogFamilySchema, ProductFamilySchema } from './catalog.js';
+import {
+  CatalogProductSchema,
+  CatalogPlacementSchema,
+  CatalogFamilySchema,
+  ProductFamilySchema,
+} from './catalog.js';
 import { defaultCatalogSnapshot } from '../catalog/snapshot.js';
 
 const baseProduct = {
@@ -46,6 +51,28 @@ describe('defaultCatalogSnapshot — chronopostPrice', () => {
     const snap = defaultCatalogSnapshot();
     expect(snap.products.length).toBeGreaterThan(0);
     for (const p of snap.products) expect(p.chronopostPrice).toBeNull();
+  });
+});
+
+describe('CatalogPlacementSchema — families', () => {
+  const base = { id: 'dos', label: 'Dos', zones: ['dos'] };
+
+  it('défaut [] quand le champ est absent (rétro-compat)', () => {
+    expect(CatalogPlacementSchema.parse(base).families).toEqual([]);
+  });
+
+  it('conserve les familles fournies', () => {
+    expect(
+      CatalogPlacementSchema.parse({ ...base, families: ['enfant', 'femme'] }).families,
+    ).toEqual(['enfant', 'femme']);
+  });
+});
+
+describe('defaultCatalogSnapshot — placements', () => {
+  it('initialise chaque placement avec families: [] (toutes familles)', () => {
+    const snap = defaultCatalogSnapshot();
+    expect(snap.placements.length).toBeGreaterThan(0);
+    for (const p of snap.placements) expect(p.families).toEqual([]);
   });
 });
 

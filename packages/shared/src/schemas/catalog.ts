@@ -56,6 +56,10 @@ export const CatalogPlacementSchema = z.object({
   id: z.string().trim().min(1).max(60),
   label: z.string().trim().min(1).max(120),
   zones: z.array(z.string().trim().min(1)),
+  // Familles de produit pour lesquelles ce placement est proposé. Vide ⇒ toutes
+  // familles (rétro-compatible : les snapshots/lignes antérieurs n'avaient pas
+  // ce champ et restent donc visibles partout).
+  families: z.array(z.string().trim().min(1)).default([]),
 });
 
 export const CatalogTransportSchema = z.object({
