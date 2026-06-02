@@ -34,4 +34,24 @@ describe('NullableNumberField', () => {
     await userEvent.type(screen.getByLabelText('px'), '3');
     expect(onChange).toHaveBeenLastCalledWith(3);
   });
+
+  it('affiche 0 quand value est 0 (Chronopost offert, ≠ vide)', () => {
+    render(<NullableNumberField value={0} onChange={vi.fn()} ariaLabel="px" />);
+    expect(screen.getByLabelText('px')).toHaveValue('0');
+  });
+
+  it('émet 0 (et non null) quand on saisit 0', async () => {
+    const onChange = vi.fn();
+    render(<NullableNumberField value={null} onChange={onChange} ariaLabel="px" />);
+    await userEvent.type(screen.getByLabelText('px'), '0');
+    expect(onChange).toHaveBeenLastCalledWith(0);
+  });
+
+  it('efface le texte quand value revient à null (annulation externe)', () => {
+    const { rerender } = render(
+      <NullableNumberField value={2} onChange={vi.fn()} ariaLabel="px" />,
+    );
+    rerender(<NullableNumberField value={null} onChange={vi.fn()} ariaLabel="px" />);
+    expect(screen.getByLabelText('px')).toHaveValue('');
+  });
 });
