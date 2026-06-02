@@ -1,7 +1,7 @@
 # Familles de produits gérables par le patron
 
 - **Date** : 2026-06-02
-- **Statut** : design validé (en attente de revue spec)
+- **Statut** : implémenté (branche `feat/familles-produits-gerables`)
 - **Approche** : les familles deviennent une **collection éditable du catalogue** (comme coloris, placements, transports). Section admin « Familles » (ajouter / renommer / supprimer) ; tous les regroupements lisent les familles du catalogue. `ProductFamily` passe d'un enum figé à une simple chaîne (le slug).
 
 ## Contexte & objectif
