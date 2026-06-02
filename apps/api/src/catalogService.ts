@@ -207,12 +207,14 @@ export async function ensureCatalogSeeded(): Promise<void> {
     slugs.sort((a, b) => {
       const ia = order.indexOf(a);
       const ib = order.indexOf(b);
-      if (ia !== -1 || ib !== -1) return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+      const LAST = Number.MAX_SAFE_INTEGER;
+      if (ia !== -1 || ib !== -1) return (ia === -1 ? LAST : ia) - (ib === -1 ? LAST : ib);
       return a.localeCompare(b);
     });
     const labelFor = (slug: string) => def.families.find((f) => f.id === slug)?.label ?? slug;
     await prisma.family.createMany({
       data: slugs.map((slug, i) => ({ slug, label: labelFor(slug), sort: i })),
+      skipDuplicates: true,
     });
   }
 

@@ -161,7 +161,10 @@ export const catalogRoute = new Hono()
 
   .put('/families', async (c) => {
     const body = (await c.req.json()) as unknown;
-    const parsed = z.array(CatalogFamilySchema).safeParse(body);
+    const parsed = z
+      .array(CatalogFamilySchema)
+      .min(1, 'Au moins une famille est requise')
+      .safeParse(body);
     if (!parsed.success) {
       return c.json({ error: 'Familles invalides', issues: parsed.error.issues }, 400);
     }
