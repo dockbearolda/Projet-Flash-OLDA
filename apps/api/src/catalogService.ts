@@ -1,5 +1,11 @@
 import { defaultCatalogSnapshot } from '@df/shared';
-import type { CatalogSnapshot, CatalogProduct, CatalogZone, CatalogTransport } from '@df/shared';
+import type {
+  CatalogSnapshot,
+  CatalogProduct,
+  CatalogZone,
+  CatalogTransport,
+  CatalogFamily,
+} from '@df/shared';
 import { prisma } from './db.js';
 
 const TGCA_KEY = 'tgcaRate';
@@ -25,7 +31,7 @@ function toSalePrices(value: unknown): SalePrices {
 /** Read the full editable catalogue from the database into the shared shape. */
 export async function readSnapshot(): Promise<CatalogSnapshot> {
   const def = defaultCatalogSnapshot();
-  const [products, zones, coefs, textile, flock, placements, transports, settings] =
+  const [products, zones, coefs, textile, flock, placements, transports, families, settings] =
     await Promise.all([
       prisma.product.findMany({ orderBy: { ref: 'asc' } }),
       prisma.zone.findMany(),
@@ -34,6 +40,7 @@ export async function readSnapshot(): Promise<CatalogSnapshot> {
       prisma.flockColor.findMany({ orderBy: { name: 'asc' } }),
       prisma.placement.findMany(),
       prisma.transport.findMany({ orderBy: { sort: 'asc' } }),
+      prisma.family.findMany({ orderBy: { sort: 'asc' } }),
       prisma.setting.findMany(),
     ]);
 
@@ -46,7 +53,7 @@ export async function readSnapshot(): Promise<CatalogSnapshot> {
         ref: p.ref,
         supplierRef: p.supplierRef,
         name: p.name,
-        family: p.family as CatalogProduct['family'],
+        family: p.family,
         priceAchat: Number(p.priceAchat),
         chronopostPrice: p.chronopostPrice == null ? null : Number(p.chronopostPrice),
         sizes: p.sizes as CatalogProduct['sizes'],
@@ -78,6 +85,7 @@ export async function readSnapshot(): Promise<CatalogSnapshot> {
         delay: t.delay,
       }),
     ),
+    families: families.map((f): CatalogFamily => ({ id: f.slug, label: f.label })),
     tgcaRate: Number.isFinite(tgcaRate) ? tgcaRate : def.tgcaRate,
   };
 }
@@ -185,6 +193,26 @@ export async function ensureCatalogSeeded(): Promise<void> {
         delay: t.delay,
         sort: i,
       })),
+    });
+  }
+
+  const familyCount = await prisma.family.count();
+  if (familyCount === 0) {
+    // Backfill : familles distinctes des produits existants (prod déjà peuplée),
+    // sinon les familles par défaut (base neuve).
+    const prods = await prisma.product.findMany({ select: { family: true } });
+    const distinct = [...new Set(prods.map((p) => p.family).filter((s) => s.length > 0))];
+    const order = def.families.map((f) => f.id);
+    const slugs = distinct.length > 0 ? distinct : order;
+    slugs.sort((a, b) => {
+      const ia = order.indexOf(a);
+      const ib = order.indexOf(b);
+      if (ia !== -1 || ib !== -1) return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+      return a.localeCompare(b);
+    });
+    const labelFor = (slug: string) => def.families.find((f) => f.id === slug)?.label ?? slug;
+    await prisma.family.createMany({
+      data: slugs.map((slug, i) => ({ slug, label: labelFor(slug), sort: i })),
     });
   }
 
