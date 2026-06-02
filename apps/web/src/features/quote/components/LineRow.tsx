@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Link2, Link2Off, Trash2, Truck } from 'lucide-react';
-import { SIZE_KEYS } from '@df/shared';
+import { SIZE_KEYS, groupProductsByFamily } from '@df/shared';
 import type {
-  CatalogProduct,
   CatalogTextileColor,
-  ProductFamily,
   QuoteLine,
   Sizes,
   SizeKey,
@@ -33,14 +31,6 @@ interface Props {
   onRemove: () => void;
 }
 
-const FAMILY_LABEL: Record<ProductFamily, string> = {
-  unisexe: 'Homme',
-  femme: 'Femme',
-  enfant: 'Enfant',
-};
-
-const FAMILY_ORDER: ProductFamily[] = ['unisexe', 'femme', 'enfant'];
-
 /** Parse un nombre saisi à la française (« 2,3 ») ; NaN si invalide. */
 function parseFrNum(s: string): number {
   return Number.parseFloat(s.trim().replace(',', '.'));
@@ -63,8 +53,16 @@ export function LineRow({
   onLinked,
   onRemove,
 }: Props) {
-  const { products, productByRef, placements, textileColors, transports, tgcaRate, version } =
-    useCatalog();
+  const {
+    products,
+    productByRef,
+    placements,
+    textileColors,
+    transports,
+    tgcaRate,
+    version,
+    families,
+  } = useCatalog();
   const isCustom = line.custom !== undefined;
   const product = isCustom ? undefined : productByRef[line.productRef];
   const displayRef = isCustom ? 'Libre' : (product?.ref ?? '—');
@@ -181,14 +179,10 @@ export function LineRow({
     if (Number.isFinite(c)) setPrixConseilStr(fmtNum2(c * reventeBase));
   }
 
-  const groupedProducts = useMemo(() => {
-    const byFamily = new Map<ProductFamily, CatalogProduct[]>();
-    for (const f of FAMILY_ORDER) byFamily.set(f, []);
-    for (const p of products) byFamily.get(p.family)?.push(p);
-    for (const list of byFamily.values())
-      list.sort((a, b) => a.ref.localeCompare(b.ref, undefined, { numeric: true }));
-    return byFamily;
-  }, [products]);
+  const groupedProducts = useMemo(
+    () => groupProductsByFamily(products, families),
+    [products, families],
+  );
 
   // Tailles proposées par la référence (undefined ⇒ toutes). Ordre canonique.
   const availableSizes = useMemo<SizeKey[] | undefined>(() => {
@@ -401,19 +395,17 @@ export function LineRow({
               }}
               aria-label="Produit textile"
             >
-              {FAMILY_ORDER.map((family) => {
-                const items = groupedProducts.get(family) ?? [];
-                if (items.length === 0) return null;
-                return (
-                  <optgroup key={family} label={FAMILY_LABEL[family]}>
+              {groupedProducts.map(({ family, items }) =>
+                items.length === 0 ? null : (
+                  <optgroup key={family.id} label={family.label}>
                     {items.map((p) => (
                       <option key={p.ref} value={p.ref}>
                         {p.ref} — {p.name}
                       </option>
                     ))}
                   </optgroup>
-                );
-              })}
+                ),
+              )}
             </SelectInput>
           </Field>
         )}
