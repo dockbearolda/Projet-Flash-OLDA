@@ -9,6 +9,7 @@ const DevComponentsPage = lazy(() => import('@/pages/dev/DevComponentsPage'));
 const AdminLayout = lazy(() => import('@/pages/admin/AdminLayout'));
 const QuotesPage = lazy(() => import('@/pages/admin/QuotesPage'));
 const CatalogPage = lazy(() => import('@/pages/admin/CatalogPage'));
+const FamiliesPage = lazy(() => import('@/pages/admin/FamiliesPage'));
 const CoefsPage = lazy(() => import('@/pages/admin/CoefsPage'));
 const ZonesPage = lazy(() => import('@/pages/admin/ZonesPage'));
 const ColorsPage = lazy(() => import('@/pages/admin/ColorsPage'));
@@ -44,6 +45,14 @@ export const router: RouterInstance = createBrowserRouter([
         element: (
           <Suspense fallback={<PageFallback />}>
             <CatalogPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'families',
+        element: (
+          <Suspense fallback={<PageFallback />}>
+            <FamiliesPage />
           </Suspense>
         ),
       },

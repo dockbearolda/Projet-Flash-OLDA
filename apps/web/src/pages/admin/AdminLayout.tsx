@@ -11,6 +11,7 @@ import {
   Palette,
   LayoutGrid,
   Settings,
+  Tags,
 } from 'lucide-react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useNavigate } from 'react-router-dom';
@@ -65,6 +66,11 @@ export default function AdminLayout() {
             icon={<Shirt size={16} strokeWidth={1.7} />}
             label="Produits"
             badge={fmtInt.format(products.length)}
+          />
+          <NavItem
+            to="/admin/families"
+            icon={<Tags size={16} strokeWidth={1.7} />}
+            label="Familles"
           />
           <NavItem
             to="/admin/zones"

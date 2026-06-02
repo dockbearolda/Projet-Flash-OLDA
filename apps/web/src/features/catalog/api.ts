@@ -8,6 +8,7 @@ import type {
   CatalogFlockColor,
   CatalogPlacement,
   CatalogSettings,
+  CatalogFamily,
 } from '@df/shared';
 import { useCatalogStore } from './catalogStore';
 
@@ -77,3 +78,5 @@ export const savePlacements = (placements: CatalogPlacement[]): Promise<CatalogS
   putSection('placements', placements);
 export const saveSettings = (settings: CatalogSettings): Promise<CatalogSnapshot> =>
   putSection('settings', settings);
+export const saveFamilies = (families: CatalogFamily[]): Promise<CatalogSnapshot> =>
+  putSection('families', families);
