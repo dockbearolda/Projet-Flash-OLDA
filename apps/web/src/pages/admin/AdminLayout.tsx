@@ -9,7 +9,6 @@ import {
   FileText,
   Banknote,
   Palette,
-  LayoutGrid,
   Settings,
   Tags,
 } from 'lucide-react';
@@ -73,9 +72,9 @@ export default function AdminLayout() {
             label="Familles"
           />
           <NavItem
-            to="/admin/zones"
+            to="/admin/impressions"
             icon={<Banknote size={16} strokeWidth={1.7} />}
-            label="Prix d’impression"
+            label="Impressions"
           />
           <NavItem
             to="/admin/coefs"
@@ -86,11 +85,6 @@ export default function AdminLayout() {
             to="/admin/colors"
             icon={<Palette size={16} strokeWidth={1.7} />}
             label="Coloris"
-          />
-          <NavItem
-            to="/admin/placements"
-            icon={<LayoutGrid size={16} strokeWidth={1.7} />}
-            label="Placements"
           />
           <NavItem
             to="/admin/settings"
