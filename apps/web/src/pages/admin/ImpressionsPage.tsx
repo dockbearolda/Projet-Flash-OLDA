@@ -1,13 +1,9 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo } from 'react';
 import { RotateCcw } from 'lucide-react';
-import type { CatalogZone, CatalogPlacement, CatalogFamily } from '@df/shared';
-import {
-  normalizeZonesToSharedSeuils,
-  degressivePricesFromUnit,
-  zoneSalePriceForQtyFrom,
-} from '@df/shared';
+import type { CatalogPlacement, CatalogFamily } from '@df/shared';
+import { normalizeZonesToSharedSeuils, degressivePricesFromUnit } from '@df/shared';
 import { useCatalog } from '@/features/catalog/useCatalog';
-import { saveZonesAndPlacements } from '@/features/catalog/api';
+import { savePlacements } from '@/features/catalog/api';
 import {
   PageHeader,
   TextField,
@@ -17,333 +13,45 @@ import {
   SaveBar,
 } from './components/adminUi';
 import { useSection } from './components/useSection';
-import { eur } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
 type SaleRow = [number, number];
-interface Draft {
-  zones: CatalogZone[];
-  placements: CatalogPlacement[];
-}
 
-/** Trie les paliers de chaque zone par seuil croissant (alignement conservé). */
-function sortZones(zones: CatalogZone[]): CatalogZone[] {
-  return zones.map((z) => ({
-    ...z,
-    salePrices: [...z.salePrices].sort((a, b) => a[0] - b[0]),
+/** Trie le barème de chaque option par seuil croissant. */
+function sortPlacements(placements: CatalogPlacement[]): CatalogPlacement[] {
+  return placements.map((p) => ({
+    ...p,
+    salePrices: [...p.salePrices].sort((a, b) => a[0] - b[0]),
   }));
 }
 
 export default function ImpressionsPage() {
   const cat = useCatalog();
-  // Seuils partagés : on fusionne (union) les seuils des zones en reportant le
-  // palier inférieur — aucun prix effectif ne change.
-  const initial = useMemo<Draft>(
-    () => ({ zones: normalizeZonesToSharedSeuils(cat.zones), placements: cat.placements }),
-    [cat.zones, cat.placements],
-  );
-  return <ImpressionsEditor key={cat.version} initial={initial} families={cat.families} />;
+  // Toutes les options partagent la même échelle de seuils (union, report du
+  // palier inférieur) — aucun prix effectif ne change.
+  const initial = useMemo(() => normalizeZonesToSharedSeuils(cat.placements), [cat.placements]);
+  return <OptionsEditor key={cat.version} initial={initial} families={cat.families} />;
 }
 
-function ImpressionsEditor({ initial, families }: { initial: Draft; families: CatalogFamily[] }) {
-  const { draft, setDraft, dirty, saving, onSave, onCancel } = useSection(initial, (v) =>
-    saveZonesAndPlacements(sortZones(v.zones), v.placements),
-  );
-
-  const setZones = useCallback(
-    (updater: (z: CatalogZone[]) => CatalogZone[]) => {
-      setDraft((d) => ({ ...d, zones: updater(d.zones) }));
-    },
-    [setDraft],
-  );
-  const setPlacements = useCallback(
-    (updater: (p: CatalogPlacement[]) => CatalogPlacement[]) => {
-      setDraft((d) => ({ ...d, placements: updater(d.placements) }));
-    },
-    [setDraft],
-  );
-
-  return (
-    <div>
-      <PageHeader
-        title="Impressions"
-        subtitle="Vos zones d’impression et leurs prix, puis les placements (combinaisons de zones) proposés dans le devis — le tout sur un seul écran. Un seul « Enregistrer » met zones et placements à jour."
-      />
-
-      <section className="mb-9">
-        <h2 className="df-display text-xl">Zones &amp; prix</h2>
-        <p className="text-sm text-[var(--df-ink-3)] mt-0.5 mb-3">
-          Prix de vente par zone selon la quantité ; les seuils (colonne de gauche) sont communs à
-          toutes les zones. Nouvelle zone : saisissez le prix à la quantité 1, les paliers se
-          remplissent automatiquement (↻ pour recalculer, ou modifiez une case à la main).
-        </p>
-        <ZonesGrid zones={draft.zones} setZones={setZones} />
-      </section>
-
-      <section>
-        <h2 className="df-display text-xl">Placements</h2>
-        <p className="text-sm text-[var(--df-ink-3)] mt-0.5 mb-3">
-          Emplacements proposés dans le devis = combinaisons de zones. Cochez les zones incluses
-          (leur somme donne le prix, affiché à droite) puis les familles concernées (aucune cochée ⇒
-          toutes les familles).
-        </p>
-        <PlacementsList
-          placements={draft.placements}
-          setPlacements={setPlacements}
-          zones={draft.zones}
-          families={families}
-        />
-      </section>
-
-      <SaveBar dirty={dirty} saving={saving} onSave={onSave} onCancel={onCancel} />
-    </div>
-  );
-}
-
-/* ── Section haut : grille zones × seuils ─────────────────────────────────── */
-function ZonesGrid({
-  zones,
-  setZones,
-}: {
-  zones: CatalogZone[];
-  setZones: (updater: (z: CatalogZone[]) => CatalogZone[]) => void;
-}) {
-  // Les seuils sont communs à toutes les zones : on les lit sur la 1re zone.
-  const seuils = zones[0]?.salePrices.map((r) => r[0]) ?? [];
-
-  function updateZone(zi: number, patch: Partial<CatalogZone>) {
-    setZones((d) => d.map((z, i) => (i === zi ? { ...z, ...patch } : z)));
-  }
-  function updateSeuil(rowIndex: number, threshold: number) {
-    setZones((d) =>
-      d.map((z) => ({
-        ...z,
-        salePrices: z.salePrices.map(
-          (row, j): SaleRow => (j === rowIndex ? [threshold, row[1]] : row),
-        ),
-      })),
-    );
-  }
-  function updatePrice(zi: number, rowIndex: number, price: number) {
-    setZones((d) =>
-      d.map((z, i) =>
-        i === zi
-          ? {
-              ...z,
-              salePrices: z.salePrices.map(
-                (row, j): SaleRow => (j === rowIndex ? [row[0], price] : row),
-              ),
-            }
-          : z,
-      ),
-    );
-  }
-  function addSeuil() {
-    setZones((d) => {
-      const maxSeuil = d[0]?.salePrices.reduce((m, [s]) => Math.max(m, s), 0) ?? 0;
-      const next = maxSeuil + 10;
-      return d.map((z) => {
-        const carry = z.salePrices[z.salePrices.length - 1]?.[1] ?? 0;
-        return { ...z, salePrices: [...z.salePrices, [next, carry] as SaleRow] };
-      });
-    });
-  }
-  function removeSeuil(rowIndex: number) {
-    setZones((d) =>
-      d.map((z) => ({ ...z, salePrices: z.salePrices.filter((_, j) => j !== rowIndex) })),
-    );
-  }
-  function addZone() {
-    setZones((d) => [...d, { id: '', label: '', salePrices: seuils.map((s): SaleRow => [s, 0]) }]);
-  }
-  function removeZone(zi: number) {
-    setZones((d) => d.filter((_, i) => i !== zi));
-  }
-  // Auto-remplissage dégressif d'une colonne depuis son prix unité (1re ligne),
-  // suivant la courbe moyenne des AUTRES zones. 'ifEmpty' ne touche que les
-  // colonnes vides (nouvelle zone) ; 'force' recalcule tout.
-  function fillColumnFromUnit(zi: number, mode: 'ifEmpty' | 'force') {
-    setZones((d) => {
-      const z = d[zi];
-      if (!z) return d;
-      const restEmpty = z.salePrices.slice(1).every((r) => r[1] === 0);
-      if (mode === 'ifEmpty' && !restEmpty) return d;
-      const unit = z.salePrices[0]?.[1] ?? 0;
-      const seuilsArr = z.salePrices.map((r) => r[0]);
-      const refs = d.filter((zz, i) => i !== zi && (zz.salePrices[0]?.[1] ?? 0) > 0);
-      const prices = degressivePricesFromUnit(unit, seuilsArr, refs);
-      return d.map((zz, i) =>
-        i === zi
-          ? {
-              ...zz,
-              salePrices: zz.salePrices.map(
-                (row, j): SaleRow => (j === 0 ? row : [row[0], prices[j] ?? 0]),
-              ),
-            }
-          : zz,
-      );
-    });
-  }
-
-  if (zones.length === 0) {
-    return (
-      <p className="text-sm text-[var(--df-ink-3)]">Aucune zone. Ajoutez-en une pour commencer.</p>
-    );
-  }
-
-  return (
-    <>
-      <div className="overflow-x-auto rounded-[var(--df-radius-lg)] border border-[var(--df-border)] bg-[var(--df-surface)]">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="border-b border-[var(--df-border)] bg-[var(--df-surface-2)]">
-              <th className="sticky left-0 z-10 bg-[var(--df-surface-2)] px-4 py-3 text-left align-bottom min-w-[7rem]">
-                <span className="df-caps">Seuil ≥</span>
-              </th>
-              {zones.map((z, zi) => (
-                <th
-                  key={zi}
-                  className="px-3 py-2.5 align-bottom border-l border-[var(--df-border)] min-w-[9rem]"
-                >
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <TextField
-                        value={z.label}
-                        onChange={(v) => {
-                          updateZone(zi, { label: v });
-                        }}
-                        placeholder="Nom (ex. Coeur)"
-                        ariaLabel={`Nom de la zone ${String(zi + 1)}`}
-                        className="flex-1 min-w-0"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          fillColumnFromUnit(zi, 'force');
-                        }}
-                        title="Recalculer les paliers depuis le prix unité"
-                        aria-label={`Recalculer ${z.label || String(zi + 1)} depuis le prix unité`}
-                        className="inline-flex items-center justify-center w-9 h-9 rounded-[var(--df-radius)] text-[var(--df-ink-3)] hover:bg-[var(--df-surface-2)] hover:text-[var(--df-accent)]"
-                      >
-                        <RotateCcw size={15} strokeWidth={1.8} aria-hidden />
-                      </button>
-                      <DeleteRowButton
-                        onClick={() => {
-                          removeZone(zi);
-                        }}
-                        label={`Supprimer la zone ${z.label || String(zi + 1)}`}
-                      />
-                    </div>
-                    <TextField
-                      value={z.id}
-                      onChange={(v) => {
-                        updateZone(zi, { id: v });
-                      }}
-                      placeholder="identifiant (ex. coeur)"
-                      ariaLabel={`Identifiant de la zone ${String(zi + 1)}`}
-                      className="df-mono"
-                    />
-                  </div>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {seuils.map((seuil, ri) => (
-              <tr key={ri} className="border-b border-[var(--df-border)] last:border-b-0">
-                <td className="sticky left-0 z-10 bg-[var(--df-surface)] px-4 py-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <NumberField
-                      value={seuil}
-                      onChange={(v) => {
-                        updateSeuil(ri, v);
-                      }}
-                      allowDecimal={false}
-                      ariaLabel={`Seuil ligne ${String(ri + 1)}`}
-                      className="w-20"
-                    />
-                    <DeleteRowButton
-                      onClick={() => {
-                        removeSeuil(ri);
-                      }}
-                      label={`Supprimer le seuil ${String(seuil)}`}
-                    />
-                  </div>
-                </td>
-                {zones.map((z, zi) => (
-                  <td key={zi} className="px-3 py-1.5 border-l border-[var(--df-border)]">
-                    <NumberField
-                      value={z.salePrices[ri]?.[1] ?? 0}
-                      onChange={(v) => {
-                        updatePrice(zi, ri, v);
-                      }}
-                      onBlur={() => {
-                        if (ri === 0) fillColumnFromUnit(zi, 'ifEmpty');
-                      }}
-                      suffix="€"
-                      ariaLabel={`Prix ${z.label || String(zi + 1)} au seuil ${String(seuil)}`}
-                    />
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        <AddRowButton onClick={addSeuil} label="Ajouter un seuil" />
-        <AddRowButton onClick={addZone} label="Ajouter une zone" />
-      </div>
-    </>
-  );
-}
-
-/* ── Section bas : placements (combinaisons de zones + familles) ──────────── */
-function PlacementsList({
-  placements,
-  setPlacements,
-  zones,
+function OptionsEditor({
+  initial,
   families,
 }: {
-  placements: CatalogPlacement[];
-  setPlacements: (updater: (p: CatalogPlacement[]) => CatalogPlacement[]) => void;
-  zones: CatalogZone[];
+  initial: CatalogPlacement[];
   families: CatalogFamily[];
 }) {
-  const zonesById = useMemo(() => {
-    const m: Record<string, CatalogZone | undefined> = {};
-    for (const z of zones) m[z.id] = z;
-    return m;
-  }, [zones]);
+  const { draft, setDraft, dirty, saving, onSave, onCancel } = useSection(initial, (placements) =>
+    savePlacements(sortPlacements(placements)),
+  );
 
-  // Prix indicatif d'un placement = somme de ses zones à la quantité 1 (live).
-  function placementUnitTotal(p: CatalogPlacement): number {
-    return p.zones.reduce(
-      (acc, zid) => acc + zoneSalePriceForQtyFrom(zonesById[zid]?.salePrices ?? [], 1),
-      0,
-    );
-  }
+  // Les seuils sont communs à toutes les options : on les lit sur la 1re.
+  const seuils = draft[0]?.salePrices.map((r) => r[0]) ?? [];
 
-  function update(i: number, patch: Partial<CatalogPlacement>) {
-    setPlacements((d) => d.map((p, idx) => (idx === i ? { ...p, ...patch } : p)));
-  }
-  function toggleZone(i: number, zoneId: string) {
-    setPlacements((d) =>
-      d.map((p, idx) =>
-        idx === i
-          ? {
-              ...p,
-              zones: p.zones.includes(zoneId)
-                ? p.zones.filter((z) => z !== zoneId)
-                : [...p.zones, zoneId],
-            }
-          : p,
-      ),
-    );
+  function updateOption(i: number, patch: Partial<CatalogPlacement>) {
+    setDraft((d) => d.map((p, idx) => (idx === i ? { ...p, ...patch } : p)));
   }
   function toggleFamily(i: number, familyId: string) {
-    setPlacements((d) =>
+    setDraft((d) =>
       d.map((p, idx) =>
         idx === i
           ? {
@@ -356,90 +64,178 @@ function PlacementsList({
       ),
     );
   }
+  // Édite un seuil (la quantité) : s'applique à TOUTES les options.
+  function updateSeuil(rowIndex: number, threshold: number) {
+    setDraft((d) =>
+      d.map((p) => ({
+        ...p,
+        salePrices: p.salePrices.map(
+          (row, j): SaleRow => (j === rowIndex ? [threshold, row[1]] : row),
+        ),
+      })),
+    );
+  }
+  function addSeuil() {
+    setDraft((d) => {
+      const maxSeuil = d[0]?.salePrices.reduce((m, [s]) => Math.max(m, s), 0) ?? 0;
+      const next = maxSeuil + 10;
+      return d.map((p) => {
+        const carry = p.salePrices[p.salePrices.length - 1]?.[1] ?? 0;
+        return { ...p, salePrices: [...p.salePrices, [next, carry] as SaleRow] };
+      });
+    });
+  }
+  function removeSeuil(rowIndex: number) {
+    setDraft((d) =>
+      d.map((p) => ({ ...p, salePrices: p.salePrices.filter((_, j) => j !== rowIndex) })),
+    );
+  }
+  // Édite le prix d'une option à un seuil donné.
+  function updatePrice(i: number, rowIndex: number, price: number) {
+    setDraft((d) =>
+      d.map((p, idx) =>
+        idx === i
+          ? {
+              ...p,
+              salePrices: p.salePrices.map(
+                (row, j): SaleRow => (j === rowIndex ? [row[0], price] : row),
+              ),
+            }
+          : p,
+      ),
+    );
+  }
+  // Auto-remplissage dégressif d'une option depuis son prix à l'unité (1re ligne),
+  // suivant la courbe moyenne des AUTRES options. 'ifEmpty' = seulement si vide.
+  function fillFromUnit(i: number, mode: 'ifEmpty' | 'force') {
+    setDraft((d) => {
+      const p = d[i];
+      if (!p) return d;
+      const restEmpty = p.salePrices.slice(1).every((r) => r[1] === 0);
+      if (mode === 'ifEmpty' && !restEmpty) return d;
+      const unit = p.salePrices[0]?.[1] ?? 0;
+      const seuilsArr = p.salePrices.map((r) => r[0]);
+      const refs = d.filter((pp, idx) => idx !== i && (pp.salePrices[0]?.[1] ?? 0) > 0);
+      const prices = degressivePricesFromUnit(unit, seuilsArr, refs);
+      return d.map((pp, idx) =>
+        idx === i
+          ? {
+              ...pp,
+              salePrices: pp.salePrices.map(
+                (row, j): SaleRow => (j === 0 ? row : [row[0], prices[j] ?? 0]),
+              ),
+            }
+          : pp,
+      );
+    });
+  }
+  function addOption() {
+    setDraft((d) => [
+      ...d,
+      {
+        id: '',
+        label: '',
+        zones: [],
+        families: [],
+        salePrices: seuils.map((s): SaleRow => [s, 0]),
+      },
+    ]);
+  }
+  function removeOption(i: number) {
+    setDraft((d) => d.filter((_, idx) => idx !== i));
+  }
 
   return (
-    <>
+    <div>
+      <PageHeader
+        title="Impressions"
+        subtitle="Les options d’impression proposées dans le devis. Chaque option a un nom, les familles où elle s’affiche, et son prix selon la quantité (saisissez le prix à l’unité, les paliers se remplissent tout seuls)."
+      />
+
+      {/* Paliers de quantité — communs à toutes les options */}
+      <div className="mb-6 rounded-[var(--df-radius-lg)] border border-[var(--df-border)] bg-[var(--df-surface-2)] p-4">
+        <span className="df-caps">Paliers de quantité (communs à toutes les options)</span>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          {seuils.map((seuil, ri) => (
+            <div
+              key={ri}
+              className="inline-flex items-center gap-1 rounded-[var(--df-radius)] border border-[var(--df-border)] bg-[var(--df-surface)] pl-1 pr-0.5 py-0.5"
+            >
+              <NumberField
+                value={seuil}
+                onChange={(v) => {
+                  updateSeuil(ri, v);
+                }}
+                allowDecimal={false}
+                ariaLabel={`Palier de quantité ${String(ri + 1)}`}
+                className="w-16"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  removeSeuil(ri);
+                }}
+                aria-label={`Supprimer le palier ${String(seuil)}`}
+                className="inline-flex items-center justify-center w-7 h-7 rounded-[var(--df-radius)] text-[var(--df-ink-4)] hover:text-[var(--df-danger)]"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+          <AddRowButton onClick={addSeuil} label="Ajouter un palier" />
+        </div>
+      </div>
+
+      {/* Liste des options */}
       <div className="space-y-3">
-        {placements.map((p, i) => (
+        {draft.length === 0 && (
+          <p className="text-sm text-[var(--df-ink-3)]">Aucune option. Ajoutez-en une.</p>
+        )}
+        {draft.map((p, i) => (
           <div
             key={i}
             className="rounded-[var(--df-radius-lg)] bg-[var(--df-surface)] border border-[var(--df-border)] p-4"
           >
+            {/* Nom + identifiant + actions */}
             <div className="flex items-center gap-2">
               <TextField
                 value={p.label}
                 onChange={(v) => {
-                  update(i, { label: v });
+                  updateOption(i, { label: v });
                 }}
                 placeholder="Nom affiché (ex. Coeur + Dos)"
-                ariaLabel={`Nom du placement ${String(i + 1)}`}
+                ariaLabel={`Nom de l’option ${String(i + 1)}`}
                 className="flex-1"
               />
               <TextField
                 value={p.id}
                 onChange={(v) => {
-                  update(i, { id: v });
+                  updateOption(i, { id: v });
                 }}
                 placeholder="identifiant"
-                ariaLabel={`Identifiant du placement ${String(i + 1)}`}
+                ariaLabel={`Identifiant de l’option ${String(i + 1)}`}
                 className="df-mono w-44"
               />
-              {p.zones.length > 0 && (
-                <span
-                  className="df-mono text-sm tabular-nums whitespace-nowrap text-[var(--df-ink-2)]"
-                  title="Somme des zones à la quantité 1 (indicatif)"
-                >
-                  ≈ {eur(placementUnitTotal(p))}/pc
-                </span>
-              )}
+              <button
+                type="button"
+                onClick={() => {
+                  fillFromUnit(i, 'force');
+                }}
+                title="Recalculer les paliers depuis le prix à l’unité"
+                aria-label={`Recalculer ${p.label || String(i + 1)} depuis le prix à l’unité`}
+                className="inline-flex items-center justify-center w-9 h-9 rounded-[var(--df-radius)] text-[var(--df-ink-3)] hover:bg-[var(--df-surface-2)] hover:text-[var(--df-accent)]"
+              >
+                <RotateCcw size={15} strokeWidth={1.8} aria-hidden />
+              </button>
               <DeleteRowButton
                 onClick={() => {
-                  setPlacements((d) => d.filter((_, idx) => idx !== i));
+                  removeOption(i);
                 }}
-                label={`Supprimer le placement ${String(i + 1)}`}
+                label={`Supprimer l’option ${p.label || String(i + 1)}`}
               />
             </div>
 
-            {/* Zones incluses — leur somme donne le prix d’impression */}
-            <div className="mt-3">
-              <span className="df-caps">Zones d’impression incluses</span>
-              <div className="mt-1.5 flex flex-wrap gap-2">
-                {zones.length === 0 ? (
-                  <span className="text-xs text-[var(--df-ink-3)]">
-                    Aucune zone définie ci-dessus.
-                  </span>
-                ) : (
-                  zones.map((z) => {
-                    const on = p.zones.includes(z.id);
-                    return (
-                      <button
-                        key={z.id}
-                        type="button"
-                        aria-pressed={on}
-                        onClick={() => {
-                          toggleZone(i, z.id);
-                        }}
-                        className={cn(
-                          'px-3 h-8 rounded-full text-xs font-medium border transition-colors',
-                          on
-                            ? 'bg-[var(--df-accent-soft)] text-[var(--df-accent)] border-[var(--df-accent)]'
-                            : 'bg-[var(--df-surface-2)] text-[var(--df-ink-3)] border-[var(--df-border)] hover:text-[var(--df-ink)]',
-                        )}
-                      >
-                        {z.label || z.id}
-                      </button>
-                    );
-                  })
-                )}
-                {p.zones.length === 0 && zones.length > 0 && (
-                  <span className="text-xs text-[var(--df-ink-3)] self-center">
-                    (sans impression)
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Familles où ce placement est proposé (vide ⇒ toutes) */}
+            {/* Familles */}
             <div className="mt-3">
               <span className="df-caps">
                 Proposé pour ces familles{' '}
@@ -480,18 +276,44 @@ function PlacementsList({
                 )}
               </div>
             </div>
+
+            {/* Prix par palier (le 1er = prix à l’unité, déclenche l’auto-remplissage) */}
+            <div className="mt-3">
+              <span className="df-caps">Prix par quantité</span>
+              <div className="mt-1.5 flex flex-wrap gap-2">
+                {p.salePrices.map((row, ri) => (
+                  <label
+                    key={ri}
+                    className="flex flex-col gap-1 rounded-[var(--df-radius)] border border-[var(--df-border)] bg-[var(--df-surface-2)] px-2 py-1.5"
+                  >
+                    <span className="df-caps text-[10px] text-center">
+                      {ri === 0 ? 'unité' : `≥ ${String(row[0])}`}
+                    </span>
+                    <NumberField
+                      value={row[1]}
+                      onChange={(v) => {
+                        updatePrice(i, ri, v);
+                      }}
+                      onBlur={() => {
+                        if (ri === 0) fillFromUnit(i, 'ifEmpty');
+                      }}
+                      suffix="€"
+                      ariaLabel={`Prix ${p.label || String(i + 1)} pour quantité ${String(row[0])}`}
+                      className="w-24"
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
           </div>
         ))}
       </div>
 
       <div className="mt-4">
-        <AddRowButton
-          onClick={() => {
-            setPlacements((d) => [...d, { id: '', label: '', zones: [], families: [] }]);
-          }}
-          label="Ajouter un placement"
-        />
+        <AddRowButton onClick={addOption} label="Ajouter une option" />
       </div>
-    </>
+
+      <SaveBar dirty={dirty} saving={saving} onSave={onSave} onCancel={onCancel} />
+    </div>
   );
 }

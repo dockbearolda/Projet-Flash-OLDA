@@ -55,11 +55,15 @@ export const CatalogFlockColorSchema = z.object({
 export const CatalogPlacementSchema = z.object({
   id: z.string().trim().min(1).max(60),
   label: z.string().trim().min(1).max(120),
-  zones: z.array(z.string().trim().min(1)),
+  // Zones historiques (rétro-compat). Le prix de l'option vient de salePrices.
+  zones: z.array(z.string().trim().min(1)).default([]),
   // Familles de produit pour lesquelles ce placement est proposé. Vide ⇒ toutes
   // familles (rétro-compatible : les snapshots/lignes antérieurs n'avaient pas
   // ce champ et restent donc visibles partout).
   families: z.array(z.string().trim().min(1)).default([]),
+  // Barème de prix propre à l'option (tiered). Vide ⇒ ancien modèle (le prix
+  // est alors recalculé comme la somme des zones).
+  salePrices: z.array(SalePriceRowSchema).default([]),
 });
 
 export const CatalogTransportSchema = z.object({

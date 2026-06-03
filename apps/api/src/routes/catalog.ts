@@ -158,6 +158,7 @@ export const catalogRoute = new Hono()
           label: p.label,
           zones: p.zones,
           families: p.families,
+          salePrices: p.salePrices,
         })),
       }),
     ]);

@@ -65,9 +65,12 @@ export interface CatalogFlockColor {
 export interface CatalogPlacement {
   id: string;
   label: string;
+  /** Zones historiques (rétro-compat des clients en cache). Le prix vient de salePrices. */
   zones: string[];
   /** Familles de produit où ce placement est proposé. Vide ⇒ toutes familles. */
   families: string[];
+  /** Barème de prix propre à l'option (tiered). Source du prix dans le devis. */
+  salePrices: CatalogSalePrices;
 }
 
 export interface CatalogTransport {
@@ -99,6 +102,12 @@ export interface CatalogSnapshot {
  * Used as the initial state of the client store, and as the server seed.
  */
 export function defaultCatalogSnapshot(): CatalogSnapshot {
+  const defaultZones: CatalogZone[] = ZONE_IDS.map((id) => ({
+    id: ZONES[id].id,
+    label: ZONES[id].label,
+    salePrices: ZONES[id].salePrices.map(([t, v]) => [t, v] as [number, number]),
+  }));
+  const defaultSeuils = unifiedSeuils(defaultZones);
   return {
     products: PRODUCTS.map((p) => ({
       ref: p.ref,
@@ -111,11 +120,7 @@ export function defaultCatalogSnapshot(): CatalogSnapshot {
       bestColorIds: [...DEFAULT_PRODUCT_BEST_COLOR_IDS],
       chronopostPrice: null,
     })),
-    zones: ZONE_IDS.map((id) => ({
-      id: ZONES[id].id,
-      label: ZONES[id].label,
-      salePrices: ZONES[id].salePrices.map(([t, v]) => [t, v] as [number, number]),
-    })),
+    zones: defaultZones,
     coefs: COEFS.map(([t, c]) => [t, c] as [number, number]),
     textileColors: TEXTILE_COLORS.map((c) => ({
       id: c.id,
@@ -136,6 +141,7 @@ export function defaultCatalogSnapshot(): CatalogSnapshot {
       label: p.label,
       zones: [...p.zones],
       families: [],
+      salePrices: placementSalePricesFromZones([...p.zones], defaultZones, defaultSeuils),
     })),
     transports: TRANSPORT_OPTIONS.map((t) => ({
       id: t.id,
@@ -268,5 +274,27 @@ export function degressivePricesFromUnit(
         0,
       ) / refs.length;
     return round1(unitPrice * avgRatio);
+  });
+}
+
+/**
+ * Prix d'un placement = somme des prix de ses zones, palier par palier. Sert à
+ * la migration « zones → option » : chaque placement reçoit son propre barème
+ * (= ce que la somme des zones donnait), donc les prix restent identiques.
+ * Arrondi à 0,01 € pour neutraliser le bruit des flottants.
+ */
+export function placementSalePricesFromZones(
+  zoneIds: readonly string[],
+  zones: readonly { id: string; salePrices: CatalogSalePrices }[],
+  seuils: readonly number[],
+): CatalogSalePrices {
+  const byId = new Map(zones.map((z) => [z.id, z]));
+  const round2 = (x: number): number => Math.round((x + Number.EPSILON) * 100) / 100;
+  return seuils.map((s) => {
+    const sum = zoneIds.reduce(
+      (acc, zid) => acc + zoneSalePriceForQtyFrom(byId.get(zid)?.salePrices ?? [], s),
+      0,
+    );
+    return [s, round2(sum)];
   });
 }

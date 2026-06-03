@@ -50,9 +50,11 @@ model Placement {
   id        String   @id @default(cuid())
   slug      String   @unique
   label     String
-  zones     String[] // ['coeur', 'dos', ...]
+  zones     String[] // ['coeur', 'dos', ...] — historique (rétro-compat), prix via salePrices
   // Familles de produit où ce placement est proposé. Vide ⇒ toutes familles.
   families  String[] @default([])
+  // Barème de prix propre à l'option : [[qtyThreshold, priceHT], ...].
+  salePrices Json    @default("[]")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
