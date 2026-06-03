@@ -240,3 +240,33 @@ export function normalizeZonesToSharedSeuils<T extends { salePrices: CatalogSale
     ),
   }));
 }
+
+/**
+ * Prix dégressifs d'une nouvelle zone à partir de son seul prix unité (la
+ * quantité du 1er seuil). On suit la courbe MOYENNE des zones de référence :
+ * pour chaque seuil, ratio = moyenne(prix(seuil) ÷ prix(1er seuil)) sur les
+ * zones ayant un prix unité > 0 ; puis prix = unité × ratio, arrondi à 0,10 €.
+ * Sans référence exploitable, on remplit à plat (le prix unité partout). Sert à
+ * l'auto-remplissage d'une colonne dans « Prix d'impression ».
+ */
+export function degressivePricesFromUnit(
+  unitPrice: number,
+  seuils: readonly number[],
+  referenceZones: readonly { salePrices: CatalogSalePrices }[],
+): number[] {
+  const first = seuils[0];
+  if (first === undefined) return [];
+  const round1 = (x: number): number => Math.round(x * 10) / 10;
+  const refs = referenceZones.filter((z) => zoneSalePriceForQtyFrom(z.salePrices, first) > 0);
+  return seuils.map((s) => {
+    if (refs.length === 0) return round1(unitPrice);
+    const avgRatio =
+      refs.reduce(
+        (sum, z) =>
+          sum +
+          zoneSalePriceForQtyFrom(z.salePrices, s) / zoneSalePriceForQtyFrom(z.salePrices, first),
+        0,
+      ) / refs.length;
+    return round1(unitPrice * avgRatio);
+  });
+}
