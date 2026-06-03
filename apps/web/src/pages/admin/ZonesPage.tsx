@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
+import { RotateCcw } from 'lucide-react';
 import type { CatalogZone } from '@df/shared';
-import { normalizeZonesToSharedSeuils } from '@df/shared';
+import { normalizeZonesToSharedSeuils, degressivePricesFromUnit } from '@df/shared';
 import { useCatalog } from '@/features/catalog/useCatalog';
 import { saveZones } from '@/features/catalog/api';
 import {
@@ -92,12 +93,37 @@ function ZonesEditor({ initial }: { initial: CatalogZone[] }) {
   function removeZone(zi: number) {
     setDraft((d) => d.filter((_, i) => i !== zi));
   }
+  // Auto-remplissage dégressif d'une colonne depuis son prix unité (1re ligne),
+  // en suivant la courbe moyenne des AUTRES zones. 'ifEmpty' ne touche que les
+  // colonnes encore vides (saisie d'une nouvelle zone) ; 'force' recalcule tout.
+  function fillColumnFromUnit(zi: number, mode: 'ifEmpty' | 'force') {
+    setDraft((d) => {
+      const z = d[zi];
+      if (!z) return d;
+      const restEmpty = z.salePrices.slice(1).every((r) => r[1] === 0);
+      if (mode === 'ifEmpty' && !restEmpty) return d;
+      const unit = z.salePrices[0]?.[1] ?? 0;
+      const seuilsArr = z.salePrices.map((r) => r[0]);
+      const refs = d.filter((zz, i) => i !== zi && (zz.salePrices[0]?.[1] ?? 0) > 0);
+      const prices = degressivePricesFromUnit(unit, seuilsArr, refs);
+      return d.map((zz, i) =>
+        i === zi
+          ? {
+              ...zz,
+              salePrices: zz.salePrices.map(
+                (row, j): SaleRow => (j === 0 ? row : [row[0], prices[j] ?? 0]),
+              ),
+            }
+          : zz,
+      );
+    });
+  }
 
   return (
     <div>
       <PageHeader
         title="Prix d’impression (zones DTF)"
-        subtitle="Grille de prix de vente par zone. Les seuils de quantité (colonne de gauche) sont communs à toutes les zones : modifiez-les ici et ça s’applique partout. Le prix appliqué est celui du plus grand seuil ≤ quantité ; le total d’une impression est la somme des zones du placement."
+        subtitle="Grille de prix de vente par zone. Les seuils de quantité (colonne de gauche) sont communs à toutes les zones. Pour une nouvelle zone, saisissez seulement le prix à la quantité 1 : les paliers se remplissent automatiquement en suivant la dégression de vos autres zones (↻ pour recalculer, ou modifiez une case à la main). Le prix appliqué est celui du plus grand seuil ≤ quantité ; le total d’une impression est la somme des zones du placement."
       />
 
       {draft.length === 0 ? (
@@ -128,6 +154,17 @@ function ZonesEditor({ initial }: { initial: CatalogZone[] }) {
                           ariaLabel={`Nom de la zone ${String(zi + 1)}`}
                           className="flex-1 min-w-0"
                         />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            fillColumnFromUnit(zi, 'force');
+                          }}
+                          title="Recalculer les paliers depuis le prix unité"
+                          aria-label={`Recalculer ${z.label || String(zi + 1)} depuis le prix unité`}
+                          className="inline-flex items-center justify-center w-9 h-9 rounded-[var(--df-radius)] text-[var(--df-ink-3)] hover:bg-[var(--df-surface-2)] hover:text-[var(--df-accent)]"
+                        >
+                          <RotateCcw size={15} strokeWidth={1.8} aria-hidden />
+                        </button>
                         <DeleteRowButton
                           onClick={() => {
                             removeZone(zi);
@@ -178,6 +215,13 @@ function ZonesEditor({ initial }: { initial: CatalogZone[] }) {
                         onChange={(v) => {
                           updatePrice(zi, ri, v);
                         }}
+                        onBlur={
+                          ri === 0
+                            ? () => {
+                                fillColumnFromUnit(zi, 'ifEmpty');
+                              }
+                            : undefined
+                        }
                         suffix="€"
                         ariaLabel={`Prix ${z.label || String(zi + 1)} au seuil ${String(seuil)}`}
                       />

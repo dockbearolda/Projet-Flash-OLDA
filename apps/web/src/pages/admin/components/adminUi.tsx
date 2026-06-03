@@ -51,6 +51,7 @@ function parseNum(s: string): number {
 export function NumberField({
   value,
   onChange,
+  onBlur,
   suffix,
   ariaLabel,
   className,
@@ -58,6 +59,7 @@ export function NumberField({
 }: {
   value: number;
   onChange: (v: number) => void;
+  onBlur?: () => void;
   suffix?: string;
   ariaLabel?: string;
   className?: string;
@@ -91,6 +93,7 @@ export function NumberField({
           setText(cleaned);
           onChange(parseNum(cleaned));
         }}
+        onBlur={onBlur}
         className={cn('df-input h-9 text-sm text-right tabular-nums df-mono', suffix ? 'pr-7' : '')}
       />
       {suffix && (
