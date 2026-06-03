@@ -1,4 +1,4 @@
-import { defaultCatalogSnapshot } from '@df/shared';
+import { defaultCatalogSnapshot, unifiedSeuils, placementSalePricesFromZones } from '@df/shared';
 import type {
   CatalogSnapshot,
   CatalogProduct,
@@ -47,6 +47,13 @@ export async function readSnapshot(): Promise<CatalogSnapshot> {
   const tgcaSetting = settings.find((s) => s.key === TGCA_KEY);
   const tgcaRate = tgcaSetting ? Number(tgcaSetting.value) : def.tgcaRate;
 
+  const catZones: CatalogZone[] = zones.map((z) => ({
+    id: z.slug,
+    label: z.label,
+    salePrices: toSalePrices(z.salePrices),
+  }));
+  const seuils = unifiedSeuils(catZones);
+
   return {
     products: products.map(
       (p): CatalogProduct => ({
@@ -61,13 +68,7 @@ export async function readSnapshot(): Promise<CatalogSnapshot> {
         bestColorIds: p.bestColorIds,
       }),
     ),
-    zones: zones.map(
-      (z): CatalogZone => ({
-        id: z.slug,
-        label: z.label,
-        salePrices: toSalePrices(z.salePrices),
-      }),
-    ),
+    zones: catZones,
     coefs: coefs.map((c) => [c.threshold, Number(c.coef)] as [number, number]),
     textileColors: textile.map((c) => ({ id: c.slug, name: c.name, hex: c.hex, best: c.best })),
     flockColors: flock.map((c) => ({
@@ -76,12 +77,19 @@ export async function readSnapshot(): Promise<CatalogSnapshot> {
       hex: c.hex,
       special: c.special,
     })),
-    placements: placements.map((p) => ({
-      id: p.slug,
-      label: p.label,
-      zones: p.zones,
-      families: p.families,
-    })),
+    placements: placements.map((p) => {
+      const stored = toSalePrices(p.salePrices);
+      return {
+        id: p.slug,
+        label: p.label,
+        zones: p.zones,
+        families: p.families,
+        // Migration paresseuse : sans barème propre, on le calcule comme la
+        // somme des zones (prix identiques) — rien n'est persisté ici.
+        salePrices:
+          stored.length > 0 ? stored : placementSalePricesFromZones(p.zones, catZones, seuils),
+      };
+    }),
     transports: transports.map(
       (t): CatalogTransport => ({
         id: t.slug,
@@ -190,6 +198,7 @@ export async function ensureCatalogSeeded(): Promise<void> {
         label: p.label,
         zones: p.zones,
         families: p.families,
+        salePrices: p.salePrices,
       })),
     });
   }

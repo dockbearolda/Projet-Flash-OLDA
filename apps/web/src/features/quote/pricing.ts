@@ -1,4 +1,5 @@
 import { SIZE_KEYS } from '@df/shared/catalog';
+import { zoneSalePriceForQtyFrom } from '@df/shared';
 import type { Sizes, Transport } from '@df/shared';
 import { getCatalog, zoneSalePriceForQty } from '@/features/catalog/useCatalog';
 
@@ -29,6 +30,11 @@ export function placementZonesPriceHT(placementId: string, qty: number): number 
   const placement = getCatalog().placementById[placementId];
   if (!placement) {
     throw new Error(`Unknown placement: ${placementId}`);
+  }
+  // Nouveau modèle : barème propre à l'option. Repli (cache / ancien snapshot) :
+  // somme des zones — donne le même prix.
+  if (placement.salePrices.length > 0) {
+    return zoneSalePriceForQtyFrom(placement.salePrices, qty);
   }
   return placement.zones.reduce((acc, zoneId) => acc + zoneSalePriceForQty(zoneId, qty), 0);
 }
