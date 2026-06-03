@@ -215,13 +215,9 @@ function ZonesEditor({ initial }: { initial: CatalogZone[] }) {
                         onChange={(v) => {
                           updatePrice(zi, ri, v);
                         }}
-                        onBlur={
-                          ri === 0
-                            ? () => {
-                                fillColumnFromUnit(zi, 'ifEmpty');
-                              }
-                            : undefined
-                        }
+                        onBlur={() => {
+                          if (ri === 0) fillColumnFromUnit(zi, 'ifEmpty');
+                        }}
                         suffix="€"
                         ariaLabel={`Prix ${z.label || String(zi + 1)} au seuil ${String(seuil)}`}
                       />
