@@ -39,7 +39,7 @@ export async function loadCatalogFromServer(): Promise<boolean> {
   return true;
 }
 
-async function putSection(path: string, body: unknown): Promise<CatalogSnapshot> {
+async function putSection(path: string, body: unknown, apply = true): Promise<CatalogSnapshot> {
   const res = await fetch(`/api/catalog/${path}`, {
     method: 'PUT',
     credentials: 'include',
@@ -60,7 +60,7 @@ async function putSection(path: string, body: unknown): Promise<CatalogSnapshot>
   const data: unknown = await res.json();
   const parsed = CatalogSnapshotSchema.safeParse(data);
   if (!parsed.success) throw new Error('Réponse serveur invalide');
-  useCatalogStore.getState().setSnapshot(parsed.data, { loaded: true });
+  if (apply) useCatalogStore.getState().setSnapshot(parsed.data, { loaded: true });
   return parsed.data;
 }
 
@@ -76,6 +76,19 @@ export const saveFlockColors = (colors: CatalogFlockColor[]): Promise<CatalogSna
   putSection('flock-colors', colors);
 export const savePlacements = (placements: CatalogPlacement[]): Promise<CatalogSnapshot> =>
   putSection('placements', placements);
+
+/**
+ * Enregistre zones + placements en un seul geste (page « Impressions »). Deux
+ * appels PUT existants, mais le snapshot n'est appliqué qu'une fois (au second),
+ * donc un seul bump de version → un seul remount de l'éditeur.
+ */
+export const saveZonesAndPlacements = async (
+  zones: CatalogZone[],
+  placements: CatalogPlacement[],
+): Promise<CatalogSnapshot> => {
+  await putSection('zones', zones, false);
+  return putSection('placements', placements, true);
+};
 export const saveSettings = (settings: CatalogSettings): Promise<CatalogSnapshot> =>
   putSection('settings', settings);
 export const saveFamilies = (families: CatalogFamily[]): Promise<CatalogSnapshot> =>

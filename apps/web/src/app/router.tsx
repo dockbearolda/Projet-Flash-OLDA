@@ -11,9 +11,8 @@ const QuotesPage = lazy(() => import('@/pages/admin/QuotesPage'));
 const CatalogPage = lazy(() => import('@/pages/admin/CatalogPage'));
 const FamiliesPage = lazy(() => import('@/pages/admin/FamiliesPage'));
 const CoefsPage = lazy(() => import('@/pages/admin/CoefsPage'));
-const ZonesPage = lazy(() => import('@/pages/admin/ZonesPage'));
 const ColorsPage = lazy(() => import('@/pages/admin/ColorsPage'));
-const PlacementsPage = lazy(() => import('@/pages/admin/PlacementsPage'));
+const ImpressionsPage = lazy(() => import('@/pages/admin/ImpressionsPage'));
 const SettingsPage = lazy(() => import('@/pages/admin/SettingsPage'));
 
 function lazyPage(El: ReturnType<typeof lazy>) {
@@ -64,11 +63,12 @@ export const router: RouterInstance = createBrowserRouter([
           </Suspense>
         ),
       },
+      { path: 'zones', element: <Navigate to="/admin/impressions" replace /> },
       {
-        path: 'zones',
+        path: 'impressions',
         element: (
           <Suspense fallback={<PageFallback />}>
-            <ZonesPage />
+            <ImpressionsPage />
           </Suspense>
         ),
       },
@@ -80,14 +80,7 @@ export const router: RouterInstance = createBrowserRouter([
           </Suspense>
         ),
       },
-      {
-        path: 'placements',
-        element: (
-          <Suspense fallback={<PageFallback />}>
-            <PlacementsPage />
-          </Suspense>
-        ),
-      },
+      { path: 'placements', element: <Navigate to="/admin/impressions" replace /> },
       {
         path: 'settings',
         element: (
