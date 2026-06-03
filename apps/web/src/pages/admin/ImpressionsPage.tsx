@@ -25,6 +25,34 @@ function sortPlacements(placements: CatalogPlacement[]): CatalogPlacement[] {
   }));
 }
 
+/** Slug technique à partir d'un nom : « Coeur + Dos » → « coeur-dos ». */
+function slugify(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Donne un identifiant aux options qui n'en ont pas (nouvelles), dérivé du nom
+ * et rendu unique. Les options existantes gardent leur id — les devis y font
+ * référence, il ne doit jamais changer.
+ */
+function ensureUniqueIds(placements: CatalogPlacement[]): CatalogPlacement[] {
+  const used = new Set(placements.map((p) => p.id).filter((id) => id.length > 0));
+  return placements.map((p, i) => {
+    if (p.id.length > 0) return p;
+    const base = slugify(p.label) || `option-${String(i + 1)}`;
+    let id = base;
+    let n = 2;
+    while (used.has(id)) id = `${base}-${String(n++)}`;
+    used.add(id);
+    return { ...p, id };
+  });
+}
+
 export default function ImpressionsPage() {
   const cat = useCatalog();
   // Toutes les options partagent la même échelle de seuils (union, report du
@@ -41,7 +69,7 @@ function OptionsEditor({
   families: CatalogFamily[];
 }) {
   const { draft, setDraft, dirty, saving, onSave, onCancel } = useSection(initial, (placements) =>
-    savePlacements(sortPlacements(placements)),
+    savePlacements(sortPlacements(ensureUniqueIds(placements))),
   );
 
   // Les seuils sont communs à toutes les options : on les lit sur la 1re.
@@ -196,7 +224,7 @@ function OptionsEditor({
             key={i}
             className="rounded-[var(--df-radius-lg)] bg-[var(--df-surface)] border border-[var(--df-border)] p-4"
           >
-            {/* Nom + identifiant + actions */}
+            {/* Nom + actions (l'identifiant technique est généré automatiquement) */}
             <div className="flex items-center gap-2">
               <TextField
                 value={p.label}
@@ -206,15 +234,6 @@ function OptionsEditor({
                 placeholder="Nom affiché (ex. Coeur + Dos)"
                 ariaLabel={`Nom de l’option ${String(i + 1)}`}
                 className="flex-1"
-              />
-              <TextField
-                value={p.id}
-                onChange={(v) => {
-                  updateOption(i, { id: v });
-                }}
-                placeholder="identifiant"
-                ariaLabel={`Identifiant de l’option ${String(i + 1)}`}
-                className="df-mono w-44"
               />
               <button
                 type="button"
