@@ -1,10 +1,12 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { PageFallback } from './PageFallback';
+import { Authed } from './Authed';
 
 type RouterInstance = ReturnType<typeof createBrowserRouter>;
 
 const TabletPage = lazy(() => import('@/pages/tablet/TabletPage'));
+const LoginPage = lazy(() => import('@/pages/login/LoginPage'));
 const DevComponentsPage = lazy(() => import('@/pages/dev/DevComponentsPage'));
 const AdminLayout = lazy(() => import('@/pages/admin/AdminLayout'));
 const QuotesPage = lazy(() => import('@/pages/admin/QuotesPage'));
@@ -15,16 +17,18 @@ const ColorsPage = lazy(() => import('@/pages/admin/ColorsPage'));
 const ImpressionsPage = lazy(() => import('@/pages/admin/ImpressionsPage'));
 const SettingsPage = lazy(() => import('@/pages/admin/SettingsPage'));
 
-function lazyPage(El: ReturnType<typeof lazy>) {
-  return (
+function lazyPage(El: ReturnType<typeof lazy>, guard = true) {
+  const inner = (
     <Suspense fallback={<PageFallback />}>
       <El />
     </Suspense>
   );
+  return guard ? <Authed>{inner}</Authed> : inner;
 }
 
 export const router: RouterInstance = createBrowserRouter([
   { path: '/', element: <Navigate to="/tablet" replace /> },
+  { path: '/login', element: lazyPage(LoginPage, false) },
   { path: '/tablet', element: lazyPage(TabletPage) },
   {
     path: '/admin',
@@ -91,5 +95,5 @@ export const router: RouterInstance = createBrowserRouter([
       },
     ],
   },
-  { path: '/dev/components', element: lazyPage(DevComponentsPage) },
+  { path: '/dev/components', element: lazyPage(DevComponentsPage, false) },
 ]);

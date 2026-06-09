@@ -21,6 +21,7 @@ Deux contextes d'usage :
 | Validation    | Zod                                                  |
 | API           | Hono sur Node 20                                     |
 | DB            | Prisma 6 + PostgreSQL                                |
+| Auth          | Mot de passe partagé, cookie httpOnly signé HMAC     |
 | PWA           | vite-plugin-pwa (manifest, service worker, sw cache) |
 | Tests         | Vitest + Testing Library (103 tests)                 |
 | E2E           | Playwright (configuré, scénarios non remplis en MVP) |
@@ -52,6 +53,7 @@ Ouvrir :
 
 - http://localhost:5173/tablet — interface vendeuse
 - http://localhost:5173/admin/quotes — admin desktop
+- http://localhost:5173/login — login mot de passe partagé
 - http://localhost:5173/dev/components — galerie composants (dev)
 
 ---
@@ -168,7 +170,7 @@ Voir `apps/web/src/features/quote/pricing.ts` pour l'implémentation (39 tests).
 3. **Geist self-hosted** — utilise Google Fonts en CDN, à passer en self-hosted si besoin d'offline complet sur les fonts.
 4. **Sync API** — l'historique est local IDB pour MVP. Le code des routes /api/quotes est prêt pour brancher une vraie sync queue.
 5. **Email / envoi** — bouton "Générer PDF" télécharge le fichier, pas d'envoi email automatique (à ajouter via Resend / SMTP si demandé).
-6. **Multi-utilisateur** — pas en MVP (aucune auth). Si besoin d'avoir un nom d'auteur par devis, ajouter une notion de user et l'attacher à `Quote`.
+6. **Multi-utilisateur** — pas en MVP (mot de passe partagé unique). Si besoin d'avoir un nom d'auteur par devis, ajouter une notion de user dans `Session` et `Quote`.
 
 ---
 

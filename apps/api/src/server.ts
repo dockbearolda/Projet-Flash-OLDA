@@ -16,7 +16,9 @@ import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
+import { authMiddleware } from './auth.js';
 import { healthRoute } from './routes/health.js';
+import { authRoute } from './routes/auth.js';
 import { catalogRoute } from './routes/catalog.js';
 import { quotesRoute } from './routes/quotes.js';
 import { pdfRoute } from './routes/pdf.js';
@@ -35,7 +37,11 @@ if (!isProd) {
   app.use('/api/*', cors({ origin: 'http://localhost:5173', credentials: true }));
 }
 
+// Auth gate (applies to all /api except health and login)
+app.use('/api/*', authMiddleware);
+
 app.route('/api/health', healthRoute);
+app.route('/api/auth', authRoute);
 app.route('/api/catalog', catalogRoute);
 app.route('/api/quotes', quotesRoute);
 app.route('/api/pdf', pdfRoute);
