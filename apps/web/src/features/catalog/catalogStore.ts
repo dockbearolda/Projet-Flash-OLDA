@@ -20,7 +20,16 @@ export const useCatalogStore = create<CatalogState>()(
       version: 0,
       loaded: false,
       setSnapshot: (snapshot, opts) => {
-        set({ snapshot, version: get().version + 1, loaded: opts?.loaded ?? get().loaded });
+        // Skip no-op applies (e.g. a periodic / SSE resync that returned the
+        // same data): bumping the version would needlessly remount the admin
+        // editor and could discard an in-progress edit. Still flip `loaded` on
+        // the first server response even when it equals the cached snapshot.
+        const cur = get();
+        if (JSON.stringify(cur.snapshot) === JSON.stringify(snapshot)) {
+          if (opts?.loaded && !cur.loaded) set({ loaded: true });
+          return;
+        }
+        set({ snapshot, version: cur.version + 1, loaded: opts?.loaded ?? cur.loaded });
       },
     }),
     {

@@ -29,9 +29,20 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
         runtimeCaching: [
           {
-            urlPattern: /\/api\/catalog/,
-            handler: 'StaleWhileRevalidate',
-            options: { cacheName: 'df-catalog' },
+            // Le flux temps réel ne doit jamais être intercepté ni mis en cache.
+            urlPattern: /\/api\/catalog\/stream/,
+            handler: 'NetworkOnly',
+          },
+          {
+            // Catalogue : toujours le réseau d'abord pour que chaque appareil
+            // reflète la dernière modif admin ; le cache ne sert que hors-ligne.
+            urlPattern: /\/api\/catalog(\?.*)?$/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'df-catalog',
+              networkTimeoutSeconds: 5,
+              expiration: { maxEntries: 4 },
+            },
           },
         ],
       },

@@ -1,4 +1,6 @@
 import { Hono } from 'hono';
+import { streamSSE } from 'hono/streaming';
+import type { SSEMessage } from 'hono/streaming';
 import { z } from 'zod';
 import {
   CatalogProductSchema,
@@ -12,6 +14,7 @@ import {
 } from '@df/shared';
 import { prisma } from '../db.js';
 import { readSnapshot, ensureCatalogSeeded } from '../catalogService.js';
+import { subscribeCatalog, notifyCatalogChanged, currentRevision } from '../catalogEvents.js';
 
 function duplicates(keys: (string | number)[]): boolean {
   return new Set(keys).size !== keys.length;
@@ -30,6 +33,41 @@ export const catalogRoute = new Hono()
     }
     return c.json(snapshot);
   })
+
+  // Flux temps réel : pousse un numéro de révision à chaque modif du catalogue,
+  // pour que chaque tablette/PC se resynchronise instantanément. Protégé par le
+  // middleware d'auth comme le reste de /api/* (cookie de session via EventSource).
+  .get('/stream', (c) =>
+    streamSSE(c, async (stream) => {
+      // Sérialise les écritures d'une même connexion : la diffusion et le
+      // heartbeat ne doivent jamais entrelacer deux trames SSE.
+      let chain: Promise<unknown> = Promise.resolve();
+      const send = (msg: SSEMessage) => {
+        chain = chain.then(() => stream.writeSSE(msg)).catch(() => undefined);
+      };
+
+      const unsub = subscribeCatalog((rev) => {
+        send({ event: 'catalog', data: String(rev) });
+      });
+      stream.onAbort(() => {
+        unsub();
+      });
+
+      // Bonjour initial : le client se cale sur la révision courante.
+      send({ event: 'catalog', data: String(currentRevision()) });
+
+      // Heartbeat : garde la connexion ouverte derrière les proxys (Railway).
+      // `stream.aborted` est muté de façon asynchrone (déconnexion du client) ;
+      // on le lit via une fonction pour ne pas le « figer » à false côté types.
+      const isAborted = () => stream.aborted;
+      while (!isAborted()) {
+        await stream.sleep(25_000);
+        if (isAborted()) break;
+        send({ event: 'ping', data: '1' });
+      }
+      unsub();
+    }),
+  )
 
   .put('/products', async (c) => {
     const body = (await c.req.json()) as unknown;
@@ -56,6 +94,7 @@ export const catalogRoute = new Hono()
         })),
       }),
     ]);
+    notifyCatalogChanged();
     return c.json(await readSnapshot());
   })
 
@@ -74,6 +113,7 @@ export const catalogRoute = new Hono()
         data: parsed.data.map(([threshold, coef]) => ({ threshold, coef })),
       }),
     ]);
+    notifyCatalogChanged();
     return c.json(await readSnapshot());
   })
 
@@ -97,6 +137,7 @@ export const catalogRoute = new Hono()
         })),
       }),
     ]);
+    notifyCatalogChanged();
     return c.json(await readSnapshot());
   })
 
@@ -115,6 +156,7 @@ export const catalogRoute = new Hono()
         data: parsed.data.map((x) => ({ slug: x.id, name: x.name, hex: x.hex, best: x.best })),
       }),
     ]);
+    notifyCatalogChanged();
     return c.json(await readSnapshot());
   })
 
@@ -138,6 +180,7 @@ export const catalogRoute = new Hono()
         })),
       }),
     ]);
+    notifyCatalogChanged();
     return c.json(await readSnapshot());
   })
 
@@ -162,6 +205,7 @@ export const catalogRoute = new Hono()
         })),
       }),
     ]);
+    notifyCatalogChanged();
     return c.json(await readSnapshot());
   })
 
@@ -200,6 +244,7 @@ export const catalogRoute = new Hono()
         data: parsed.data.map((f, i) => ({ slug: f.id, label: f.label, sort: i })),
       }),
     ]);
+    notifyCatalogChanged();
     return c.json(await readSnapshot());
   })
 
@@ -229,5 +274,6 @@ export const catalogRoute = new Hono()
         update: { value: String(parsed.data.tgcaRate) },
       }),
     ]);
+    notifyCatalogChanged();
     return c.json(await readSnapshot());
   });
