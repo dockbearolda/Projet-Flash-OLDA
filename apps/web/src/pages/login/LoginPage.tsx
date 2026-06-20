@@ -54,7 +54,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--df-bg)] flex items-center justify-center px-6">
+    <div className="min-h-screen bg-transparent flex items-center justify-center px-6">
       <form
         onSubmit={handleSubmit}
         className="w-[400px] bg-[var(--df-surface)] border border-[var(--df-border)] rounded-[var(--df-radius-xl)] shadow-[var(--df-shadow-2)] p-8"

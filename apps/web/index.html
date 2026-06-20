@@ -5,7 +5,7 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#2f5a7a" />
+    <meta name="theme-color" content="#ebeae8" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>Devis Flash · OLDA</title>
@@ -14,6 +14,7 @@
       // Les fonds doivent rester alignés sur --df-bg de chaque thème (globals.css).
       try {
         var bg = {
+          olda: '#ebeae8',
           sable: '#e8e5dd',
           lin: '#ece7dc',
           argile: '#ece4da',
@@ -26,8 +27,8 @@
           nuit: '#16181c',
         };
         var t = localStorage.getItem('df:theme');
-        if (!bg[t]) t = 'sable';
-        if (t !== 'sable') document.documentElement.dataset.dfTheme = t;
+        if (!bg[t]) t = 'olda';
+        if (t !== 'olda') document.documentElement.dataset.dfTheme = t;
         var meta = document.querySelector('meta[name="theme-color"]');
         if (meta) meta.setAttribute('content', bg[t]);
       } catch (e) {}

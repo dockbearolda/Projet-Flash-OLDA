@@ -39,7 +39,7 @@ export default function DevComponentsPage() {
   const [text, setText] = useState('');
 
   return (
-    <div className="min-h-screen bg-[var(--df-bg)] p-10">
+    <div className="min-h-screen bg-transparent p-10">
       <div className="max-w-5xl mx-auto">
         <div className="mb-12">
           <div className="df-caps mb-2">Devis Flash · Dev</div>

@@ -425,7 +425,7 @@ export default function TabletPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[var(--df-bg)]">
+    <div className="flex min-h-screen bg-transparent">
       <main className="flex-1 flex flex-col min-w-0">
         <header className="df-glass h-[var(--df-titlebar-height)] shrink-0 px-4 border-b border-[var(--df-glass-border)] flex items-center gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -678,7 +678,7 @@ function MenuItem({
 // devis (et donc une référence) seulement au clic sur « Nouveau devis ».
 function EmptyEditor({ onStart, onAdmin }: { onStart: () => void; onAdmin: () => void }) {
   return (
-    <div className="flex min-h-screen flex-col bg-[var(--df-bg)]">
+    <div className="flex min-h-screen flex-col bg-transparent">
       <header className="df-glass h-[var(--df-titlebar-height)] shrink-0 px-4 border-b border-[var(--df-glass-border)] flex items-center gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
           <Logo className="w-7 h-7 shrink-0 text-[var(--df-accent)]" />
