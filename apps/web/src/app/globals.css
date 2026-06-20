@@ -1,59 +1,144 @@
 @import 'tailwindcss';
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500&display=swap');
 
 @theme {
-  /* Surfaces — neutre chaud, désaturé, peu éblouissant */
-  --color-df-bg: #e8e5dd;
-  --color-df-bg-2: #dad6cc;
-  --color-df-surface: #f6f3ed;
-  --color-df-surface-2: #edeae1;
-  --color-df-surface-soft: rgba(246, 243, 237, 0.7);
+  /* ============================================================
+     Charte OLDA — Duck Blue. Surfaces fraîches, accent canard,
+     vert mint pour la marge, encre froide. Voir design-system-OLDA.
+     ============================================================ */
+
+  /* Surfaces */
+  --color-df-bg: #ebeae8;
+  --color-df-bg-2: #cdd4cd;
+  --color-df-surface: #f5f7f8;
+  --color-df-surface-2: #eaeef0;
+  --color-df-surface-soft: rgba(245, 247, 248, 0.72);
 
   /* Encres */
-  --color-df-ink: #1b1813;
-  --color-df-ink-2: #423d34;
-  --color-df-ink-3: #6e6a5d;
-  --color-df-ink-4: #a09a8d;
+  --color-df-ink: #202930;
+  --color-df-ink-2: #5b6b78;
+  --color-df-ink-3: #7a8893;
+  --color-df-ink-4: #bcc6cc;
 
   /* Bordures */
-  --color-df-border: rgba(38, 34, 26, 0.1);
-  --color-df-border-strong: rgba(38, 34, 26, 0.18);
+  --color-df-border: rgba(74, 98, 116, 0.14);
+  --color-df-border-strong: rgba(74, 98, 116, 0.24);
 
-  /* Accent */
-  --color-df-accent: #2f5a7a;
-  --color-df-accent-2: #3d749b;
-  --color-df-accent-ink: #f7f8f9;
-  --color-df-accent-soft: rgba(47, 90, 122, 0.1);
+  /* Accent — Duck Blue */
+  --color-df-accent: #4a6274;
+  --color-df-accent-2: #42596a;
+  --color-df-accent-ink: #f4f7f8;
+  --color-df-accent-soft: rgba(74, 98, 116, 0.1);
 
   /* Sémantiques */
   --color-df-success: #3a6d54;
-  --color-df-danger: #a23b2a;
+  --color-df-danger: #dc2626;
   --color-df-warning: #a96e16;
+  --color-df-profit: #76d3a3;
 
-  /* Typo */
-  --font-body: 'Geist', -apple-system, system-ui, sans-serif;
-  --font-display: 'Geist', -apple-system, system-ui, sans-serif;
-  --font-mono: 'Geist Mono', ui-monospace, monospace;
+  /* Typo — police système, pas de webfont */
+  --font-body:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
+  --font-display:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, monospace;
 
-  /* Rayons */
-  --radius-df-sm: 6px;
-  --radius-df: 10px;
-  --radius-df-lg: 14px;
+  /* Rayons — grille 4pt : 8 champs, 11 boutons, 16 cartes, 20 panneau, 980 pills */
+  --radius-df-sm: 8px;
+  --radius-df: 11px;
+  --radius-df-lg: 16px;
   --radius-df-xl: 20px;
 
-  /* Ombres */
-  --shadow-df-1: 0 1px 0 rgba(14, 17, 22, 0.04), 0 1px 2px rgba(14, 17, 22, 0.05);
-  --shadow-df-2: 0 1px 0 rgba(14, 17, 22, 0.04), 0 6px 20px rgba(14, 17, 22, 0.08);
-  --shadow-df-3: 0 2px 0 rgba(14, 17, 22, 0.04), 0 24px 60px rgba(14, 17, 22, 0.16);
-  --shadow-df-pressed: inset 0 1px 2px rgba(14, 17, 22, 0.1);
+  /* Ombres — froides, teintées canard, jamais noires pures */
+  --shadow-df-1: 0 1px 2px rgba(32, 41, 48, 0.05), 0 1px 3px rgba(74, 98, 116, 0.06);
+  --shadow-df-2: 0 1px 3px rgba(32, 41, 48, 0.06), 0 14px 36px rgba(74, 98, 116, 0.12);
+  --shadow-df-3: 0 2px 4px rgba(32, 41, 48, 0.08), 0 28px 60px rgba(74, 98, 116, 0.2);
+  --shadow-df-pressed: inset 0 1px 2px rgba(32, 41, 48, 0.1);
 
-  /* Glass */
-  --color-df-glass: rgba(246, 243, 237, 0.88);
-  --color-df-glass-border: rgba(38, 34, 26, 0.1);
+  /* Glass — verre clair, liseré blanc */
+  --color-df-glass: rgba(245, 247, 248, 0.72);
+  --color-df-glass-border: rgba(255, 255, 255, 0.55);
 }
 
 :root {
-  /* Mirror tokens as CSS variables for non-Tailwind uses */
+  /* Miroir des tokens en variables CSS (usages hors Tailwind + thématisation).
+     « OLDA » est le thème par défaut : ses valeurs vivent ici, dans :root. */
+  --df-bg: #ebeae8;
+  --df-bg-2: #cdd4cd;
+  /* Dégradé de fond OLDA — canvas fixe (appliqué via la règle ciblée plus bas). */
+  --df-bg-grad: linear-gradient(140deg, #ebeae8, #cdd4cd 50%, #adb8b9);
+  --df-surface: #f5f7f8;
+  --df-surface-2: #eaeef0;
+  --df-surface-soft: rgba(245, 247, 248, 0.72);
+
+  --df-ink: #202930;
+  --df-ink-2: #5b6b78;
+  --df-ink-3: #7a8893;
+  --df-ink-4: #bcc6cc;
+
+  --df-border: rgba(74, 98, 116, 0.14);
+  --df-border-strong: rgba(74, 98, 116, 0.24);
+
+  --df-accent: #4a6274;
+  --df-accent-2: #42596a;
+  --df-accent-ink: #f4f7f8;
+  --df-accent-soft: rgba(74, 98, 116, 0.1);
+  /* Anneau de focus — Duck clair */
+  --df-focus: #6b8191;
+  --df-focus-ring: rgba(107, 129, 145, 0.22);
+
+  --df-success: #3a6d54;
+  --df-danger: #dc2626;
+  --df-warning: #a96e16;
+  /* Marge / profit — mint */
+  --df-profit: #76d3a3;
+  --df-profit-bg: rgba(95, 185, 140, 0.16);
+
+  --df-font-body:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
+  --df-font-display:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
+  --df-font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, monospace;
+
+  --df-radius-sm: 8px;
+  --df-radius: 11px;
+  --df-radius-lg: 16px;
+  --df-radius-xl: 20px;
+
+  --df-shadow-1: 0 1px 2px rgba(32, 41, 48, 0.05), 0 1px 3px rgba(74, 98, 116, 0.06);
+  --df-shadow-2: 0 1px 3px rgba(32, 41, 48, 0.06), 0 14px 36px rgba(74, 98, 116, 0.12);
+  --df-shadow-3: 0 2px 4px rgba(32, 41, 48, 0.08), 0 28px 60px rgba(74, 98, 116, 0.2);
+  --df-shadow-pressed: inset 0 1px 2px rgba(32, 41, 48, 0.1);
+
+  --df-glass: rgba(245, 247, 248, 0.72);
+  --df-glass-border: rgba(255, 255, 255, 0.55);
+
+  --df-display-letter: -0.02em;
+  --df-display-leading: 0.95;
+
+  /* Chrome — barre de titre + cadences d'animation partagées */
+  --df-titlebar-height: 56px;
+  --df-dur-fast: 140ms;
+  --df-dur-press: 80ms;
+  --df-ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  color-scheme: light;
+}
+
+/* ============================================================
+   Thèmes — chaque collègue choisit son apparence dans
+   Réglages ▸ Apparence. Le thème s'applique via
+   html[data-df-theme="…"] et reste mémorisé sur l'appareil
+   (localStorage « df:theme »). « OLDA » = défaut (:root ci-dessus).
+   Toute l'app lit ses couleurs via var(--df-*), donc redéfinir
+   ces variables ici suffit à rethémer l'ensemble.
+   ============================================================ */
+
+/* Sable — ancien défaut, conservé comme thème alternatif chaud & neutre */
+html[data-df-theme='sable'] {
   --df-bg: #e8e5dd;
   --df-bg-2: #dad6cc;
   --df-surface: #f6f3ed;
@@ -73,47 +158,9 @@
   --df-accent-ink: #f7f8f9;
   --df-accent-soft: rgba(47, 90, 122, 0.1);
 
-  --df-success: #3a6d54;
-  --df-danger: #a23b2a;
-  --df-warning: #a96e16;
-
-  --df-font-body: 'Geist', -apple-system, system-ui, sans-serif;
-  --df-font-display: 'Geist', -apple-system, system-ui, sans-serif;
-  --df-font-mono: 'Geist Mono', ui-monospace, monospace;
-
-  --df-radius-sm: 6px;
-  --df-radius: 10px;
-  --df-radius-lg: 14px;
-  --df-radius-xl: 20px;
-
-  --df-shadow-1: 0 1px 0 rgba(14, 17, 22, 0.04), 0 1px 2px rgba(14, 17, 22, 0.05);
-  --df-shadow-2: 0 1px 0 rgba(14, 17, 22, 0.04), 0 6px 20px rgba(14, 17, 22, 0.08);
-  --df-shadow-3: 0 2px 0 rgba(14, 17, 22, 0.04), 0 24px 60px rgba(14, 17, 22, 0.16);
-  --df-shadow-pressed: inset 0 1px 2px rgba(14, 17, 22, 0.1);
-
   --df-glass: rgba(246, 243, 237, 0.88);
   --df-glass-border: rgba(38, 34, 26, 0.1);
-
-  --df-display-letter: -0.04em;
-  --df-display-leading: 0.92;
-
-  /* Chrome — barre de titre + cadences d'animation partagées */
-  --df-titlebar-height: 56px;
-  --df-dur-fast: 140ms;
-  --df-dur-press: 80ms;
-  --df-ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
-
-  color-scheme: light;
 }
-
-/* ============================================================
-   Thèmes — chaque collègue choisit son apparence dans
-   Réglages ▸ Apparence. Le thème s'applique via
-   html[data-df-theme="…"] et reste mémorisé sur l'appareil
-   (localStorage « df:theme »). « Sable » = défaut (:root ci-dessus).
-   Toute l'app lit ses couleurs via var(--df-*), donc redéfinir
-   ces variables ici suffit à rethémer l'ensemble.
-   ============================================================ */
 
 /* Océan — gris clair frais, bleu vif */
 html[data-df-theme='ocean'] {
@@ -353,7 +400,6 @@ html[data-df-theme='nuit'] {
 
 html,
 body {
-  background: var(--df-bg);
   color: var(--df-ink);
   font-family: var(--df-font-body);
   font-variant-numeric: tabular-nums;
@@ -361,6 +407,20 @@ body {
   letter-spacing: -0.005em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--df-bg);
+  background-attachment: fixed;
+}
+
+/* Canvas en dégradé — réservé au thème OLDA (défaut). Les thèmes alternatifs
+   gardent leur fond plein. Couvre l'état initial (pas d'attribut) et l'état
+   sélectionné (data-df-theme="olda"). */
+html:not([data-df-theme]) body,
+html[data-df-theme='olda'] body {
+  background-image: var(--df-bg-grad);
 }
 
 #root {
@@ -392,7 +452,7 @@ button:active:not(:disabled) {
 
 .df-caps {
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   font-size: 11px;
   font-weight: 600;
   color: var(--df-ink-3);
@@ -420,7 +480,7 @@ button:active:not(:disabled) {
     padding: 0 12px;
     background: var(--df-surface);
     border: 1px solid var(--df-border);
-    border-radius: var(--df-radius);
+    border-radius: var(--df-radius-sm);
     font-size: 14px;
     color: var(--df-ink);
     font-family: inherit;
@@ -429,8 +489,8 @@ button:active:not(:disabled) {
       box-shadow 140ms;
   }
   .df-input:focus {
-    border-color: var(--df-accent);
-    box-shadow: 0 0 0 3px var(--df-accent-soft);
+    border-color: var(--df-focus, var(--df-accent));
+    box-shadow: 0 0 0 3px var(--df-focus-ring, var(--df-accent-soft));
   }
   .df-input::placeholder {
     color: var(--df-ink-4);

@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 
 export type ThemeId =
+  | 'olda'
   | 'sable'
   | 'lin'
   | 'argile'
@@ -28,13 +29,27 @@ export interface ThemeMeta {
   };
 }
 
-export const DEFAULT_THEME: ThemeId = 'sable';
+export const DEFAULT_THEME: ThemeId = 'olda';
 
 export const THEMES: ThemeMeta[] = [
   {
+    id: 'olda',
+    name: 'OLDA',
+    tagline: 'Charte maison · défaut',
+    dark: false,
+    preview: {
+      bg: '#ebeae8',
+      surface: '#f5f7f8',
+      border: 'rgba(74, 98, 116, 0.16)',
+      accent: '#4a6274',
+      ink: '#202930',
+      ink3: '#7a8893',
+    },
+  },
+  {
     id: 'sable',
     name: 'Sable',
-    tagline: 'Chaud & neutre · défaut',
+    tagline: 'Chaud & neutre',
     dark: false,
     preview: {
       bg: '#e8e5dd',

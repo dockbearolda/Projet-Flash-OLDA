@@ -43,7 +43,7 @@ export default function AdminLayout() {
   );
 
   return (
-    <div className="flex min-h-screen bg-[var(--df-bg)]">
+    <div className="flex min-h-screen bg-transparent">
       <aside className="w-[240px] shrink-0 h-screen bg-[var(--df-surface)] border-r border-[var(--df-border)] flex flex-col sticky top-0">
         <div className="px-5 py-5 border-b border-[var(--df-border)] flex items-center gap-3">
           <Logo className="w-9 h-9 shrink-0 text-[var(--df-accent)]" />
