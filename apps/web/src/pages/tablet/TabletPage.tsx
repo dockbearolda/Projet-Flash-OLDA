@@ -436,7 +436,6 @@ export default function TabletPage() {
               draggable={false}
               className="w-9 h-9 shrink-0 select-none"
             />
-            <span className="df-caps shrink-0 hidden xl:inline">OLDA · SXM</span>
           </div>
 
           <div className="flex-1" />
@@ -696,7 +695,6 @@ function EmptyEditor({ onStart, onAdmin }: { onStart: () => void; onAdmin: () =>
             className="w-9 h-9 shrink-0 select-none"
           />
           <h1 className="df-display text-lg text-[var(--df-ink)] truncate">Devis Flash</h1>
-          <span className="df-caps shrink-0 hidden xl:inline">OLDA · SXM</span>
         </div>
 
         <div className="flex-1" />
