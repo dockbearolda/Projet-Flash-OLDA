@@ -23,6 +23,14 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      # Le lint/typecheck typés résolvent @df/shared via son `dist/` et l'API via
+      # le client Prisma généré : il faut donc produire ces artefacts avant les
+      # vérifications, sinon eslint/tsc échouent sur des types « cannot be resolved ».
+      - name: Generate Prisma client & build shared
+        run: |
+          pnpm --filter @df/api exec prisma generate
+          pnpm --filter @df/shared build
+
       - name: Lint
         run: pnpm lint
 
