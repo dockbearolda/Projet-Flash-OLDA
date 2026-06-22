@@ -26,7 +26,6 @@ import { lineQty } from '@/features/quote/pricing';
 import { buildQuoteMessage, whatsappUrl, mailtoUrl, DEFAULT_DIAL } from '@/features/quote/share';
 import { LineRow, PricingGrid, RecapDrawer } from '@/features/quote/components';
 import { SegToggle } from '@/components/ui/SegToggle';
-import { Logo } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import type { Customer } from '@df/shared';
 
@@ -429,8 +428,14 @@ export default function TabletPage() {
       <main className="flex-1 flex flex-col min-w-0">
         <header className="df-glass h-[var(--df-titlebar-height)] shrink-0 px-4 border-b border-[var(--df-glass-border)] flex items-center gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
-            <Logo className="w-7 h-7 shrink-0 text-[var(--df-accent)]" />
-            <span className="df-caps shrink-0 hidden xl:inline">OLDA · SXM</span>
+            <img
+              src="/olda-logo-glass.svg"
+              alt="OLDA"
+              width={36}
+              height={36}
+              draggable={false}
+              className="w-9 h-9 shrink-0 select-none"
+            />
           </div>
 
           <div className="flex-1" />
@@ -681,9 +686,24 @@ function EmptyEditor({ onStart, onAdmin }: { onStart: () => void; onAdmin: () =>
     <div className="flex min-h-screen flex-col bg-transparent">
       <header className="df-glass h-[var(--df-titlebar-height)] shrink-0 px-4 border-b border-[var(--df-glass-border)] flex items-center gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
-          <Logo className="w-7 h-7 shrink-0 text-[var(--df-accent)]" />
+          <img
+            src="/olda-logo-glass.svg"
+            alt="OLDA"
+            width={36}
+            height={36}
+            draggable={false}
+            className="w-9 h-9 shrink-0 select-none"
+          />
           <h1 className="df-display text-lg text-[var(--df-ink)] truncate">Devis Flash</h1>
-          <span className="df-caps shrink-0 hidden xl:inline">OLDA · SXM</span>
+
+          <button
+            type="button"
+            onClick={onStart}
+            className="ml-1 inline-flex shrink-0 items-center gap-1.5 px-3 h-9 rounded-[var(--df-radius)] bg-[var(--df-accent)] text-[var(--df-accent-ink)] text-sm font-medium hover:bg-[var(--df-accent-2)] transition-colors duration-[var(--df-dur-fast)] ease-[var(--df-ease-out)]"
+          >
+            <Plus size={16} strokeWidth={1.8} aria-hidden />
+            Nouveau devis
+          </button>
         </div>
 
         <div className="flex-1" />
@@ -695,15 +715,6 @@ function EmptyEditor({ onStart, onAdmin }: { onStart: () => void; onAdmin: () =>
         >
           <Settings size={15} strokeWidth={1.8} aria-hidden />
           <span className="hidden xl:inline">Admin</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={onStart}
-          className="inline-flex items-center gap-1.5 px-3 h-9 rounded-[var(--df-radius)] bg-[var(--df-accent)] text-[var(--df-accent-ink)] text-sm font-medium hover:bg-[var(--df-accent-2)] transition-colors duration-[var(--df-dur-fast)] ease-[var(--df-ease-out)]"
-        >
-          <Plus size={16} strokeWidth={1.8} aria-hidden />
-          Nouveau devis
         </button>
       </header>
     </div>
