@@ -18,7 +18,6 @@ import { useHistoryStore, attachHistoryIdb } from '@/features/quote/historyStore
 import { useQuoteStore, attachIdbStorage } from '@/features/quote/quoteStore';
 import { useCatalog } from '@/features/catalog/useCatalog';
 import { useCatalogBoot } from '@/features/catalog/boot';
-import { Logo } from '@/components/ui';
 import { fmtInt } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
@@ -46,7 +45,14 @@ export default function AdminLayout() {
     <div className="flex min-h-screen bg-transparent">
       <aside className="w-[240px] shrink-0 h-screen bg-[var(--df-surface)] border-r border-[var(--df-border)] flex flex-col sticky top-0">
         <div className="px-5 py-5 border-b border-[var(--df-border)] flex items-center gap-3">
-          <Logo className="w-9 h-9 shrink-0 text-[var(--df-accent)]" />
+          <img
+            src="/olda-logo-glass.svg"
+            alt="OLDA"
+            width={40}
+            height={40}
+            draggable={false}
+            className="w-10 h-10 shrink-0 select-none"
+          />
           <div>
             <div className="df-caps">Devis Flash · OLDA</div>
             <div className="df-display text-xl mt-0.5">Admin</div>

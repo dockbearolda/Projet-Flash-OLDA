@@ -26,7 +26,6 @@ import { lineQty } from '@/features/quote/pricing';
 import { buildQuoteMessage, whatsappUrl, mailtoUrl, DEFAULT_DIAL } from '@/features/quote/share';
 import { LineRow, PricingGrid, RecapDrawer } from '@/features/quote/components';
 import { SegToggle } from '@/components/ui/SegToggle';
-import { Logo } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import type { Customer } from '@df/shared';
 
@@ -429,7 +428,14 @@ export default function TabletPage() {
       <main className="flex-1 flex flex-col min-w-0">
         <header className="df-glass h-[var(--df-titlebar-height)] shrink-0 px-4 border-b border-[var(--df-glass-border)] flex items-center gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
-            <Logo className="w-7 h-7 shrink-0 text-[var(--df-accent)]" />
+            <img
+              src="/olda-logo-glass.svg"
+              alt="OLDA"
+              width={36}
+              height={36}
+              draggable={false}
+              className="w-9 h-9 shrink-0 select-none"
+            />
             <span className="df-caps shrink-0 hidden xl:inline">OLDA · SXM</span>
           </div>
 
@@ -681,7 +687,14 @@ function EmptyEditor({ onStart, onAdmin }: { onStart: () => void; onAdmin: () =>
     <div className="flex min-h-screen flex-col bg-transparent">
       <header className="df-glass h-[var(--df-titlebar-height)] shrink-0 px-4 border-b border-[var(--df-glass-border)] flex items-center gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
-          <Logo className="w-7 h-7 shrink-0 text-[var(--df-accent)]" />
+          <img
+            src="/olda-logo-glass.svg"
+            alt="OLDA"
+            width={36}
+            height={36}
+            draggable={false}
+            className="w-9 h-9 shrink-0 select-none"
+          />
           <h1 className="df-display text-lg text-[var(--df-ink)] truncate">Devis Flash</h1>
           <span className="df-caps shrink-0 hidden xl:inline">OLDA · SXM</span>
         </div>
