@@ -695,6 +695,15 @@ function EmptyEditor({ onStart, onAdmin }: { onStart: () => void; onAdmin: () =>
             className="w-9 h-9 shrink-0 select-none"
           />
           <h1 className="df-display text-lg text-[var(--df-ink)] truncate">Devis Flash</h1>
+
+          <button
+            type="button"
+            onClick={onStart}
+            className="ml-1 inline-flex shrink-0 items-center gap-1.5 px-3 h-9 rounded-[var(--df-radius)] bg-[var(--df-accent)] text-[var(--df-accent-ink)] text-sm font-medium hover:bg-[var(--df-accent-2)] transition-colors duration-[var(--df-dur-fast)] ease-[var(--df-ease-out)]"
+          >
+            <Plus size={16} strokeWidth={1.8} aria-hidden />
+            Nouveau devis
+          </button>
         </div>
 
         <div className="flex-1" />
@@ -706,15 +715,6 @@ function EmptyEditor({ onStart, onAdmin }: { onStart: () => void; onAdmin: () =>
         >
           <Settings size={15} strokeWidth={1.8} aria-hidden />
           <span className="hidden xl:inline">Admin</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={onStart}
-          className="inline-flex items-center gap-1.5 px-3 h-9 rounded-[var(--df-radius)] bg-[var(--df-accent)] text-[var(--df-accent-ink)] text-sm font-medium hover:bg-[var(--df-accent-2)] transition-colors duration-[var(--df-dur-fast)] ease-[var(--df-ease-out)]"
-        >
-          <Plus size={16} strokeWidth={1.8} aria-hidden />
-          Nouveau devis
         </button>
       </header>
     </div>
