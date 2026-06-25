@@ -1,35 +1,37 @@
+import { buildDevisDocDefinition } from './devisDoc';
+import { devisPdfFilename, type DevisData } from './devisData';
+
 /**
- * Génère le devis en PDF puis déclenche son téléchargement sous le nom donné
- * (l'utilisateur choisit l'emplacement selon les réglages du navigateur).
- *
- * Le PDF est rendu côté serveur (Chrome sans écran) à partir du HTML du devis :
- * vrai PDF vectoriel, texte net et sélectionnable, fidèle au design écran et
- * paginé proprement. Nécessite une connexion internet.
+ * Charge pdfmake + ses polices (vfs) en lazy : ils ne pèsent pas sur le bundle
+ * initial et ne sont chargés qu'à la première génération de PDF.
  */
-export async function downloadDevisPdf(html: string, fileName: string): Promise<void> {
-  const res = await fetch('/api/pdf', {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ html, fileName }),
-  });
-  if (!res.ok) {
-    throw new Error(`Génération PDF: HTTP ${String(res.status)}`);
-  }
-  triggerDownload(await res.blob(), fileName);
+async function loadPdfMake() {
+  const [{ default: pdfMake }, { default: vfs }] = await Promise.all([
+    import('pdfmake/build/pdfmake'),
+    import('pdfmake/build/vfs_fonts'),
+  ]);
+  pdfMake.vfs = vfs;
+  return pdfMake;
 }
 
-function triggerDownload(blob: Blob, fileName: string): void {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = fileName;
-  a.rel = 'noopener';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  // Révoque après un court délai pour laisser le téléchargement démarrer.
-  setTimeout(() => {
-    URL.revokeObjectURL(url);
-  }, 1000);
+/**
+ * Construit le devis en PDF (Blob) **100 % côté navigateur** — aucun appel
+ * réseau, fonctionne hors-ligne. Réutilisable (téléchargement, pièce jointe…).
+ */
+export async function buildDevisPdfBlob(data: DevisData): Promise<Blob> {
+  const pdfMake = await loadPdfMake();
+  const doc = buildDevisDocDefinition(data);
+  return new Promise<Blob>((resolve) => {
+    pdfMake.createPdf(doc).getBlob(resolve);
+  });
+}
+
+/**
+ * Génère le devis en PDF côté navigateur puis déclenche son téléchargement sous
+ * « société client - date.pdf ». Produit hors-ligne, même API/serveur indisponibles.
+ */
+export async function downloadDevisPdf(data: DevisData): Promise<void> {
+  const pdfMake = await loadPdfMake();
+  const doc = buildDevisDocDefinition(data);
+  pdfMake.createPdf(doc).download(devisPdfFilename(data.customer, data.createdAt));
 }

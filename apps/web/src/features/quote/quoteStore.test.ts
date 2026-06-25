@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useQuoteStore } from './quoteStore';
+import { useQuoteStore, quoteHasContent } from './quoteStore';
 
 function freshStore() {
   useQuoteStore.getState().__replace({
@@ -123,5 +123,39 @@ describe('useQuoteStore', () => {
     await new Promise((r) => setTimeout(r, 5));
     useQuoteStore.getState().setRevente(true);
     expect(useQuoteStore.getState().updatedAt).not.toBe(before);
+  });
+});
+
+// Détermine si un brouillon vaut la peine d'être restauré après un redémarrage
+// (coupure de courant). Pilote la reprise dans `attachIdbStorage`.
+describe('quoteHasContent', () => {
+  beforeEach(() => {
+    freshStore();
+  });
+
+  it('is false for a fresh quote (one empty line, no customer)', () => {
+    expect(quoteHasContent(useQuoteStore.getState())).toBe(false);
+  });
+
+  it('is true once a quantity is entered', () => {
+    const id = useQuoteStore.getState().lines[0]!.id;
+    useQuoteStore.getState().setSizes(id, { xs: 0, s: 5, m: 0, l: 0, xl: 0, xxl: 0, autres: 0 });
+    expect(quoteHasContent(useQuoteStore.getState())).toBe(true);
+  });
+
+  it('is true once a customer field is filled', () => {
+    useQuoteStore.getState().setCustomer({ name: 'Dupont SARL' });
+    expect(quoteHasContent(useQuoteStore.getState())).toBe(true);
+  });
+
+  it('is true with more than one line', () => {
+    useQuoteStore.getState().addLine();
+    expect(quoteHasContent(useQuoteStore.getState())).toBe(true);
+  });
+
+  it('is true with a note on a line', () => {
+    const id = useQuoteStore.getState().lines[0]!.id;
+    useQuoteStore.getState().updateLine(id, { note: 'BAT à valider' });
+    expect(quoteHasContent(useQuoteStore.getState())).toBe(true);
   });
 });

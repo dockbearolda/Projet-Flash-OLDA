@@ -253,9 +253,8 @@ export default function TabletPage() {
   // sous le nom « société client - date.pdf », puis passe le devis en "Envoyé".
   async function generateDevisPdf(): Promise<void> {
     const createdAt = useQuoteStore.getState().createdAt;
-    const { buildDevisHtml, devisPdfFilename } = await import('@/features/pdf/devisTemplate');
     const { downloadDevisPdf } = await import('@/features/pdf/downloadDevisPdf');
-    const html = buildDevisHtml({
+    await downloadDevisPdf({
       id,
       customer,
       lines: lines.filter((l) => l.linked),
@@ -264,7 +263,6 @@ export default function TabletPage() {
       totals,
       createdAt,
     });
-    await downloadDevisPdf(html, devisPdfFilename(customer, createdAt));
     markSent(createdAt);
   }
 

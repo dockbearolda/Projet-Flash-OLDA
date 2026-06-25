@@ -70,14 +70,13 @@ export default function QuotesPage() {
 
   async function resend(entry: HistoryEntry) {
     try {
-      const { buildDevisHtml, devisPdfFilename } = await import('@/features/pdf/devisTemplate');
       const { downloadDevisPdf } = await import('@/features/pdf/downloadDevisPdf');
       const totals = quoteTotals({
         lines: entry.lines,
         transport: entry.transport,
         revente: entry.revente,
       });
-      const html = buildDevisHtml({
+      await downloadDevisPdf({
         id: entry.id,
         customer: entry.customer,
         lines: entry.lines.filter((l) => l.linked),
@@ -86,7 +85,6 @@ export default function QuotesPage() {
         totals,
         createdAt: entry.createdAt,
       });
-      await downloadDevisPdf(html, devisPdfFilename(entry.customer, entry.createdAt));
       markSent(entry.id);
       toast.success('Devis téléchargé', {
         id: 'pdf',
