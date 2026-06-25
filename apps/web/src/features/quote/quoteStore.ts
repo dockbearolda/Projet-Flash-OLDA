@@ -5,7 +5,7 @@ import type { Customer, FlockMode, Sizes, Transport, QuoteLine } from '@df/share
 import { createIdbStorage } from './idbStorage';
 import { useCatalogStore } from '@/features/catalog/catalogStore';
 import { nextQuoteId, newLineId } from './quoteId';
-import { quoteTotals } from './pricing';
+import { quoteTotals, lineQty } from './pricing';
 import type { QuoteTotals } from './pricing';
 
 const EMPTY_SIZES: Sizes = { xs: 0, s: 0, m: 0, l: 0, xl: 0, xxl: 0, autres: 0 };
@@ -221,14 +221,39 @@ export const useQuoteStore = create<QuoteState>()(
 let idbAttached = false;
 
 /**
+ * Un brouillon « a du contenu » dès que la vendeuse y a mis quelque chose de
+ * réel : une quantité, un client, une ligne supplémentaire, une ligne hors
+ * catalogue ou une note. Un devis neuf (une ligne vide, client vide) n'en a pas.
+ */
+export function quoteHasContent(s: Pick<QuoteState, 'lines' | 'customer'>): boolean {
+  const c = s.customer;
+  const customerFilled = [c.name, c.company, c.email, c.phone, c.address].some((v) =>
+    Boolean(v?.trim()),
+  );
+  if (customerFilled) return true;
+  if (s.lines.length > 1) return true;
+  return s.lines.some(
+    (l) => lineQty(l.sizes) > 0 || l.custom !== undefined || Boolean(l.note?.trim()),
+  );
+}
+
+/**
  * Replace the no-op storage with the real IDB storage. Called once on app boot.
+ *
+ * On réhydrate le brouillon laissé sur le disque pour survivre à une coupure de
+ * courant / tablette éteinte en pleine saisie : si le brouillon a du contenu on
+ * le rouvre tel quel, sinon on démarre proprement sur un devis neuf (DEV-PENDING).
+ * Les devis enregistrés restent de toute façon dans l'historique.
  */
 export function attachIdbStorage(): void {
   if (idbAttached) return;
-  useQuoteStore.persist.setOptions({ storage: createIdbStorage<QuoteState>() });
-  // Pas de rehydrate : à chaque ouverture du site on démarre sans devis
-  // (DEV-PENDING). Les devis enregistrés restent accessibles via l'historique.
   idbAttached = true;
+  useQuoteStore.persist.setOptions({ storage: createIdbStorage<QuoteState>() });
+  void useQuoteStore.persist.rehydrate()?.then(() => {
+    if (!quoteHasContent(useQuoteStore.getState())) {
+      useQuoteStore.setState(initialState());
+    }
+  });
 }
 
 export function useQuoteTotals(): QuoteTotals {

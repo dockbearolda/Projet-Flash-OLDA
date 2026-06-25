@@ -21,7 +21,6 @@ import { healthRoute } from './routes/health.js';
 import { authRoute } from './routes/auth.js';
 import { catalogRoute } from './routes/catalog.js';
 import { quotesRoute } from './routes/quotes.js';
-import { pdfRoute } from './routes/pdf.js';
 import { ensureCatalogSeeded } from './catalogService.js';
 import path from 'node:path';
 import { existsSync } from 'node:fs';
@@ -44,7 +43,6 @@ app.route('/api/health', healthRoute);
 app.route('/api/auth', authRoute);
 app.route('/api/catalog', catalogRoute);
 app.route('/api/quotes', quotesRoute);
-app.route('/api/pdf', pdfRoute);
 
 // Fill any missing catalogue data from the defaults (idempotent, non-blocking).
 void ensureCatalogSeeded().catch((e: unknown) => {

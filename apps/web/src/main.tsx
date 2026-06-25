@@ -19,6 +19,16 @@ window.addEventListener('vite:preloadError', (event) => {
   window.location.reload();
 });
 
+// Demande au navigateur de conserver durablement le stockage local (devis en
+// cours, historique, catalogue en cache). Sans ça, les données IndexedDB peuvent
+// être évincées sous pression mémoire — on ne veut rien perdre après une coupure
+// de courant. Sans effet si déjà accordé (PWA installée) ou non supporté.
+// `navigator.storage` est absent des vieux navigateurs : détection souple.
+const storage = navigator.storage as StorageManager | undefined;
+if (storage?.persist) {
+  void storage.persisted().then((granted) => (granted ? true : storage.persist()));
+}
+
 const rootEl = document.getElementById('root');
 if (!rootEl) throw new Error('Root element #root not found');
 
